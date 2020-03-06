@@ -1,1 +1,0 @@
-<TEXTFORMAT LEADING="2"><P ALIGN="LEFT"><FONT FACE="Arial" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="1">9.对于医疗保健机构外出生的签发，应加盖何种印章？</FONT></P></TEXTFORMAT><TEXTFORMAT LEADING="2"><P ALIGN="LEFT"><FONT FACE="Arial" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="1">    答：医疗保健机构外出生的签发也包括首次签发、换发、补发。因此，医疗保健机构外出生的首次签发和换发时应加盖签发机构的出生医学证明专用章。</FONT></P></TEXTFORMAT>

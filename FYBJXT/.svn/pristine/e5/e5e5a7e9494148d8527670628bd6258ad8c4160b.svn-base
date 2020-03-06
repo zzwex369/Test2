@@ -1,1 +1,0 @@
-<TEXTFORMAT LEADING="2"><P ALIGN="LEFT"><FONT FACE="Arial" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">答：各级、各类《出生医学证明》签发机构均应按属地管理要求到本机构所在区（县）的《出生医学证明》管理机构申领空白《出生医学证明》。</FONT></P></TEXTFORMAT>
