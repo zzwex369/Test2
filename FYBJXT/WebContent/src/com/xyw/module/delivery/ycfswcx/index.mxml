@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	
+	<fx:Declarations>
+		<s:RemoteObject id="ycfswService" destination="ycfswService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="pagerD604" result="pagerD604Handler(event)"/>
+			<s:method name="deleteD604" result="deleteD604Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.delivery.model.D604;
+			import com.xyw.module.delivery.model.D604Request;
+			import com.xyw.module.delivery.model.D604Response;
+			import com.xyw.module.delivery.model.VD604;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.formatters.DateFormatter;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var d604:D604 = null;
+			public var vD604:VD604 = null;
+			public var d604Request:D604Request = null;
+			public var systemUser:SystemUser = null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+				
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vD604 = DataGrid(event.target).selectedItem as VD604;
+			}
+			
+			public function query(event:MouseEvent):void
+			{  
+				var d604Request:D604Request = new D604Request();
+				var d604:D604 = new D604();
+				d604.d60404 = this.D604_04.text;
+				d604.d60406 = this.D604_06.text;
+				var type:String = this.D604_51.getLastSelectedInstitution();
+				var d604_51_:String = this.D604_51.getLastSelectedInstitutionCode();
+				if(this.systemUser.institutionType == "1")
+				{
+					d604.d60451 = this.systemUser.institutionCode;
+				}else{
+					if(type == "8")
+					{
+						d604.d60451 = d604_51_;
+					}else if(type == "6")
+					{
+						d604.d60451 = d604_51_.substring(0,6);
+					}else if(type == "4")
+					{
+						d604.d60451 = d604_51_.substring(0,4);
+					}else if(type == "2")
+					{
+						d604.d60451 = d604_51_.substring(0,2);
+					}
+				}
+				
+				d604Request.d604 = d604;
+				d604Request.d60421Start = this.timeStart.selectedDate;
+				d604Request.d60421End = this.timeEnd.selectedDate;
+				d604Request.pageIndex = 1;
+				d604Request.pageSize = 20;
+				this.ycfswService.pagerD604(d604Request);
+			}
+			
+			public function pagerD604Handler(event:ResultEvent):void
+			{ 
+				var d604Response:Object = event.result;
+				var vd604s:ArrayCollection = d604Response.vD604s;
+				var rowCount:Number = d604Response.rowCount;
+				this.certificateDataGrid.dataProvider = vd604s;
+				if(d604Response.errorMessage == null)
+				{
+					this.pagerBar.pageSize = 20;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = vd604s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(d604Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				var d604Request:D604Request = new D604Request();
+				d604Request.pageIndex = currentPageIndex;
+				d604Request.pageSize = pageSize;
+				
+				this.ycfswService.pagerD604(d604Request);
+			}
+			public function update(event:MouseEvent):void{
+				if(this.vD604 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:tittle = new tittle();
+					window.vD604 = this.vD604;
+					PopUpManager.addPopUp(window,this);
+					var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+					var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+					window.move(x, y);
+				}
+			}
+			public function deleteD604(event:MouseEvent):void{
+				
+				if(this.vD604 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show("确定要删除所选的行吗？", "系统提示", (Alert.YES|Alert.NO), this, alertCallBack);
+				
+			}
+			public function alertCallBack(event:CloseEvent):void{
+				var d604Request:D604Request = new D604Request();
+				var d604:D604 = new D604();
+				d604.d60401 = this.vD604.d60401;
+				d604Request.d604 = d604;
+				if(event.detail == Alert.YES){
+					this.ycfswService.deleteD604(d604Request);
+				}
+			}
+			public function deleteD604Handler(event:ResultEvent):void{
+				
+				var d604Response:D604Response = event.result as D604Response;
+				if(d604Response.errorMessage == null){
+					this.query(null);
+					Alert.okLabel = "确认";
+					Alert.show(d604Response.promptMessage, "系统提示");
+				}else{
+					Alert.show(d604Response.errorMessage, "系统提示");
+				}
+			}
+			private function printCertificate(event:MouseEvent):void
+			{
+				
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="综合查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="填报单位" id="my"/>
+						<component:InstitutionComboBox id="D604_51"/>
+						<s:Label text="姓名"/><s:TextInput id="D604_04"/>
+						<s:Label text="产妇身份证号"/><s:TextInput id="D604_06" width="150"/>
+					</s:HGroup>
+					<s:HGroup  width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="死亡日期"/><mx:DateField yearNavigationEnabled="true" id="timeStart" width="120" dayNames='["日","一","二","三","四","五","六"]'
+															monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+															formatString="YYYY-MM-DD"/>
+						<s:Label text="至"/><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="120" dayNames='["日","一","二","三","四","五","六"]'
+														 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														 formatString="YYYY-MM-DD"/>
+						<s:Button label="查询" click="query(event)"/>
+						<s:Button label="打印" click="printCertificate(event)"/>
+						<s:Button label="修改" click="update(event)"/>
+						<s:Button label="删除" click="deleteD604(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:Scroller y="126" width="100%" height="560" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+			<s:VGroup width="100%" paddingBottom="10">
+				<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="1241" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn dataField="d60401" headerText="主键" visible="false"/>
+							<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+							<s:GridColumn dataField="d60404" headerText="产妇姓名" width="100"/>
+							<s:GridColumn dataField="d60406" headerText="产妇身份证号" width="150"/>
+							<s:GridColumn dataField="d60420Zh" headerText="分娩时间" width="100"/>
+							<s:GridColumn dataField="d60422Zh" headerText="分娩地点" width="100"/>
+							<s:GridColumn dataField="d60424Zh" headerText="分娩方式 " width="100"/>
+							<s:GridColumn dataField="d60421Zh" headerText="死亡时间" width="100"/>
+							<s:GridColumn dataField="d60423Zh" headerText="死亡地点" width="100"/>
+							<s:GridColumn dataField="d60435" headerText="根本死因" width="100"/>
+							<s:GridColumn dataField="d60436Zh" headerText="死因分类" width="100"/>
+							<s:GridColumn dataField="d60450" headerText="死亡摘要或调查小结" width="300"/>
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>
+				<component:PagerBar id="pagerBar" enabled="false"/>
+				</s:VGroup>
+			</s:Scroller>
+	</s:VGroup>
+</s:Module>

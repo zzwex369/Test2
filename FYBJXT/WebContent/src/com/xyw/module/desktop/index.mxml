@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:controls="flexlib.controls.*"
+		  width="100%" height="100%"
+		  creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getArticleB" result="getArticleBHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace controls "flexlib.controls.*";
+		.myLabel
+		{
+			fontFamily:宋体;
+			fontSize:13px;
+			fontWeight:bold;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.NoticeRequest;
+			import com.xyw.sys.model.SessionException;
+			import flashx.textLayout.conversion.TextConverter;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			private function init():void
+			{
+				initParaProvince();
+				initParaCity();
+				initParaCounty();
+			}
+			
+			private function initParaProvince():void
+			{
+				var noticeRequest:NoticeRequest = new NoticeRequest();
+				var path:String = "policyPaper/notice/";
+				var fileName:String = "provinceNoticeMessage";
+				
+				noticeRequest.fileName = fileName;
+				noticeRequest.path = path;
+				this.systemService.getArticleB(noticeRequest);
+			}
+			
+			private function initParaCity():void
+			{
+				var noticeRequest:NoticeRequest = new NoticeRequest();
+				var path:String = "policyPaper/notice/";
+				var fileName:String = "cityNoticeMessage";
+				
+				noticeRequest.fileName = fileName;
+				noticeRequest.path = path;
+				this.systemService.getArticleB(noticeRequest);
+			}
+			
+			private function initParaCounty():void
+			{
+				var noticeRequest:NoticeRequest = new NoticeRequest();
+				var path:String = "policyPaper/notice/";
+				var fileName:String = "countyNoticeMessage";
+				
+				noticeRequest.fileName = fileName;
+				noticeRequest.path = path;
+				this.systemService.getArticleB(noticeRequest);
+			}
+			
+			
+			private function reissue():void
+			{
+				var contentLabel:String = "出生医学证补发";
+				var path:String = "com/xyw/module/csyxzm/csyxzmbf/index.swf";
+				this.loadModule(contentLabel,path);
+			}
+			
+			private function renewQuery():void
+			{
+				var contentLabel:String = "出生医学证明换发查询";
+				var path:String = "com/xyw/module/csyxzm/csyxzmhfcx/index.swf";
+				this.loadModule(contentLabel,path);
+			}
+			
+			private function signQuery():void
+			{
+				var contentLabel:String = "出生医学证明首发查询";
+				var path:String = "com/xyw/module/csyxzm/csyxzmcx/index.swf";
+				this.loadModule(contentLabel,path);
+			}
+		
+			private function loadModule(contentLabel:String,path:String):void
+			{
+				this.parentApplication.contentLabel = contentLabel;
+				this.parentApplication.loadModule(path);
+			}
+			
+			private function getArticleBHandler(event:ResultEvent):void
+			{
+				var noticeResponse:Object = event.result;
+				var fileName:String = noticeResponse.errorMessage;
+				
+				if(fileName == "provinceNoticeMessage"){
+					//this.provinceNoticeMessage.htmlText = noticeResponse.message;
+					this.provinceNoticeMessage.textFlow = TextConverter.importToFlow(noticeResponse.message,TextConverter.TEXT_FIELD_HTML_FORMAT);
+				}else if(fileName == "cityNoticeMessage"){
+					//this.cityNoticeMessage.htmlText = noticeResponse.message;
+					this.cityNoticeMessage.textFlow = TextConverter.importToFlow(noticeResponse.message,TextConverter.TEXT_FIELD_HTML_FORMAT);
+				}else if(fileName == "countyNoticeMessage"){
+					//this.countyNoticeMessage.htmlText = noticeResponse.message;
+					this.countyNoticeMessage.textFlow = TextConverter.importToFlow(noticeResponse.message,TextConverter.TEXT_FIELD_HTML_FORMAT);
+				}
+			}
+			
+			/* private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			} */
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" height="60%">
+			<s:VGroup width="100%" height="100%" gap="50">
+				<s:Rect width="100%" height="100%"> 
+					<s:fill> 
+						<s:BitmapFill fillMode="scale" source="@Embed(source='images/back.jpg')"/> 
+					</s:fill> 
+				</s:Rect> 
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup width="100%" height="50%">
+			<s:VGroup width="75%" height="100%">
+				<s:HGroup width="100%" height="100%">
+					<s:Panel title="省卫生厅通知"  width="33%" height="100%" skinClass="com.xyw.sys.custom.skin.CustomLabelCenterTitleWindowSkin">
+						<s:TextArea chromeColor="#C7C7C7" id="provinceNoticeMessage"  width="100%" height="100%"/>
+					</s:Panel>
+					<s:Panel title="市卫生局通知"  width="33%" height="100%" skinClass="com.xyw.sys.custom.skin.CustomLabelCenterTitleWindowSkin">
+						<s:TextArea chromeColor="#C7C7C7" id="cityNoticeMessage" width="100%" height="100%"/>
+					</s:Panel>
+					<s:Panel title="县卫生局通知"  width="34%" height="100%" skinClass="com.xyw.sys.custom.skin.CustomLabelCenterTitleWindowSkin">
+						<s:TextArea chromeColor="#C7C7C7" id="countyNoticeMessage" width="100%" height="100%"/>
+					</s:Panel>
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup width="25%" height="100%">
+				<s:Panel title="配置要求" width="100%" height="100%" skinClass="com.xyw.sys.custom.skin.CustomLabelCenterTitleWindowSkin">
+					<mx:Grid paddingLeft="20" paddingTop="20">
+						<mx:GridRow>
+							<mx:GridItem colSpan="2" horizontalAlign="center">
+								<s:Label text="软件配置:" styleName="myLabel"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="软件:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="安装flash player10及以上"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="系统:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="windowsXP windows7  windows8"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem colSpan="2" horizontalAlign="center">
+								<s:Label text="硬件配置:" styleName="myLabel"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="内　存:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="1G及以上"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="显示器："/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="19寸及以上"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:Panel>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+</s:Module>

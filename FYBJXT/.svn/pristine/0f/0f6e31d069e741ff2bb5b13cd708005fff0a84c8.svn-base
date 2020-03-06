@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.xyw.medical.birth.model.VD402" table="VD402">
+        <id name="d40201" type="long">
+            <column name="D402_01" />
+            <generator class="sequence">
+            	<param name="sequence">D402_01_SEQ</param>
+            </generator>
+        </id>
+        <property name="d40202" type="java.lang.String">
+            <column name="D402_02" />
+        </property>
+        <property name="d40203" type="java.lang.String">
+            <column name="D402_03" />
+        </property>
+        <property name="d40204" type="java.lang.String">
+            <column name="D402_04" />
+        </property>
+        <property name="d40205" type="java.lang.String">
+            <column name="D402_05" />
+        </property>
+        <property name="d40206" type="java.lang.String">
+            <column name="D402_06" />
+        </property>
+        <property name="d40207" type="java.lang.String">
+            <column name="D402_07" />
+        </property>
+        <property name="d40208" type="java.lang.String">
+            <column name="D402_08" />
+        </property>
+        <property name="d40209" type="java.lang.String">
+            <column name="D402_09" />
+        </property>
+        <property name="d40210" type="java.lang.String">
+            <column name="D402_10" />
+        </property>
+        <property name="d40210Zh" type="java.lang.String">
+            <column name="D402_10_ZH" />
+        </property>
+        <property name="d40211" type="java.lang.String">
+            <column name="D402_11" />
+        </property>
+        <property name="d40211Zh" type="java.lang.String">
+            <column name="D402_11_ZH" />
+        </property>
+        <property name="d40212" type="java.util.Date">
+            <column name="D402_12" />
+        </property>
+        <property name="d40213" type="java.util.Date">
+            <column name="D402_13" />
+        </property>
+        <property name="d40214" type="java.lang.String">
+            <column name="D402_14" />
+        </property>
+        <property name="d40215" type="java.lang.String">
+            <column name="D402_15" />
+        </property>
+        <property name="d40216" type="java.lang.String">
+            <column name="D402_16" />
+        </property>
+        <property name="d40217" type="java.lang.String">
+            <column name="D402_17" />
+        </property>
+        <property name="d40218" type="java.util.Date">
+            <column name="D402_18" />
+        </property>
+        <property name="d40219" type="java.lang.String">
+            <column name="D402_19" />
+        </property>
+        <property name="d40219Zh" type="java.lang.String">
+            <column name="D402_12_ZH" />
+        </property>
+        <property name="d40220" type="java.lang.String">
+            <column name="D402_20" />
+        </property>
+        <property name="d40220Zh" type="java.lang.String">
+            <column name="D402_20_ZH" />
+        </property>
+    </class>
+</hibernate-mapping>

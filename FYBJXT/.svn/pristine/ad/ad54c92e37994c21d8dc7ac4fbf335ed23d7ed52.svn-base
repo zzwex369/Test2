@@ -1,0 +1,144 @@
+package com.xyw.sys.model;
+
+public class D802 implements java.io.Serializable {
+	private static final long serialVersionUID = 2889140794111991284L;
+	private Short d80201;
+	private String d80202;
+	private String d80203;
+	private String d80204;
+	private Short d80205;
+	private Byte d80206;
+	private String d80207;
+	private String d80208;
+	private String d80209;
+	private String d80210;
+	private String d80211;
+	private String d80212;
+	private String d80213;
+	private String d80214;
+	private String d80215;
+
+	public D802() {
+	}
+
+	public Short getD80201() {
+		return this.d80201;
+	}
+
+	public void setD80201(Short d80201) {
+		this.d80201 = d80201;
+	}
+
+	public String getD80202() {
+		return this.d80202;
+	}
+
+	public void setD80202(String d80202) {
+		this.d80202 = d80202;
+	}
+
+	public String getD80203() {
+		return this.d80203;
+	}
+
+	public void setD80203(String d80203) {
+		this.d80203 = d80203;
+	}
+
+	public String getD80204() {
+		return this.d80204;
+	}
+
+	public void setD80204(String d80204) {
+		this.d80204 = d80204;
+	}
+
+	public Short getD80205() {
+		return this.d80205;
+	}
+
+	public void setD80205(Short d80205) {
+		this.d80205 = d80205;
+	}
+
+	public Byte getD80206() {
+		return this.d80206;
+	}
+
+	public void setD80206(Byte d80206) {
+		this.d80206 = d80206;
+	}
+
+	public String getD80207() {
+		return this.d80207;
+	}
+
+	public void setD80207(String d80207) {
+		this.d80207 = d80207;
+	}
+
+	public String getD80208() {
+		return this.d80208;
+	}
+
+	public void setD80208(String d80208) {
+		this.d80208 = d80208;
+	}
+
+	public String getD80209() {
+		return this.d80209;
+	}
+
+	public void setD80209(String d80209) {
+		this.d80209 = d80209;
+	}
+
+	public String getD80210() {
+		return this.d80210;
+	}
+
+	public void setD80210(String d80210) {
+		this.d80210 = d80210;
+	}
+
+	public String getD80211() {
+		return this.d80211;
+	}
+
+	public void setD80211(String d80211) {
+		this.d80211 = d80211;
+	}
+
+	public String getD80212() {
+		return this.d80212;
+	}
+
+	public void setD80212(String d80212) {
+		this.d80212 = d80212;
+	}
+
+	public String getD80213() {
+		return this.d80213;
+	}
+
+	public void setD80213(String d80213) {
+		this.d80213 = d80213;
+	}
+
+	public String getD80214() {
+		return this.d80214;
+	}
+
+	public void setD80214(String d80214) {
+		this.d80214 = d80214;
+	}
+
+	public String getD80215() {
+		return this.d80215;
+	}
+
+	public void setD80215(String d80215) {
+		this.d80215 = d80215;
+	}
+
+}

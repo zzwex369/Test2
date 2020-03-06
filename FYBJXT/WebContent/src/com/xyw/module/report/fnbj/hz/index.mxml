@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			private var  systemUser:SystemUser=null;
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{    systemUser=this.parentApplication.systemUser;
+			/* 	var date:Date = new Date();
+				var nowyear:String = date.fullYear.toString();
+				var nownonth:String = date.month.toString();
+				var nowday:String = date.day.toString();
+				var date_:String = nowyear+"-"+nownonth+"-"+nowday;
+				var InstitutionCode_:String = systemUser.institutionCode;
+			 	
+				var url:String = this.parentApplication.contextRoot + "/print_new/ms/msmx/msmx.jsp"; */
+				/* var url:String = this.parentApplication.contextRoot + "/print_new/ms/msmx/msmx.jsp?date_start="+date_start+
+					"&date_end="+date_end+"&code="+code; */
+				//navigateToURL(new URLRequest(url), null); */
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var _dateStr:Date=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+				var _dateEnd:Date=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+				if(Number(_dateEnd)<Number(_dateStr))
+				{
+					Alert.show("开始时间不能大于结束时间!","系统提示!");
+					return;
+				}
+				  if(institution.town.selectedItem.data==0){
+					Alert.show("请选择到最下级","系统提示");
+					return;
+				}  
+				var code:String = institution.getLastSelectedInstitutionCode();
+				var date_start:String = this.timeStart.text;
+				var date_end:String = this.timeEnd.text;
+				var url:String = this.parentApplication.contextRoot + "/print_new/ms/msmx/msmx.jsp?code="+
+					code+"&date_start="+date_start+"&date_end="+date_end+"&payStatus="+getRadioButtonValue(pay,1);
+				navigateToURL(new URLRequest(url), null);
+
+			}
+			
+			private function getRadioButtonValue(id:Object,k:int=0):String
+			{
+				var radioButton:RadioButton;
+				var value:String;
+				for(var i:int =k;i<id.numElements;i++)
+				{
+					radioButton=id.getElementAt(i) as RadioButton;
+					if(radioButton.selected)
+					{
+						value=radioButton.value.toString();
+						break;
+					}
+				}
+				return value;
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="seleall" width="100%" height="118" chromeColor="#ffffff"
+					 creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				
+				<s:HGroup width="100%" height="100%" gap="50" paddingLeft="10" id="pay">
+					<s:Label  text="付费方式" paddingTop="4"/>
+					<s:RadioButton buttonMode="true" label="全部" value="" groupName="pay"  selected="true"/>
+					<s:RadioButton buttonMode="true" label="免费" value="1" groupName="pay"/>
+					<s:RadioButton buttonMode="true" label="自费"  value="2" groupName="pay" />
+				</s:HGroup>  
+				
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="筛查机构"/><!--<s:DropDownList id="d304_45" width="150"/>-->
+					<component:InstitutionComboBox id="institution" width="681"/>
+				</s:HGroup>
+				
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="录入时间"/><mx:DateField id="timeStart" width="120"
+														dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														formatString="YYYY-MM-DD" yearNavigationEnabled="true" text="{DateField.dateToString(new Date(),'YYYY-MM-01')}"/>
+					<s:Label text="至"/><mx:DateField id="timeEnd" width="120"
+													 dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+													 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+													 formatString="YYYY-MM-DD" yearNavigationEnabled="true" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"/>
+					<s:Button label="查询" click="button1_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+</s:Module>

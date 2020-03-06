@@ -1,0 +1,205 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Dec 2, 2015 10:11:25 AM by Hibernate Tools 3.4.0.CR1 -->
+<hibernate-mapping>
+	<class name="com.xyw.medical.etbj.model.VE303" table="V_E303">
+		<comment>&#182;&#249;&#205;&#175;&#181;&#181;&#176;&#184;</comment>
+		<id name="e30301" type="long">
+			<column name="E303_01" precision="10" scale="0" />
+			<generator class="sequence">
+				<param name="sequence">E303_01_SEQ</param>
+			</generator>
+		</id>
+		<property name="e30302" type="java.lang.Long">
+			<column name="E303_02" precision="22" scale="0" />
+		</property>
+		<property name="e30303" type="java.lang.String">
+			<column name="E303_03" length="100" />
+		</property>
+		<property name="e30304" type="java.lang.String">
+			<column name="E303_04" length="100" />
+		</property>
+		<property name="e30305" type="java.util.Date">
+			<column name="E303_05" length="7" />
+		</property>
+		<property name="e30306" type="java.util.Date">
+			<column name="E303_06" length="7" />
+		</property>
+		<property name="e30307" type="java.lang.String">
+			<column name="E303_07" length="100" />
+		</property>
+		<property name="e30308" type="java.lang.String">
+			<column name="E303_08" length="100" />
+		</property>
+		<property name="e30309" type="java.lang.String">
+			<column name="E303_09" length="100" />
+		</property>
+		<property name="e30310" type="java.lang.String">
+			<column name="E303_10" length="100" />
+		</property>
+		<property name="e30311" type="java.lang.String">
+			<column name="E303_11" length="100" />
+		</property>
+		<property name="e30312" type="java.util.Date">
+			<column name="E303_12" length="7" />
+		</property>
+		<property name="e30313" type="java.lang.String">
+			<column name="E303_13" length="100" />
+		</property>
+		<property name="e30314" type="java.lang.String">
+			<column name="E303_14" length="100" />
+		</property>
+		<property name="e30315" type="java.lang.String">
+			<column name="E303_15" length="100" />
+		</property>
+		<property name="e30316" type="java.lang.String">
+			<column name="E303_16" length="100" />
+		</property>
+		<property name="e30317" type="java.lang.String">
+			<column name="E303_17" length="100" />
+		</property>
+		<property name="e30318" type="java.util.Date">
+			<column name="E303_18" length="7" />
+		</property>
+		<property name="e30319" type="java.lang.String">
+			<column name="E303_19" length="100" />
+		</property>
+		<property name="e30320" type="java.lang.String">
+			<column name="E303_20" length="100" />
+		</property>
+		<property name="e30321" type="java.lang.String">
+			<column name="E303_21" length="100" />
+		</property>
+		<property name="e30322" type="java.lang.String">
+			<column name="E303_22" length="100" />
+		</property>
+		<property name="e30323" type="java.lang.String">
+			<column name="E303_23" length="100" />
+		</property>
+		<property name="e30324" type="java.lang.String">
+			<column name="E303_24" length="100" />
+		</property>
+		<property name="e30325" type="java.lang.String">
+			<column name="E303_25" length="100" />
+		</property>
+		<property name="e30326" type="java.lang.String">
+			<column name="E303_26" length="100" />
+		</property>
+		<property name="e30327" type="java.lang.String">
+			<column name="E303_27" length="100" />
+		</property>
+		<property name="e30328" type="java.lang.String">
+			<column name="E303_28" length="100" />
+		</property>
+		<property name="e30329" type="java.lang.String">
+			<column name="E303_29" length="100" />
+		</property>
+		<property name="e30330" type="java.lang.String">
+			<column name="E303_30" length="100" />
+		</property>
+		<property name="e30331" type="java.lang.String">
+			<column name="E303_31" length="100" />
+		</property>
+		<property name="e30332" type="java.lang.String">
+			<column name="E303_32" length="100" />
+		</property>
+		<property name="e30333" type="java.lang.String">
+			<column name="E303_33" length="100" />
+		</property>
+		<property name="e30334" type="java.lang.String">
+			<column name="E303_34" length="100" />
+		</property>
+		<property name="e30335" type="java.lang.String">
+			<column name="E303_35" length="100" />
+		</property>
+		<property name="e30336" type="java.lang.String">
+			<column name="E303_36" length="100" />
+		</property>
+		<property name="e30337" type="java.lang.String">
+			<column name="E303_37" length="100" />
+		</property>
+		<property name="e30338" type="java.lang.String">
+			<column name="E303_38" length="100" />
+		</property>
+		<property name="e30339" type="java.lang.String">
+			<column name="E303_39" length="100" />
+		</property>
+		<property name="e30340" type="java.lang.String">
+			<column name="E303_40" length="100" />
+		</property>
+		<property name="e30341" type="java.lang.String">
+			<column name="E303_41" length="100" />
+		</property>
+		<property name="e30342" type="java.lang.String">
+			<column name="E303_42" length="100" />
+		</property>
+		<property name="e30343" type="java.lang.String">
+			<column name="E303_43" length="100" />
+		</property>
+		<property name="e30344" type="java.lang.String">
+			<column name="E303_44" length="100" />
+		</property>
+		<property name="e30345" type="java.lang.String">
+			<column name="E303_45" length="100" />
+		</property>
+		<property name="e30346" type="java.lang.String">
+			<column name="E303_46" length="100" />
+		</property>
+		<property name="e30347" type="java.lang.String">
+			<column name="E303_47" length="100" />
+		</property>
+		<property name="e30348" type="java.lang.String">
+			<column name="E303_48" length="100" />
+		</property>
+		<property name="e30349" type="java.lang.String">
+			<column name="E303_49" length="100" />
+		</property>
+		<property name="e30350" type="java.lang.String">
+			<column name="E303_50" length="100" />
+		</property>
+
+		<property name="e30304Zh" type="string">
+			<column name="E303_04_ZH" length="200" />
+		</property>
+		<property name="e30305Str" type="string">
+			<column name="E303_05_Str" length="200" />
+		</property>
+		<property name="e30306Str" type="string">
+			<column name="E303_06_Str" length="200" />
+		</property>
+		<property name="e30312Str" type="string">
+			<column name="E303_12_Str" length="200" />
+		</property>
+		<property name="e30313Zh" type="string">
+			<column name="E303_13_ZH" length="200" />
+		</property>
+		<property name="e30315Zh" type="string">
+			<column name="E303_15_ZH" length="200" />
+		</property>
+		<property name="e30316Zh" type="string">
+			<column name="E303_16_ZH" length="200" />
+		</property>
+		<property name="e30318Str" type="string">
+			<column name="E303_18_Str" length="200" />
+		</property>
+		
+
+		<property name="f30102" type="string">
+			<column name="F301_02" length="20">
+			</column>
+		</property>
+		<property name="f30105" type="string">
+			<column name="F301_05" length="18">
+			</column>
+		</property>
+		<property name="f30118" type="string">
+			<column name="F301_18" length="4">
+			</column>
+		</property>
+		<property name="f30121" type="string">
+			<column name="F301_21" length="18">
+			</column>
+		</property>
+	</class>
+</hibernate-mapping>

@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="l306Service" destination="l306Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryL306" result="queryL306Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l402Service" destination="l402Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryL402" result="queryL402Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]"; 
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		} 
+		s|Label
+		{
+			fontSize:13;
+		}
+		.myLabel
+		{
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		.pf10
+		{
+			paddingLeft:10px;
+		} 
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L301;
+			import com.xyw.module.msss.la.model.L301Request;
+			import com.xyw.module.msss.la.model.L306;
+			import com.xyw.module.msss.la.model.L306Request;
+			import com.xyw.module.msss.la.model.L402;
+			import com.xyw.module.msss.la.model.L402Request;
+			import com.xyw.module.msss.la.model.L402Response;
+			import com.xyw.module.msss.la.model.VL301;
+			import com.xyw.module.msss.la.model.VL306;
+			import com.xyw.module.msss.la.model.VL402;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.DataGridEvent;
+			import com.xyw.sys.custom.component.LoadPicWindow;
+			import com.xyw.sys.custom.component.LoadPicWindow2;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.AbstractOperation;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.Operation;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridCaretEvent;
+			import spark.events.GridSelectionEvent;
+			[Bindable]
+			private var systemUser:SystemUser =null;
+			private var l306:L306;
+			private var l402:L402;
+			[Bindable]
+			private var l306Request:L306Request=null;
+			[Bindable]
+			private var idx:Number;
+			[Bindable]
+			private var selectedItem:Object;
+			private var l402Field:Array=[ ["84","85","86","152"],["102","103","104","153"]];
+			private var vl402Field:Array=[ ["84Zh","85","86Str","乳腺癌超声"],["102Zh","103","104Str","乳腺癌X线"]];
+		
+			
+			private function init():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+			
+			}
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.selectedItem= DataGrid(event.target).selectedItem;
+			}
+			
+			/**
+			 *
+			 */
+			private function getQueryParam():Array
+			{
+				var paramArr:Array=new Array(4);//机构  质控类型 时间始末
+				var type:String = L306_11.getLastSelectedInstitution();
+				var code:String = L306_11.getLastSelectedInstitutionCode();
+				if(this.systemUser.institutionType == "1")
+					paramArr[0] = this.systemUser.institutionCode;
+				else
+					paramArr[0] =type=="8"?code:code.substring(0,Number(type));
+				paramArr[1]=CompMethod.getRadioButtonValue([L306_04]);
+				paramArr[2]=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+				paramArr[3]=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+				
+				return paramArr;
+			}
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam(currentPageIndex:int, pageSize:int):void
+			{
+				try{
+					var paramArr:Array=getQueryParam();
+					idx=Number(paramArr[1])-2;
+					if(this.currentState==this.states[0].name)
+					{
+						l306=new L306();
+						l306Request = new L306Request();
+						l306.l30611 =paramArr[0];
+						l306.l30604=paramArr[1];
+						l306Request.timeStr=paramArr[2];
+						l306Request.timeEnd=paramArr[3];
+						l306Request.l306=l306;
+						l306Request.parameterPagesize=pageSize;
+						l306Request.parameterPageindex=currentPageIndex;
+						this.l306Service.queryL306(l306Request);	
+					}else
+					{
+						var field:String=setField(l402Field[idx][0]);
+						l402=new L402();
+						var l402Request:L402Request = new L402Request();
+						l402[field]=paramArr[0];
+						field=setField(l402Field[idx][3]);
+						l402[field]="2";
+						l402Request.timeStr=paramArr[2];
+						l402Request.timeEnd=paramArr[3];
+						l402Request.l402=l402;
+						l402Request.parameterPagesize=pageSize;
+						l402Request.parameterPageindex=currentPageIndex;
+						this.l402Service.queryL402(l402Request);	
+					}
+				}catch(e:Error)
+				{
+				   Alert.show("查询异常","系统提示");
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function setField(suffixField:String):String
+			{
+				return "l402"+suffixField;
+			}
+			
+			private function queryL306():void
+			{
+				_query(1,20);
+			}
+			
+			private function queryL306Handler(event:ResultEvent):void
+			{
+				setL30604Enabled();
+				var l306Response:Object = event.result;
+				var vl306s:ArrayCollection =l306Response.vl306s;
+				var rowCount:Number = l306Response.rowCount;
+				this.certificateDataGrid.dataProvider=vl306s;
+				this.pagerBar.dataGrid = this.certificateDataGrid;  
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = vl306s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}
+				if(!l306Response.status)
+				{
+					Alert.show(l306Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function queryL402Handler(event:ResultEvent):void
+			{
+				setL30604Enabled();
+				var l402Response:Object = event.result;
+				var vl402s:ArrayCollection =l402Response.vl402s;
+				var rowCount:Number = l402Response.rowCount;
+				this.certificateDataGrid2.dataProvider=vl402s;
+				this.pagerBar.dataGrid = this.certificateDataGrid2;  
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = vl402s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				this.selectedItem=certificateDataGrid.selectedItem=null;
+				_query(this.pagerBar.currentPageIndex,20);
+			}
+			
+			private function _query(currentPageIndex:int,pageSize:int):void
+			{
+				setL30604Enabled(false);
+				this.initQueryParam(currentPageIndex,pageSize);
+			}
+			
+			/**
+			 *
+			 */
+			private function setL30604Enabled(enabled:Boolean=true):void
+			{
+				L306_04.enabled=enabled;
+			}
+			
+			/**
+			 *
+			 */
+			private function zk():void
+			{
+				
+				var window:zkTitle= new zkTitle();
+				if(this.selectedItem is VL402)
+					window.vl402=this.selectedItem;
+				else
+					window.vl306=this.selectedItem;
+				window.index=idx+1;
+				window.owner=this;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			
+			/**
+			 *
+			 */
+			private function setLabel(item:Object, column:GridColumn):Object
+			{
+
+				var dataFieldIdx:Number=Number(column.dataField);
+				var field:String="l402"+vl402Field[idx][dataFieldIdx];
+				var dataLabel:Object=item[field];
+				return dataLabel is String?dataLabel:DateField.dateToString(dataLabel as Date,'YYYY-MM-DD');
+			}
+			
+			/**
+			 *
+			 */
+			private function setLa302_31(item:Object, column:GridColumn):Object
+			{
+				var dataFieldIdx:Number=Number(column.dataField);
+				return vl402Field[idx][dataFieldIdx];
+			}
+			
+			
+			private function radiobutton_changeHandler(statesIdx:Number):void
+			{
+				if(statesIdx)
+					certificateDataGrid.selectedItem=null;
+				else
+					certificateDataGrid2.selectedItem=null;
+				this.selectedItem=null;
+				callLater(changeState,[statesIdx]);
+			}
+			
+			/**
+			 *
+			 */
+			private function changeState(statesIdx:Number):void
+			{
+				this.idx=Number(CompMethod.getRadioButtonValue([L306_04]))-2;
+				currentState=states[statesIdx].name;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="l306"/>
+		<s:State name="l402"/>
+	</s:states>
+	<s:Scroller width="1200" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup>
+			<mx:TabNavigator id="tab" width="1150">
+				<s:NavigatorContent width="100%" label="综合查询" buttonMode="true">
+					<s:VGroup>
+						<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="抽检单位"/>
+							<component:InstitutionComboBox id="L306_11" width="819" buttonMode="true"/>
+						</s:HGroup>
+						
+						<s:HGroup id="L306_04" width="100%" gap="35" paddingBottom="5"
+								  paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="质控类别 "/>
+							<s:RadioButton label="宫颈阴道镜" change="radiobutton_changeHandler(0)"
+										   groupName="L306_04" selected="true" value="1"/>
+							<s:RadioButton label="乳腺彩超" change="radiobutton_changeHandler(1)"
+										   groupName="L306_04" value="2"/>
+							<s:RadioButton label="乳腺X线" change="radiobutton_changeHandler(1)"
+										   groupName="L306_04" value="3"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="登记时间"/>
+						
+							<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" />
+
+							<s:Label text="至"/>
+							
+							<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+
+							<!--<s:Label text="姓名"/><s:TextInput id="L306_02"/>
+							<s:Label text="证件号码"/><s:TextInput id="L306_04" width="140"/>
+							<s:Button id="duka1" width="60" label="读卡" buttonMode="true"
+									  click="readCard()" enabled="{systemUser.duka=='1'}"/>-->
+							<s:Button width="60" label="查询" buttonMode="true" click="queryL306()"/>
+							<s:Button width="60" label="质控" buttonMode="true" click="zk()"
+									  enabled="{this.selectedItem}"/>
+						</s:HGroup>
+						
+						
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+				<s:DataGrid id="certificateDataGrid" includeIn="l306" width="1150" height="340" 
+							alternatingRowColors="[#FFFFFF,#EEEEEE]" borderAlpha="0.3" editable="false"
+							rowHeight="23" selectionChange="onSelected(event)"
+							skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+					<s:columns>     
+						<s:ArrayList>
+							<s:GridColumn width="40" editable="false" headerText="序号"
+										  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+							<s:GridColumn width="200" dataField="l30116" headerText="档案编号"/>
+							<s:GridColumn width="120" dataField="l30604zh" headerText="质控类别"/>
+							<s:GridColumn width="100" dataField="l30102" headerText="姓名"/>
+							<s:GridColumn width="140" dataField="l30104" headerText="证件号码"/>
+							<s:GridColumn width="117" dataField="l30110" headerText="联系电话"/>
+							<s:GridColumn width="200" dataField="l30611zh" headerText="录入单位"/>
+							<s:GridColumn width="100" dataField="l30612" headerText="录入人员"/>
+							<s:GridColumn dataField="l30613" headerText="录入时间"
+										  labelFunction="CompMethod.setStrDate"/>
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid> 
+				
+			
+			
+			<s:DataGrid id="certificateDataGrid2" includeIn="l402" width="1150" height="340" 
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" borderAlpha="0.3" editable="false"
+						rowHeight="23" selectionChange="onSelected(event)" 
+						skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn width="40" editable="false" headerText="序号"
+									  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="200" dataField="l40205" headerText="档案编号"/>
+						<s:GridColumn width="120" dataField="3" headerText="质控类别"
+									  labelFunction="setLa302_31"/>
+						<s:GridColumn width="100" dataField="l40203" headerText="姓名"/>
+						<s:GridColumn width="140" dataField="l40204" headerText="证件号码"/>
+						<s:GridColumn width="200" dataField="0" headerText="录入单位"
+									  labelFunction="setLabel"/>
+						<s:GridColumn width="100" dataField="1" headerText="录入人员"
+									  labelFunction="setLabel"/>
+						<s:GridColumn headerText="录入时间" dataField="2"
+									  labelFunction="setLabel"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+				<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false"
+								isPrinter="false"/>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

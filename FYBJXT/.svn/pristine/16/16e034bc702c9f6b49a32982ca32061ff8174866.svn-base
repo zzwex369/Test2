@@ -1,0 +1,1920 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="1240" creationComplete="creationCompleteHandler(event)">
+	
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="e702Service" destination="e702Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveE702" result="saveOrUpdateE702Handler(event)"/>
+			<s:method name="renewE702" result="saveOrUpdateE702Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="saveSuccess", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		s|Label 
+		{
+			fontSize:12px;
+		}
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.mySize
+		{
+			fontSize:12px;
+		}
+		
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		.pf15{
+			paddingLeft:15px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.etsl.model.E702;
+			import com.xyw.module.etbj.etsl.model.E702Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flashx.textLayout.tlf_internal;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import org.hamcrest.mxml.object.Null;
+			
+			import spark.effects.Move;
+			import spark.effects.easing.Linear;
+			import spark.events.IndexChangeEvent;
+			[Bindable]
+			public var registrationType:Number=0;// 登记类型  0 初筛  1诊断
+			[Bindable]
+			private var systemUser:SystemUser;
+			public var modify:Boolean=false;//是否修改
+			private var loadS30110:Boolean=false;//
+			[Bindable]
+			public var _owner:Object;
+			[Bindable]
+			public var ve702:Object;
+			private var e702:E702;
+			private var count:int=7;
+			private var scVg:Number;
+			private var e702Request:E702Request;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var exceptionField:Array=["10","16","18","20","22","24","26","29","46","53"];
+			private var explainField:Array=["眼外观 ","光照反应","瞬目反射","红球试验","眼位检查","眼球运动",
+											"视物行为观察","视力检查","眼前节","眼后节"];
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				initializeComboBox();
+				scVg=scVgroup.height;
+			}
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=false):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.sql = sql;
+				comboBoxDataRequest.flag = flag;
+				comboBoxDataRequest.showPrompt = showPrompt;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			/**
+			 *
+			 */
+			private function initializeComboBox():void
+			{
+				
+				_initializeComboBox("select t.s_01,t.s_02 from s301_01 t","S301_01");
+				
+				_initializeComboBox("select t.s_01,t.s_02 from s301_04 t","S301_04");
+				
+				_initializeComboBox("select t.s_01,t.s_02 from z304_06 t where s_01 " +
+					"in('0','1','3','6','8','12','14','16','18','20','24','28','32')","Z304_06",true);
+				
+				_initializeComboBox("select t.la_01,t.la_02 from la302_03 t","LA302_03",true);
+				
+				_initializeComboBox("select e705_04,t.e705_03 from E705 t where substr(e705_11,0,6)='"+
+					systemUser.institutionCode.substring(0,6)+"'","E705",true);
+				
+				_initializeComboBox("select * from Z702_07 t ","Z702_07",true);
+				
+				_initializeComboBox("select * from Z702_08 t ","Z702_08",true);
+
+			}
+			
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				--count;
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S301_01")
+				{
+					this.E701_07.dataProvider = comboBoxDataList;
+					this.E701_07.selectedIndex = 0;
+				}else if(flag == "S301_04")
+				{
+					this.E701_11.dataProvider = comboBoxDataList;
+					this.E701_11.selectedIndex = 0;
+				}else if(flag == "Z304_06")
+				{
+					this.E702_08.dataProvider = comboBoxDataList;
+					this.E702_08.selectedIndex = 0;
+				}else if(flag == "LA302_03")
+				{
+					this.E702_66.dataProvider = comboBoxDataList;
+					this.E702_66.selectedIndex = 0;
+				}else if(flag == "E705")
+				{
+					this.E702_04.dataProvider = comboBoxDataList;
+					this.E702_04.selectedIndex = 0;
+				}else if(flag == "Z702_07")
+				{
+					this.E702_05.dataProvider = comboBoxDataList;
+					this.E702_05.selectedIndex = 0;
+				}else if(flag == "Z702_08")
+				{
+					this.E702_06.dataProvider = comboBoxDataList;
+					this.E702_06.selectedIndex = 0;
+				}
+				else if(flag == "S301_10_01")
+				{
+					this.E702_72.dataProvider = comboBoxDataList;
+					this.E702_72.selectedIndex = 0;
+				}else if(flag == "S301_10_02")
+				{
+					this.E702_69.dataProvider = comboBoxDataList;
+					this.E702_69.selectedIndex = 0;
+				}
+				if(modify)
+				{
+					if(!count)				
+						loadVE702();
+				}else if(!loadS30110)
+				{
+					loadS30110=true;
+					
+					_initializeComboBox("select t.s_01,t.s_02 from S301_10 t " +
+						"where t.S_05='1' and t.S_04 ="+this.systemUser.userCode,"S301_10_01");	
+					
+					_initializeComboBox("select t.s_01,t.s_02 from S301_10 t " +
+						"where t.S_05='2' and t.S_04 ="+this.systemUser.userCode,"S301_10_02");	
+					callLater(loadBasic);
+				}
+			}
+			
+			/**
+			 *
+			 */
+			public function loadBasic():void
+			{
+				if(!E701_07.dataProvider||!E701_11.dataProvider||!E702_08.dataProvider)
+				{
+					callLater(loadBasic);
+					return ;
+				}
+				if(ve702.e70208)
+				{
+					var event:IndexChangeEvent=new IndexChangeEvent(IndexChangeEvent.CHANGE);
+					event.oldIndex=0;
+					event.newIndex=E702_08.selectedIndex=CompMethod.getDropDownListSelectedIndex(E702_08.dataProvider,ve702.e70208);
+					//callLater(setHeight);
+					callLater(E702_08_changeHandler,[event]);
+				}
+				E701_07.selectedIndex=CompMethod.getDropDownListSelectedIndex(E701_07.dataProvider,ve702.e70107);
+				E701_11.selectedIndex=CompMethod.getDropDownListSelectedIndex(E701_11.dataProvider,ve702.e70111);
+
+			}
+			
+			/**
+			 *
+			 */
+			private function loadVE702():void
+			{
+				this.addEventListener("e70208change",doLoadVE702);
+				loadBasic();
+				
+
+				
+			}	
+			
+			/**
+			 *
+			 */
+			private function doLoadVE702(event:Event):void
+			{
+				this.removeEventListener("e70208change",doLoadVE702);
+				E702_05.text=ve702.e70205;
+				E702_06.text=ve702.e70206;
+				E702_07.text=ve702.e70207;		
+				E702_12.text=ve702.e70212;
+				E702_13.text=ve702.e70213;
+				E702_14.text=ve702.e70214;
+				E702_15.text=ve702.e70215;
+				E702_17.text=ve702.e70217;
+				E702_19.text=ve702.e70219;
+				E702_21.text=ve702.e70221;
+				E702_23.text=ve702.e70223;
+				E702_25.text=ve702.e70225;
+				E702_28.text=ve702.e70228;
+				E702_32.text=ve702.e70232;
+				E702_33.text=ve702.e70233;
+				E702_34.text=ve702.e70234;	
+				E702_35.text=ve702.e70235;
+				E702_36.text=ve702.e70236;
+				E702_37.text=ve702.e70237;
+				E702_38.text=ve702.e70238;
+				E702_39.text=ve702.e70239;
+				E702_40.text=ve702.e70240;
+				E702_41.text=ve702.e70241;
+				E702_42.text=ve702.e70242;
+				E702_43.text=ve702.e70243;
+				E702_44.text=ve702.e70244;
+				E702_45.text=ve702.e70245;
+				E702_48.text=ve702.e70248;
+				E702_49.text=ve702.e70249;
+				E702_50.text=ve702.e70250;
+				E702_51.text=ve702.e70251;
+				E702_52.text=ve702.e70252;
+				E702_55.text=ve702.e70255;
+				E702_56.text=ve702.e70256;
+				E702_57.text=ve702.e70257;
+				E702_58.text=ve702.e70258;
+				E702_62.text=ve702.e70262;
+				E702_65.text=ve702.e70265;
+				E702_69.text=ve702.e70269;
+				E702_72.text=ve702.e70272;
+				
+				E702_67.text=DateField.dateToString(ve702.e70267,'YYYY-MM-DD');
+				E702_70.text=DateField.dateToString(ve702.e70270,'YYYY-MM-DD');
+				E702_73.text=DateField.dateToString(ve702.e70273,'YYYY-MM-DD');
+				CompMethod.setRadioButtonSelect(E702_10,ve702.e70210);
+				CompMethod.setRadioButtonSelect(E702_16,ve702.e70216);
+				CompMethod.setRadioButtonSelect(E702_18,ve702.e70218);
+				CompMethod.setRadioButtonSelect(E702_20,ve702.e70220);
+				CompMethod.setRadioButtonSelect(E702_22,ve702.e70222);
+				CompMethod.setRadioButtonSelect(E702_24,ve702.e70224);
+				CompMethod.setRadioButtonSelect(E702_26,ve702.e70226);
+				CompMethod.setRadioButtonSelect(E702_29,ve702.e70229);
+				CompMethod.setRadioButtonSelect(E702_30,ve702.e70230);
+				CompMethod.setRadioButtonSelect(E702_31,ve702.e70231);
+				CompMethod.setRadioButtonSelect(E702_46,ve702.e70246);
+				CompMethod.setRadioButtonSelect(E702_53,ve702.e70253);
+				CompMethod.setRadioButtonSelect(E702_60,ve702.e70260);
+				CompMethod.setRadioButtonSelect(E702_61,ve702.e70261);
+				CompMethod.setRadioButtonSelect(E702_64,ve702.e70264);
+				
+				CompMethod.setCheckBoxAutomationName(E702_27,ve702.e70227);
+				CompMethod.setCheckBoxAutomationName(E702_59,ve702.e70259);
+				CompMethod.setCheckBoxAutomationName([E702_11_1,E702_11_2,E702_11_3,E702_11_4],ve702.e70211);
+				CompMethod.setCheckBoxAutomationName([E702_54_1,E702_54_2,E702_54_3,E702_54_4],ve702.e70254);
+				CompMethod.setCheckBoxAutomationName([E702_47_2,E702_47_4,E702_47_5,E702_47_6,E702_47_7],ve702.e70247);
+				
+				E702_04.selectedIndex=CompMethod.getDropDownListSelectedIndex(E702_04.dataProvider,ve702.e70204);
+			
+				
+				E702_66.selectedIndex=CompMethod.getDropDownListSelectedIndex(E702_66.dataProvider,ve702.e70266);
+				E702_68.selectedIndex=CompMethod.getDropDownListSelectedIndex(E702_68.dataProvider,ve702.e70268);
+				E702_71.selectedIndex=CompMethod.getDropDownListSelectedIndex(E702_71.dataProvider,ve702.e70271);
+				
+				if(ve702.e70229=='1')
+					CompMethod.hasNumEles([E702_30,E702_31]);
+			}
+			
+			/**
+			 *
+			 */
+			private function setHeight():void
+			{
+				
+				var diff:Number=(scVgroup.height)-scVg;
+				scNav.height+=diff;
+				scTab.height+=diff;
+				this.height+=diff;
+				scVg=scVgroup.height;
+				this.addEventListener(Event.ENTER_FRAME,moveThis);
+			}
+			
+			private function moveThis(event:Event):void
+			{
+				
+				var x:Number = (FlexGlobals.topLevelApplication.mdiCanvas.width-_owner.width)/2;
+				var y:Number = (FlexGlobals.topLevelApplication.mdiCanvas.height-_owner.height)/2;
+				var moveEffect:Move = new Move();
+				moveEffect.xTo = x;
+				moveEffect.yTo = y;
+				moveEffect.target = _owner;
+				//moveEffect
+				moveEffect.easer = new Linear();
+				moveEffect.play();
+				//owner.move(x, y);
+				if(this.hasEventListener(Event.ENTER_FRAME))
+					this.removeEventListener(Event.ENTER_FRAME,moveThis);
+			}
+			
+			/**
+			 * 根据月龄清空和显示内容
+			 */
+			private function E702_08_changeHandler(event:IndexChangeEvent):void
+			{
+				
+				var idx:int=event.newIndex;
+				var oldIdx:int=event.oldIndex;
+
+				if(idx!=3&&idx!=4)
+				{
+					CompMethod.hasNumEles([E702_18,E702_19,E702_20,E702_21]);	// 瞬目反射  红球试验 
+				} if(idx==3||idx==4)
+				{
+					if(oldIdx!=3&&oldIdx!=4)
+					{
+						CompMethod.hasNumEles([E702_19,E702_21]);
+						CompMethod.setRadioButtonSelect(E702_18,'3');// 瞬目反射  红球试验 
+						CompMethod.setRadioButtonSelect(E702_20,'3');// 瞬目反射  红球试验 
+					}
+				
+				} if(idx!=1)
+				{
+					CompMethod.hasNumEles([E702_16,E702_17]);	
+
+				} if(idx==2&&oldIdx!=2)
+				{
+					CompMethod.hasNumEles(E702_17);	
+					CompMethod.setRadioButtonSelect(E702_16,'3');	
+				} if(idx!=7&&idx!=9&&idx>3)// 视物行为 眼位检查
+				{
+					if(oldIdx==7||oldIdx==9||oldIdx>=11||oldIdx<=3)
+					{
+						if(oldIdx<=3||oldIdx==7||oldIdx==9)
+						{
+							CompMethod.hasNumEles(E702_23);	
+							CompMethod.setRadioButtonSelect(E702_22,'3');
+						}
+						
+						
+						if((oldIdx>=11||oldIdx<=3||oldIdx==7||oldIdx==9)&&idx<11)
+						{
+							CompMethod.hasNumEles([E702_27,E702_28]);	
+							CompMethod.setRadioButtonSelect(E702_26,'3');	
+						}
+					}
+					
+					
+				} if(idx>5&&idx!=7&&idx!=9)
+				{
+					if(oldIdx<=5||oldIdx==7||oldIdx==9)
+					{
+						CompMethod.hasNumEles(E702_25);	
+						CompMethod.setRadioButtonSelect(E702_24,'3');
+					
+					}
+					
+				}if(idx>9&&oldIdx<=9)
+				{
+					//CompMethod.hasNumEles([E702_24,E702_26]);	
+					if(idx!=10)
+						CompMethod.hasNumEles([E702_26,E702_27,E702_28]);	
+					CompMethod.setRadioButtonSelect(E702_29,'3');
+					CompMethod.setRadioButtonSelect(E702_30,'2');
+					CompMethod.setRadioButtonSelect(E702_31,'2');
+					if(registrationType)
+					{
+						CompMethod.setRadioButtonSelect(E702_46,'3');
+						CompMethod.setRadioButtonSelect(E702_53,'3');
+					}
+				}if(idx<11)
+				{
+					CompMethod.hasNumEles([E702_46,E702_53]);
+					
+					if(idx<10)
+					{
+						CompMethod.hasNumEles([slGrid,slHgroup]);				
+						E702_04_changeHandler(new IndexChangeEvent(IndexChangeEvent.CHANGE));//清空学前班信息
+					}
+					
+					if(idx<6)
+					{
+						CompMethod.hasNumEles(E702_24);//眼球运动 
+						
+						if(idx<4)
+							CompMethod.hasNumEles([E702_22,E702_26Row]);
+						if(idx<2)
+							CompMethod.hasNumEles(E702_16);
+					}
+				}
+				if(idx==7||idx==9)
+				{
+					CompMethod.hasNumEles(scVgroup);
+					callLater(function ():void
+					{
+						CompMethod.setRadioButtonSelect(E702_10,'3');
+						CompMethod.setRadioButtonSelect(E702_60,'3');
+						CompMethod.setRadioButtonSelect(E702_61,'1');
+
+					})
+				}
+				
+				callLater(setHeight);
+				callLater(function ():void{dispatchEvent(new Event("e70208change"));});
+			}
+			
+			/**
+			 *
+			 */
+			private function E702_08LabelFunction(item:Object):String
+			{
+				
+				var label:String=item[E702_08.labelField];
+				var month:int=Number(label.substring(0,label.length-1));
+				if(!isNaN(month)&&month>8)
+				{
+					label=label.substring(0,label.length-1);
+					label=Number(label)/12+'岁';
+				}
+				return label;
+				
+			}
+
+			
+			
+		
+			/**
+			 *验证 录入异常是否与结果一致
+			 * return true 保存
+			 * 		  false  不保存
+			 */
+			private function validateE70260():void
+			{
+				var field:String;
+				var countArr:Array=[0,0,"",""];//0 异常  1正常  2 异常选项 3 正常选项
+				var e70260:String=e702.e70260;
+				for(var i:int=0;i<exceptionField.length;i++)
+				{
+					field=e702["e702"+exceptionField[i]];
+					if(field=="2")
+					{
+						++countArr[0];
+						countArr[2]=!countArr[2]?explainField[i]:countArr[2];
+					}else if(field=="3")
+					{
+						++countArr[1];
+						countArr[3]=!countArr[3]?explainField[i]:countArr[3];
+					}
+				}
+				
+				var idx:int=0;
+				if(countArr[0]&&e70260=="3")
+					idx=2;
+				else if(!countArr[0]&&countArr[1]&&e70260=="2")
+					idx=3;
+				if(idx)
+				{
+					var sysResult:String=idx==2?"异常":"正常";
+					showWarning(countArr[idx]+"选项与检查结果不一致，是否使用系统自动更改检查结果为"+sysResult+"？"
+						,0,E702_60,["e70260",idx.toString()]);
+				}
+				else
+					doShowWarning();
+				
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function doShowWarning(idx:Number=-1):void
+			{
+				
+				if(e702.e70260=='2'&&e702.e70261!='3')
+				{
+					showWarning("检查结果为异常，处理不为转诊，是否使用系统自动更改处理结果为转诊？",1,E702_61,["e70261",3]);
+					return ;
+				}
+					
+				else if(e702.e70260=='3'&&e702.e70261=='3'){
+					showWarning("检查结果为正常，处理为转诊，是否继续保存为定期检查？",1,E702_61,["e70261",1]);
+					return ;
+				}
+					
+				saveOrUpdate();
+				
+				
+			}
+			
+			/**
+			 * text 提示信息
+			 * flag 0 下个验证  1 保存
+			 * id 组件id 
+			 * valArr 0  字段  1字段指定值
+			 */
+			private function showWarning(text:String,flag:Number=0,id:Object=null,valArr:Array=null):void
+			{
+				Alert.show(text,"系统警告"
+					,3,this,function (event:CloseEvent):void
+					{
+						
+						if(event.detail==1)
+						{
+							e702[valArr[0]]=valArr[1];
+							CompMethod.setRadioButtonSelect(id,valArr[1]);
+							
+							//if(!flag)
+								doShowWarning();
+//							else
+//								saveOrUpdate();
+						}else
+							save.enabled=true;
+					});
+			}
+			
+			/**
+			 *
+			 */
+			private function validate():void
+			{
+				if(!ve702)
+				{
+					Alert.show("请先查询基本信息!","系统提示");
+					return;
+				}
+				var resultArr:Array;
+				var checkBoxArr:Array=new Array(6);//1眼外观   2眼前节  3眼后节 4视物行为 5 佩戴眼镜  6保健指导
+				
+				if(!E702_08.selectedIndex)
+				{
+					Alert.show("请选择月龄","系统提示");
+					return;
+				}
+				if(E702_04.selectedIndex)
+				{
+					if(!E702_05.text||StringUtil.trim(E702_05.text)=="选择")
+					{
+						Alert.show("请输入年级","系统提示");
+						return;
+					}
+					
+					if(!E702_06.text||StringUtil.trim(E702_06.text)=="选择")
+					{
+						Alert.show("请输入班级","系统提示");
+						return;
+					}
+				}
+				
+				
+				if(E702_64_1.selected)
+				{
+					if(!E702_66.selectedIndex)
+					{
+						Alert.show("请选择家族史与本人关系","系统提示");
+						return;
+					}
+					if(!E702_65.text)
+					{
+						Alert.show("请输入疾病名称","系统提示");
+						return;
+					}
+				}
+				if(E702_10_2.selected)
+				{
+					
+					resultArr=CompMethod.getCheckBoxAutomationName([E702_11_1,E702_11_2,E702_11_3,E702_11_4]);
+					if(!resultArr[0])
+					{
+						Alert.show("请选择眼外观异常","系统提示");
+						return;
+					}
+					if(E702_12.enabled&&!E702_12.text)
+					{
+						Alert.show("请输入眼外观眼睑异常原因 ","系统提示");
+						return;
+					}
+					if(E702_13.enabled&&!E702_13.text)
+					{
+						Alert.show("请输入眼外观 结膜异常原因 ","系统提示");
+						return;
+					}
+					if(E702_14.enabled&&!E702_14.text)
+					{
+						Alert.show("请输入眼外观 角膜异常原因 ","系统提示");
+						return;
+					}
+					if(E702_15.enabled&&!E702_15.text)
+					{
+						Alert.show("请输入眼外观 瞳孔异常原因 ","系统提示");
+						return;
+					}
+					checkBoxArr[0]=resultArr[1];
+				}
+				if(E702_46_2.selected)
+				{
+					
+					resultArr=CompMethod.getCheckBoxAutomationName([E702_47_2,E702_47_4,E702_47_5,E702_47_6,E702_47_7]);
+					if(!resultArr[0])
+					{
+						Alert.show("请选择眼前节异常","系统提示");
+						return;
+					}
+					if(E702_48.enabled&&!E702_48.text)
+					{
+						Alert.show("请输入眼外观角膜异常原因 ","系统提示");
+						return;
+					}
+					if(E702_49.enabled&&!E702_49.text)
+					{
+						Alert.show("请输入眼外观前房异常原因 ","系统提示");
+						return;
+					}
+					if(E702_50.enabled&&!E702_50.text)
+					{
+						Alert.show("请输入眼外观虹膜异常原因 ","系统提示");
+						return;
+					}
+					if(E702_51.enabled&&!E702_51.text)
+					{
+						Alert.show("请输入眼外观瞳孔异常原因 ","系统提示");
+						return;
+					}
+					if(E702_52.enabled&&!E702_52.text)
+					{
+						Alert.show("请输入眼外观晶体异常原因原因 ","系统提示");
+						return;
+					}
+					checkBoxArr[1]=resultArr[1];
+				}
+				if(E702_53_2.selected)
+				{
+					
+					resultArr=CompMethod.getCheckBoxAutomationName([E702_54_1,E702_54_2,E702_54_3,E702_54_4]);
+					if(!resultArr[0])
+					{
+						Alert.show("请选择眼后节异常","系统提示");
+						return;
+					}
+					if(E702_55.enabled&&!E702_55.text)
+					{
+						Alert.show("请输入玻璃体异常原因 ","系统提示");
+						return;
+					}
+					if(E702_56.enabled&&!E702_56.text)
+					{
+						Alert.show("请输入视乳头异常原因 ","系统提示");
+						return;
+					}
+					if(E702_57.enabled&&!E702_57.text)
+					{
+						Alert.show("请输入视网膜异常原因原因 ","系统提示");
+						return;
+					}
+					if(E702_58.enabled&&!E702_58.text)
+					{
+						Alert.show("请输入脉络膜异常原因  ","系统提示");
+						return;
+					}
+					
+					checkBoxArr[2]=resultArr[1];
+				}
+				if(E702_26_2.selected)
+				{
+					
+					resultArr=CompMethod.getCheckBoxAutomationName(E702_27);
+					if(!resultArr[0])
+					{
+						Alert.show("请选择视物行为观察异常","系统提示");
+						return;
+					}
+					if(E702_28.enabled&&!E702_28.text)
+					{
+						Alert.show("请输入视物行为观察其他异常","系统提示");
+						return;
+					}
+					
+					
+					checkBoxArr[3]=resultArr[1];
+				}
+				
+			
+				
+				if(E702_31_1.selected)//佩戴 
+				{
+					if(E702_32.enabled&&!E702_32.text)
+					{
+						Alert.show("请输入左眼佩戴度数","系统提示");
+						return;
+					}
+					if(E702_33.enabled&&!E702_33.text)
+					{
+						Alert.show("请输入右眼佩戴度数 ","系统提示");
+						return;
+					}
+					if(E702_36.enabled&&!E702_36.text)
+					{
+						Alert.show("请输入左眼戴镜视力","系统提示");
+						return;
+					}
+					if(E702_37.enabled&&!E702_37.text)
+					{
+						Alert.show("请输入右眼戴镜视力","系统提示");
+						return;
+					}
+				}
+				if(E702_31_2.selected)// 否
+				{
+					if(E702_34.enabled&&!E702_34.text)
+					{
+						Alert.show("请输入左裸眼视力","系统提示");
+						return;
+					}
+					if(E702_35.enabled&&!E702_35.text)
+					{
+						Alert.show("请输入右裸眼视力","系统提示");
+						return;
+					}
+				}	
+				
+				resultArr=CompMethod.getCheckBoxAutomationName(E702_59);
+				if(!resultArr[0])
+				{
+					
+					Alert.show("请选择眼保健指导","系统提示");
+					return;
+				}	
+				checkBoxArr[4]=resultArr[1];
+				
+				if(E702_17.enabled&&!E702_17.text)
+				{
+					Alert.show("请输入光照反应 异常原因","系统提示");
+					return;
+				}
+				
+				if(E702_19.enabled&&!E702_19.text)
+				{
+					Alert.show("请输入瞬目反射 异常原因","系统提示");
+					return;
+				}
+				
+				if(E702_21.enabled&&!E702_21.text)
+				{
+					Alert.show("请输入红球试验 异常原因","系统提示");
+					return;
+				}
+				
+				if(E702_23.enabled&&!E702_23.text)
+				{
+					Alert.show("请输入眼位检查 异常原因","系统提示");
+					return;
+				}
+				
+				if(E702_25.enabled&&!E702_25.text)
+				{
+					Alert.show("请输入眼球运动 异常原因","系统提示");
+					return;
+				}
+				
+				if(E702_38.enabled&&!E702_38.text)
+				{
+					Alert.show("请输入左眼最佳矫正视力","系统提示");
+					return;
+				}
+				
+				if(E702_39.enabled&&!E702_39.text)
+				{
+					Alert.show("请输入右眼最佳矫正视力","系统提示");
+					return;
+				}
+				
+				if(!E702_69.text)
+				{
+					Alert.show("请输入检查医生","系统提示");
+					return;
+				}
+				
+				if(!E702_72.text)
+				{
+					Alert.show("请输入登记人员","系统提示");
+					return;
+				}
+				
+				if(!E702_68.selectedItem)
+				{
+					Alert.show("请选择检查单位","系统提示");
+					return;
+				}
+				
+				if(!registrationType){
+					
+					if(!E702_67.text){
+						Alert.show("请输入下次选择时间","系统提示");
+						return;
+					}
+					
+					if(CompMethod.getTimeSpace(E702_70,E702_67,true,"检查时间能大于下次检查时间！"))
+					 	return;
+					
+				}
+				saveE702(checkBoxArr);
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function saveE702(checkBoxArr:Array):void
+			{
+				save.enabled=false;
+				e702=new E702();
+				e702Request=new E702Request();
+				//1眼外观   2眼前节  3眼后节 4视物行为 5 佩戴眼镜  6保健指导
+				e702.e70211=checkBoxArr[0];
+				
+				e702.e70227=checkBoxArr[3];
+				e702.e70259=checkBoxArr[4];
+
+				e702.e70204=E702_04.selectedItem.data;
+				e702.e70205=E702_05.text;
+				e702.e70206=E702_06.text;
+				
+				e702.e70208=E702_08.selectedItem.data;
+				e702.e70268=E702_68.selectedItem.data;
+				e702.e70271=E702_71.selectedItem.data;
+				
+				
+				e702.e70207=StringUtil.trim(E702_07.text);
+				
+				e702.e70212=StringUtil.trim(E702_12.text);
+				e702.e70213=StringUtil.trim(E702_13.text);
+				e702.e70214=StringUtil.trim(E702_14.text);
+				e702.e70215=StringUtil.trim(E702_15.text);
+				e702.e70217=StringUtil.trim(E702_17.text);
+				e702.e70219=StringUtil.trim(E702_19.text);		
+				e702.e70221=StringUtil.trim(E702_21.text);
+				e702.e70223=StringUtil.trim(E702_23.text);
+				e702.e70225=StringUtil.trim(E702_25.text);
+				e702.e70228=StringUtil.trim(E702_28.text);
+				e702.e70232=StringUtil.trim(E702_32.text);
+				e702.e70233=StringUtil.trim(E702_33.text);
+				e702.e70234=StringUtil.trim(E702_34.text);
+				e702.e70235=StringUtil.trim(E702_35.text);
+				e702.e70236=StringUtil.trim(E702_36.text);
+				e702.e70237=StringUtil.trim(E702_37.text);
+				e702.e70238=StringUtil.trim(E702_38.text);
+				e702.e70239=StringUtil.trim(E702_39.text);
+				e702.e70240=StringUtil.trim(E702_40.text);
+				e702.e70241=StringUtil.trim(E702_41.text);
+				e702.e70242=StringUtil.trim(E702_42.text);
+				e702.e70243=StringUtil.trim(E702_43.text);
+				e702.e70244=StringUtil.trim(E702_44.text);
+				e702.e70245=StringUtil.trim(E702_45.text);	
+				e702.e70262=StringUtil.trim(E702_62.text);	
+				e702.e70269=StringUtil.trim(E702_69.text);
+				e702.e70272=StringUtil.trim(E702_72.text);
+				
+				
+				e702.e70210=CompMethod.getRadioButtonValue(E702_10);
+				e702.e70216=CompMethod.getRadioButtonValue(E702_16);
+				e702.e70218=CompMethod.getRadioButtonValue(E702_18);
+				e702.e70220=CompMethod.getRadioButtonValue(E702_20);
+				e702.e70222=CompMethod.getRadioButtonValue(E702_22);
+				e702.e70224=CompMethod.getRadioButtonValue(E702_24);
+				e702.e70226=CompMethod.getRadioButtonValue(E702_26);
+				e702.e70229=CompMethod.getRadioButtonValue(E702_29);
+				e702.e70230=CompMethod.getRadioButtonValue(E702_30);
+				e702.e70231=CompMethod.getRadioButtonValue(E702_31);
+				e702.e70260=CompMethod.getRadioButtonValue(E702_60);
+				e702.e70261=CompMethod.getRadioButtonValue(E702_61);
+				
+				e702.e70270=DateField.stringToDate(E702_70.text,'YYYY-MM-DD');
+				e702.e70273=DateField.stringToDate(E702_73.text,'YYYY-MM-DD');
+				e702.e70209=registrationType?'2':'1';
+				e702Request.flag=(E702_08.selectedIndex-1).toString();
+				e702.e70202=registrationType?ve702.e70202:ve702.e70101;
+				if(registrationType)
+				{
+					e702.e70247=checkBoxArr[1];
+					e702.e70254=checkBoxArr[2];
+					e702.e70266=E702_66.selectedItem.data;
+
+					e702.e70248=StringUtil.trim(E702_48.text);
+					e702.e70249=StringUtil.trim(E702_49.text);
+					e702.e70250=StringUtil.trim(E702_50.text);
+					e702.e70251=StringUtil.trim(E702_51.text);
+					e702.e70252=StringUtil.trim(E702_52.text);
+					e702.e70255=StringUtil.trim(E702_55.text);
+					e702.e70256=StringUtil.trim(E702_56.text);
+					e702.e70257=StringUtil.trim(E702_57.text);
+					e702.e70258=StringUtil.trim(E702_58.text);
+					e702.e70265=StringUtil.trim(E702_65.text);
+					e702.e70246=CompMethod.getRadioButtonValue(E702_46);
+					e702.e70253=CompMethod.getRadioButtonValue(E702_53);
+					e702.e70264=CompMethod.getRadioButtonValue(E702_64);
+
+				}else
+					e702.e70267=DateField.stringToDate(E702_67.text,'YYYY-MM-DD');
+				validateE70260();
+				
+				
+				
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function saveOrUpdate():void
+			{
+				if(modify)
+				{
+					e702.e70201=ve702.e70201;
+					e702.e70203=ve702.e70203;
+					e702Request.e702=e702;
+					e702Service.renewE702(e702Request);
+				}else
+				{
+					e702.e70203=registrationType?ve702.e70201:'';
+					e702Request.e702=e702;
+					e702Service.saveE702(e702Request);		
+				}
+			}
+			
+			
+			private function saveOrUpdateE702Handler(event:ResultEvent):void{   
+				CompMethod.CUDHandler(
+					event.result,['errorMessage',modify?"修改":"保存"],
+					function():void{
+						dispatchEvent(new Event("saveSuccess"));
+					},save);
+				
+			}
+			
+			private function checkbox_changeHandler(event:Event,text:TextInput):void
+			{
+				
+				if(!event.target.selected)
+					text.text='';
+			}
+			
+			private function e70229ChangeHandler(event:Event):void
+			{
+				if(event.target.value=='3')
+					CompMethod.hasNumEles([E702_38,E702_39]);
+				CompMethod.setRadioButtonSelect(E702_30,E702_08.selectedIndex==10?"1":"2");
+				CompMethod.setRadioButtonSelect(E702_31,"2");
+
+			}
+			
+			private function E702_04_changeHandler(event:IndexChangeEvent):void
+			{
+				var idx:int=E702_04.selectedIndex;
+				if(!idx)
+					E702_05.selectedIndex=E702_06.selectedIndex=idx;
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<!--<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+	<s:VGroup>
+			-->
+	<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="1230" label="基本信息">
+			<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+				<mx:Grid>
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="婴儿姓名"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_07" width="160" enabled="false"
+										 text="{ve702.e70106}"/>
+							<s:Label styleName="must" text="*"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="出生日期"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<mx:DateField id="E701_09" width="130" enabled="false"
+										  text="{DateField.dateToString(ve702.e70109,'YYYY-MM-DD')}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="性别"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:DropDownList id="E701_07" width="130" enabled="false"/>							
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="体重"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:BorderContainer width="130" height="23" enabled="false">
+								<s:HGroup verticalAlign="middle">
+									<s:TextInput id="E701_12" width="90" borderVisible="false"
+												 enabled="false" text="{ve702.e70112}"
+												 textAlign="right"/>
+									<s:Label paddingRight="0" styleName="mySize" text="(kg)"/>
+								</s:HGroup>
+							</s:BorderContainer>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="民族"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:DropDownList id="E701_11" width="130" enabled="false"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label enabled="false" styleName="mySize" text="视力卡号"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E701_05" width="160" enabled="false" restrict="^0-9"
+										 text="{ve702.e70105}"/>
+							<s:Label styleName="must" text="*"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="月        龄"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem>
+							<s:DropDownList id="E702_08" width="130"
+											change="E702_08_changeHandler(event)" color="#FF0000"
+											enabled="{!registrationType}"
+											labelFunction="E702_08LabelFunction"/>
+							<s:Label styleName="must" text="*"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label visible="{!registrationType}"
+									 includeInLayout="{!registrationType}" styleName="pf15 mySize"
+									 text="托幼机构"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:DropDownList id="E702_04" visible="{!registrationType}" width="130"
+										 enabled="{E702_08.selectedIndex&gt;9}"
+										 includeInLayout="{!registrationType}"
+										 change="E702_04_changeHandler(event)"/>
+							<s:Image width="16"  height="16" buttonMode="true" 
+									 source='images/help.png'
+									 toolTip="如果没有选项，请在打开系统维护中的幼儿园维护添加，然后从新打开此页面即可"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label visible="{!registrationType}"
+									 includeInLayout="{!registrationType}" styleName="pf15 mySize"
+									 text="年级"/>
+						</mx:GridItem>
+						
+		   			  <mx:GridItem>
+							<component:FindSelectedItemComboBox id="E702_05" visible="{!registrationType}" 
+										 enabled="{E702_08.selectedIndex&gt;9 &amp;&amp;E702_04.selectedIndex}"
+										 includeInLayout="{!registrationType}"
+										 width="130" height="22" editable="true" restrict="^0-9"/>							
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label visible="{!registrationType}"
+									 includeInLayout="{!registrationType}" styleName="pf15 mySize"
+									 text="班级"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<component:FindSelectedItemComboBox id="E702_06" visible="{!registrationType}" 
+										 enabled="{E702_08.selectedIndex&gt;9&amp;&amp;E702_04.selectedIndex}"
+										 includeInLayout="{!registrationType}"
+										 width="130" height="22" editable="true" restrict="^0-9"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	
+	<!--用于诊治机构-->
+	<mx:TabNavigator visible="{registrationType}" chromeColor="#ffffff" creationPolicy="all"
+					 includeInLayout="{registrationType}">
+		<s:NavigatorContent width="1230" label="家族史">
+			<s:HGroup id="E702_64" gap="10" paddingBottom="10" paddingLeft="10" paddingRight="10"
+					  verticalAlign="baseline">
+				<s:Label styleName="mySize" text="眼病家族史"/>
+				<s:RadioButton label="无" buttonMode="true"
+							   change="E702_66.selectedIndex=0;E702_65.text=''" groupName="E702_64"
+							   selected="true" value="0"/>
+				<s:RadioButton id="E702_64_1" label="有" buttonMode="true" groupName="E702_64"
+							   value="1"/>		
+				<s:Label styleName="mySize" text="与本人关系"/>
+				<s:DropDownList id="E702_66" width="130" enabled="{E702_64_1.selected}"/>
+				<s:Label styleName="mySize" text="疾病名称"/>
+				<s:TextInput id="E702_65" width="200" enabled="{E702_64_1.selected}"/>
+				
+			</s:HGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+		
+	
+	<mx:TabNavigator id="scTab" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent id="scNav" width="1230" label="筛查情况">
+			<s:VGroup id="scVgroup" enabled="{E702_08.selectedIndex&gt;9}" paddingBottom="10"
+					  paddingLeft="10" paddingRight="10">
+				
+				<mx:Grid width="1220">
+					<mx:GridRow id="E702_10Row">
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="眼  外  观"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_10">
+							
+							<s:RadioButton id="E702_10_3" label="正常" buttonMode="true"
+										   change="CompMethod.hasNumEles(E702_10Row);E702_10_3.selected=true"
+										   groupName="E702_10" selected="true" value="3"/>
+							<s:RadioButton id="E702_10_2" label="异常" buttonMode="true"
+										   groupName="E702_10" value="2"/>	
+							<s:RadioButton id="E702_10_1" label="未检" buttonMode="true"
+										   change="CompMethod.hasNumEles(E702_10Row);E702_10_3.selected=true"
+										   groupName="E702_10" value="1"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_11_1" width="57">
+							<s:CheckBox id="E702_11_11" label="眼睑" automationName="1"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_12)"
+										enabled="{E702_10_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_12" width="180" enabled="{E702_11_11.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_11_2" width="57">
+							<s:CheckBox id="E702_11_22" label="结膜" automationName="2"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_13)"
+										enabled="{E702_10_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_13" width="180" enabled="{E702_11_22.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_11_3" width="57">
+							<s:CheckBox id="E702_11_33" label="角膜" automationName="3"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_14)"
+										enabled="{E702_10_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_14" width="180" enabled="{E702_11_33.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_11_4" width="57">
+							<s:CheckBox id="E702_11_44" label="瞳孔" automationName="4"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_15)"
+										enabled="{E702_10_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_15" width="180" enabled="{E702_11_44.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					
+					<!--用于诊治机构-->
+					<mx:GridRow id="E702_46Row1"
+								visible="{registrationType&amp;&amp;E702_08.selectedIndex&gt;10}"
+								enabled="{E702_08.selectedIndex&gt;10}"
+								includeInLayout="{registrationType&amp;&amp;E702_08.selectedIndex&gt;10}">
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="眼  前  节"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_46">
+							
+							<s:RadioButton id="E702_46_3" label="正常" buttonMode="true"
+										   change="CompMethod.hasNumEles([E702_46Row1,E702_46Row2]);E702_46_3.selected=true"
+										   groupName="E702_46" value="3"/>
+							<s:RadioButton id="E702_46_2" label="异常" buttonMode="true"
+										   groupName="E702_46" value="2"/>	
+							<s:RadioButton id="E702_46_1" label="未检" buttonMode="true"
+										   change="CompMethod.hasNumEles([E702_46Row1,E702_46Row2]);E702_46_3.selected=true"
+										   groupName="E702_46"  value="1"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_47_2" width="57">
+							<s:CheckBox id="E702_47_22" label="角膜" automationName="2"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_48)"
+										enabled="{E702_46_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_48" width="180" enabled="{E702_47_22.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_47_5" width="57">
+							<s:CheckBox id="E702_47_55" label="前房" automationName="5"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_49)"
+										enabled="{E702_46_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_49" width="180" enabled="{E702_47_55.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_47_6" width="57">
+							<s:CheckBox id="E702_47_66" label="虹膜" automationName="6"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_50)"
+										enabled="{E702_46_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_50" width="180" enabled="{E702_47_66.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_47_4" width="57">
+							<s:CheckBox id="E702_47_44" label="瞳孔" automationName="4"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_51)"
+										enabled="{E702_46_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_51" width="180" enabled="{E702_47_44.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					
+					<!--用于诊治机构-->
+					<mx:GridRow id="E702_46Row2"
+								visible="{registrationType&amp;&amp;E702_08.selectedIndex&gt;10}"
+								enabled="{E702_08.selectedIndex&gt;10}"
+								includeInLayout="{registrationType&amp;&amp;E702_08.selectedIndex&gt;10}">
+						<mx:GridItem colSpan="2"/>
+							
+						<mx:GridItem id="E702_47_7" width="57">
+							<s:CheckBox id="E702_47_77" label="晶体" automationName="7"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_52)"
+										enabled="{E702_46_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_52" width="180" enabled="{E702_47_77.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						
+					</mx:GridRow>
+					
+					<mx:GridRow id="E702_53Row"
+								visible="{registrationType&amp;&amp;E702_08.selectedIndex&gt;10}"
+								enabled="{E702_08.selectedIndex&gt;10}"
+								includeInLayout="{registrationType&amp;&amp;E702_08.selectedIndex&gt;10}">
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="眼  后  节"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_53">
+							
+							<s:RadioButton id="E702_53_3" label="正常" buttonMode="true"
+										   change="CompMethod.hasNumEles(E702_53Row);E702_53_3.selected=true"
+										   groupName="E702_53" value="3"/>
+							<s:RadioButton id="E702_53_2" label="异常" buttonMode="true"
+										   groupName="E702_53" value="2"/>	
+							<s:RadioButton id="E702_53_1" label="未检" buttonMode="true"
+										   change="CompMethod.hasNumEles(E702_53Row);E702_53_3.selected=true"
+										   groupName="E702_53"  value="1"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_54_1" width="57">
+							<s:CheckBox id="E702_54_11" label="玻璃体" automationName="1"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_55)"
+										enabled="{E702_53_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_55" width="180" enabled="{E702_54_11.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_54_2" width="57">
+							<s:CheckBox id="E702_54_22" label="视乳头" automationName="2"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_56)"
+										enabled="{E702_53_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_56" width="180" enabled="{E702_54_22.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_54_3" width="57">
+							<s:CheckBox id="E702_54_33" label="视网膜" automationName="3"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_57)"
+										enabled="{E702_53_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_57" width="180" enabled="{E702_54_33.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_54_4" width="57">
+							<s:CheckBox id="E702_54_44" label="脉络膜" automationName="4"
+										buttonMode="true"
+										change="checkbox_changeHandler(event,E702_58)"
+										enabled="{E702_53_2.selected}"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:TextInput id="E702_58" width="180" enabled="{E702_54_44.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+				</mx:Grid>
+				<mx:Grid width="1220">
+					<mx:GridRow visible="{E702_08.selectedIndex==2}"
+								includeInLayout="{E702_08.selectedIndex==2}">
+						<mx:GridItem enabled="{E702_08.selectedIndex==2}">
+							<s:Label styleName="mySize" text="光照反应"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_16" enabled="{E702_08.selectedIndex==2}">
+							
+							<s:RadioButton label="正常" buttonMode="true" change="E702_17.text=''"
+										   groupName="E702_16" value="3"/>
+							<s:RadioButton id="E702_16_2" label="异常" buttonMode="true"
+										   groupName="E702_16" value="2"/>	
+							<s:RadioButton id="E702_16_1" label="未检" buttonMode="true"
+										   change="E702_17.text=''"
+										   groupName="E702_16"  value="1"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem colSpan="2">
+							<s:TextInput id="E702_17" width="1004" enabled="{E702_16_2.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					<mx:GridRow visible="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}"
+								includeInLayout="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}">
+						
+						<mx:GridItem enabled="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}">
+							<s:Label styleName="mySize" text="瞬目反射"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_18"
+									 enabled="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}">
+							
+							<s:RadioButton label="正常" buttonMode="true" change="E702_19.text=''"
+										   groupName="E702_18" value="3"/>
+							<s:RadioButton id="E702_18_2" label="异常" buttonMode="true"
+										   groupName="E702_18" value="2"/>
+							<s:RadioButton id="E702_18_1" label="未检" buttonMode="true"
+										   change="E702_19.text=''"
+										   groupName="E702_18"  value="1"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem colSpan="2">
+							<s:TextInput id="E702_19" width="1004" enabled="{E702_18_2.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					<mx:GridRow visible="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}"
+								includeInLayout="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}">
+						
+						<mx:GridItem enabled="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}">
+							<s:Label styleName="mySize" text="红球实验"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_20"
+									 enabled="{E702_08.selectedIndex==3||E702_08.selectedIndex==4}">
+							<s:RadioButton label="正常" buttonMode="true" change="E702_21.text=''"
+										   groupName="E702_20" value="3"/>
+							<s:RadioButton id="E702_20_2" label="异常" buttonMode="true"
+										   groupName="E702_20" value="2"/>	
+							<s:RadioButton id="E702_20_1" label="未检" buttonMode="true"
+										   change="E702_21.text=''"
+										   groupName="E702_20"  value="1"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem colSpan="2">
+							<s:TextInput id="E702_21" width="1004" enabled="{E702_20_2.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					
+					
+					<mx:GridRow visible="{E702_08.selectedIndex&gt;3         &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;         E702_08.selectedIndex!=9}"
+								includeInLayout="{E702_08.selectedIndex&gt;3         &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;         E702_08.selectedIndex!=9}">
+						<mx:GridItem enabled="{E702_08.selectedIndex&gt;3           &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;E702_08.selectedIndex!=9}">
+							<s:Label styleName="mySize" text="眼位检查"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_22"
+									 enabled="{E702_08.selectedIndex&gt;3           &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;E702_08.selectedIndex!=9}">
+							<s:RadioButton label="正常" buttonMode="true" change="E702_23.text=''"
+										   groupName="E702_22" value="3"/>
+							<s:RadioButton id="E702_22_2" label="异常" buttonMode="true"
+										   groupName="E702_22" value="2"/>	
+							<s:RadioButton id="E702_22_1" label="未检" buttonMode="true"
+										   change="E702_23.text=''"
+										   groupName="E702_22"  value="1"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem colSpan="2">
+							<s:TextInput id="E702_23" width="1004" enabled="{E702_22_2.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					
+					<mx:GridRow visible="{E702_08.selectedIndex&gt;5         &amp;&amp;E702_08.selectedIndex!=7         &amp;&amp;E702_08.selectedIndex!=9}"
+								includeInLayout="{E702_08.selectedIndex&gt;5         &amp;&amp;E702_08.selectedIndex!=7         &amp;&amp;E702_08.selectedIndex!=9}">
+						<mx:GridItem enabled="{E702_08.selectedIndex&gt;5           &amp;&amp;E702_08.selectedIndex!=7           &amp;&amp;E702_08.selectedIndex!=9}">
+							<s:Label styleName="mySize" text="眼球运动"/>
+						</mx:GridItem>
+					
+						<mx:GridItem id="E702_24"
+									 enabled="{E702_08.selectedIndex&gt;5                 &amp;&amp;E702_08.selectedIndex!=7                  &amp;&amp;E702_08.selectedIndex!=9}">
+							<s:RadioButton label="正常" buttonMode="true" change="E702_25.text=''"
+										   groupName="E702_24" value="3"/>
+							<s:RadioButton id="E702_24_2" label="异常" buttonMode="true"
+										   groupName="E702_24" value="2"/>	
+							<s:RadioButton id="E702_24_1" label="未检" buttonMode="true"
+										   change="E702_25.text=''"
+										   groupName="E702_24"  value="1"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem colSpan="2">
+							<s:TextInput id="E702_25" width="1004" enabled="{E702_24_2.selected}" maxChars="100" prompt="最多输入100个字符"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					
+					<mx:GridRow id="E702_26Row"
+								visible="{E702_08.selectedIndex&gt;3&amp;&amp;E702_08.selectedIndex&lt;11         &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;E702_08.selectedIndex!=9}"
+								includeInLayout="{E702_08.selectedIndex&gt;3&amp;&amp;         E702_08.selectedIndex&lt;11         &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;E702_08.selectedIndex!=9}">
+							
+						<mx:GridItem enabled="{E702_08.selectedIndex&gt;3&amp;&amp;E702_08.selectedIndex&lt;11           &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;E702_08.selectedIndex!=9}">
+							<s:Label styleName="mySize" text="视物行为"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_26"
+									 enabled="{E702_08.selectedIndex&gt;3&amp;&amp;E702_08.selectedIndex&lt;11                 &amp;&amp;E702_08.selectedIndex!=7&amp;&amp;E702_08.selectedIndex!=9}">
+							<s:RadioButton label="正常" buttonMode="true"
+										   change="CompMethod.hasNumEles(E702_27)"
+										   groupName="E702_26" value="3"/>
+							<s:RadioButton id="E702_26_2" label="异常" buttonMode="true"
+										   groupName="E702_26" value="2"/>	
+							<s:RadioButton id="E702_26_1" label="未检" buttonMode="true"
+										   change="CompMethod.hasNumEles(E702_27)"
+										   groupName="E702_26"  value="1"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem id="E702_27" enabled="{E702_26_2.selected}">
+							<s:CheckBox label="畏光" automationName="1" buttonMode="true"/>
+							<s:CheckBox label="眯眼" automationName="2" buttonMode="true"/>
+							<s:CheckBox label="歪头" automationName="3" buttonMode="true"/>
+							<s:CheckBox id="E702_27_9" label="其它" automationName="9"
+										buttonMode="true"
+										change="if(!E702_27_9.selected)E702_28.text=''"/>
+						</mx:GridItem>
+						
+						
+						<mx:GridItem >
+							<s:TextInput id="E702_28" width="796" enabled="{E702_27_9.selected}" maxChars="100" prompt="最多输入100个字符"/>
+
+						</mx:GridItem>
+						
+					</mx:GridRow>
+				</mx:Grid>
+				<mx:Grid id="slGrid" visible="{E702_08.selectedIndex&gt;9}"
+						 enabled="{E702_08.selectedIndex&gt;9}"
+						 includeInLayout="{E702_08.selectedIndex&gt;9}">
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="视力检查"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_29">
+							<s:RadioButton label="正常" buttonMode="true"
+										   change="e70229ChangeHandler(event)"
+										   groupName="E702_29" value="3"/>
+							<s:RadioButton id="E702_29_2" label="异常" buttonMode="true"
+										   groupName="E702_29" value="2"
+										   change="e70229ChangeHandler(event)"/>	
+							<s:RadioButton id="E702_29_1" label="未检" buttonMode="true"
+										   change="CompMethod.hasNumEles([E702_30,E702_31,slHgroup])"
+										   groupName="E702_29"  value="1"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_30">
+							<s:Label styleName="mySize" text="测量视力表"/>
+							<s:RadioButton label="图形视力表（3-4岁）" buttonMode="true" groupName="E702_30"
+										   value="1"/>
+							<s:RadioButton label="标准对数视力表（4岁以上）" buttonMode="true"
+										   groupName="E702_30" value="2"/>
+							
+
+						</mx:GridItem>
+						
+						<mx:GridItem id="E702_31">
+							<s:Label styleName="mySize" text="佩戴眼镜 "
+									 toolTip="注：戴镜视力指配戴自己现有的眼镜看到的视力水平。"/>
+							<s:RadioButton id="E702_31_2" label="否" buttonMode="true"
+										   change="CompMethod.hasNumEles([E702_32,E702_33,E702_36,E702_37])"
+										   groupName="E702_31" value="2"/>
+							<s:RadioButton id="E702_31_1" label="是" buttonMode="true"
+										   groupName="E702_31" value="1"/>
+							<!--<s:HGroup width="100%" height="100%" verticalAlign="baseline">
+								<s:Label styleName="mySize"  text="（"/>
+								<s:Label styleName="mySize"  text="左眼度数"/>
+								<s:TextInput id="E601_16" width="100"/>
+								<s:Label styleName="mySize"  text="右眼度数"/>
+								<s:TextInput id="E601_16" width="100"/>
+								<s:Label styleName="mySize"  text="）"/>
+							</s:HGroup>  -->
+							
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					
+				</mx:Grid>
+				<s:HGroup id="slHgroup" visible="{E702_08.selectedIndex&gt;9}" width="1220"
+						  height="100%" enabled="{E702_08.selectedIndex&gt;9}" gap="8"
+						  includeInLayout="{E702_08.selectedIndex&gt;9}">
+					<s:BorderContainer width="49%">
+						<mx:Grid horizontalGap="3" paddingBottom="5" paddingTop="5">
+						
+							
+							<mx:GridRow>
+								<mx:GridItem borderAlpha="1" borderVisible="false" rowSpan="4">
+									<s:Label width="100" color="#118EC8" fontSize="17"
+											 styleName="mySize" text="左眼" textAlign="center"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="裸眼视力"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_34" width="130" maxChars="7"
+												 restrict="0-9." enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="pf15 mySize" text="戴镜视力"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_36" width="130"
+												 enabled="{E702_31_1.selected&amp;&amp;!E702_29_1.selected}" maxChars="7"
+												 restrict="0-9."/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="佩戴度数"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_32" width="130"
+												 enabled="{E702_31_1.selected&amp;&amp;!E702_29_1.selected}" maxChars="7"
+												 restrict="0-9"/>
+								</mx:GridItem>
+								
+							
+							
+								<mx:GridItem>
+									<s:Label styleName="pf15 mySize" text="矫正视力"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_38" width="130"
+												 enabled="{E702_29_2.selected&amp;&amp;!E702_29_1.selected}" maxChars="7"
+												 restrict="0-9."/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="球镜（S）"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_40" width="130" maxChars="7"
+												 restrict="0-9.+\-" enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="pf15 mySize" text="柱镜（散光C）"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_42" width="130" maxChars="7"
+												 restrict="0-9.+\-" enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="轴       位"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_44" width="130" maxChars="7" prompt="散光方向A"
+												 restrict="0-9" enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+						</mx:Grid>
+					</s:BorderContainer>
+					
+					<s:BorderContainer width="610">
+						<mx:Grid horizontalGap="3" paddingBottom="5" paddingTop="5">
+							
+							
+							<mx:GridRow>
+								<mx:GridItem borderAlpha="1" borderColor="black"
+											 borderVisible="false" rowSpan="4">
+									<s:Label width="100" color="#118EC8" fontSize="17"
+											 styleName="mySize" text="右眼" textAlign="center"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="裸 眼视力"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_35" width="130" maxChars="7"
+												 restrict="0-9." enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="pf15 mySize" text="戴镜视力"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_37" width="130"
+												 enabled="{E702_31_1.selected&amp;&amp;!E702_29_1.selected}" maxChars="7"
+												 restrict="0-9."/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							
+							<mx:GridRow>
+								
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="佩戴度数"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_33" width="130"
+												 enabled="{E702_31_1.selected&amp;&amp;!E702_29_1.selected}" maxChars="7"
+												 restrict="0-9"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="pf15 mySize" text="矫正视力"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_39" width="130"
+												 enabled="{E702_29_2.selected&amp;&amp;!E702_29_1.selected}" maxChars="7"
+												 restrict="0-9."/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="球镜（S）"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_41" width="130" maxChars="7"
+												 restrict="0-9.+\-" enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="pf15 mySize" text="柱镜（散光C）"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_43" width="130" maxChars="7"
+												 restrict="0-9.+\-" enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								
+								<mx:GridItem>
+									<s:Label styleName="mySize" text="轴       位"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E702_45" width="130" maxChars="7" prompt="散光方向A"
+												 restrict="0-9" enabled="{!E702_29_1.selected}"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:BorderContainer>
+					
+				</s:HGroup>  
+				
+				<mx:Grid width="1220">
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="其他说明"/>
+						</mx:GridItem>
+						<mx:GridItem colSpan="3">
+							<s:TextArea id="E702_62" width="1161" height="43" text="无" maxChars="200" prompt="最多输入200个字符"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="检查结果"/>
+						</mx:GridItem>
+						<mx:GridItem width="50" id="E702_60">
+							<s:RadioButton label="正常" buttonMode="true" groupName="E702_60"
+										   selected="true" value="3"/>
+							<s:RadioButton label="异常" buttonMode="true" groupName="E702_60" value="2"/>
+						</mx:GridItem>
+						
+						<mx:GridItem colSpan="2" id="E702_61" width="920">
+							<s:Label styleName="pf15 mySize" text="处理"/>
+						
+							<s:RadioButton label="定期检查" buttonMode="true" groupName="E702_61"
+										   selected="true" value="1"/>
+							<s:RadioButton label="随访" buttonMode="true" groupName="E702_61" value="2"/>
+							<s:RadioButton label="转诊" buttonMode="true" groupName="E702_61" value="3"/>
+						</mx:GridItem>
+						
+					</mx:GridRow>
+				</mx:Grid>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	
+	
+	<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="1230" label="眼及视力保健指导">
+			<s:HGroup id="E702_59" gap="25" paddingBottom="10" paddingLeft="10" paddingRight="10">
+				<s:CheckBox label="1．早期发现，及时就诊" automationName="1" buttonMode="true" selected="true"/>
+				<s:CheckBox label="2．注意用眼卫生" automationName="2" buttonMode="true" selected="true"/>
+				<s:CheckBox label="3．防止眼外伤" automationName="3" buttonMode="true" selected="true"/>
+				<s:CheckBox label="4．预防传染性眼病" automationName="4" buttonMode="true" selected="true"/>
+			</s:HGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	
+	
+	<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="1230" label="登记信息">
+			<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+				<mx:Grid>
+					
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="检查医生"/>
+							<component:FindSelectedItemComboBox id="E702_69" width="130" height="22"
+																editable="true" restrict="^0-9"/>
+							<s:Label styleName="must" text="*"/>
+							
+						</mx:GridItem>
+												
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="检查单位"/>
+							<component:institutionCodeComboBox id="E702_68" enabled="false"
+															   excludeLable="['公安','计生委']"
+															   isSelectUserCode="true"/>
+							<s:Label styleName="must" text="*"/>
+							
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="检查时间"/>
+							<component:CustomRangeDateField id="E702_70" isSelectNow="true"/>
+							<s:Label styleName="must" text="*"/>
+							
+						</mx:GridItem>
+						
+						<mx:GridItem visible="{!registrationType}"
+									 includeInLayout="{!registrationType}">
+							<s:Label styleName="pf15 mySize" text="下次检查时间"/>
+							<component:CustomRangeDateField id="E702_67" width="130"
+															isDisabledRanges="false"/>
+							<s:Label styleName="must" text="*"/>
+							
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					<mx:GridRow>
+					
+						<mx:GridItem>
+							<s:Label styleName="mySize" text="登记人员"/>
+							<component:FindSelectedItemComboBox id="E702_72" width="130" height="22"
+																editable="true" restrict="^0-9"/>
+							<s:Label styleName="must" text="*"/>
+							
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="登记医院"/>
+							<component:institutionCodeComboBox id="E702_71" enabled="false"
+															   includeData="{this.systemUser.institutionCode}"
+															   isSelectUserCode="true"/>
+							<s:Label styleName="must" text="*"/>
+							
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:Label styleName="pf15 mySize" text="录入时间"/>
+							<component:CustomRangeDateField id="E702_73" enabled="false"
+															isSelectNow="true"/>
+							<s:Label styleName="must" text="*"/>
+							
+						</mx:GridItem>
+						
+					
+					</mx:GridRow>
+				</mx:Grid>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:HGroup width="1225" horizontalAlign="center" paddingBottom="10" verticalAlign="middle">
+		<s:Button id="save" label="保存" click="validate()" enabled="{E702_08.selectedIndex&gt;9}"/>
+	</s:HGroup>
+</s:VGroup>
+

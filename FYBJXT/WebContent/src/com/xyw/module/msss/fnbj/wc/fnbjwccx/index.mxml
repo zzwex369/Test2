@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:RemoteObject id="maternalCheckService" destination="f606Service" 
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryf606" result="queryF606Handler(event)"/>
+			<s:method name="deletef606" result="deleteF606Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|ToolTip
+		{
+			fontSize:15;
+			backgroundColor:#000000;
+			color:#FFFFFF;
+			/* leading:12; */			
+		}
+		s|SkinnableTextBase:disabledWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		s|SkinnableTextBase:normalWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.model.F606Request;
+			import com.xyw.module.msss.fnbj.model.Vf606s;
+			import com.xyw.module.msss.fnbj.wc.fnbjwccx.titleF606;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.skin.CustomDataGridSkin;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			  
+			var vf606:Vf606s;
+			var f606Request:F606Request;
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			
+			public var flag_dele:Boolean = true;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+			
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				this.systemUser = this.parentApplication.systemUser;
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vf606 = DataGrid(event.target).selectedItem as Vf606s;
+			}
+			
+			public function initQueryParam():void{
+				var type:String = this.f_jigou.getLastSelectedInstitution();
+				var f50126:String = this.f_jigou.getLastSelectedInstitutionCode();
+				
+			//
+				f606Request.f606_67 = type == "8"?f50126:f50126.substring(0,Number(type));
+				f606Request.f606_03 = StringUtil.trim(idname.text);
+				f606Request.f606_05 = StringUtil.trim(idcard.text);
+				f606Request.timeStr = DateField.stringToDate(this.timeStart.text,"YYYY-MM-DD");
+				f606Request.timeEnd = DateField.stringToDate(this.timeEnd.text,"YYYY-MM-DD");
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				f606Request = new F606Request();
+				this.initQueryParam();
+				f606Request.parameterPageindex = 1;
+				f606Request.parameterPagesize = 20;
+				this.maternalCheckService.queryf606(f606Request);
+			}
+			
+			protected function queryF606Handler(event:ResultEvent):void
+			{
+				
+				var f606Response:Object = event.result;
+			//	var flag:String = f606Response.flag;
+				var listVF303:ArrayCollection = f606Response.vf606s;
+				var rowCount:Number = f606Response.rowCount;
+				if(f606Response.state)
+				{ 
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVF303;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					if(f606Response.errorMessage==null){
+						return;
+					}
+					if(flag_dele){
+						Alert.show(f606Response.errorMessage, "系统提示");
+						return;
+					}
+					flag_dele=true;
+				} else {
+					Alert.show(f606Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				f606Request = new F606Request();
+				this.initQueryParam();
+				f606Request.parameterPageindex = currentPageIndex;
+				f606Request.parameterPagesize = pageSize;
+				this.maternalCheckService.queryf606(f606Request);
+			}
+			
+			public function query1(event:MouseEvent):void
+			{
+				if(this.vf606 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:titleF606 =new titleF606();
+					window.vf606 = this.vf606;
+					window.currentState="special";
+					CompMethod.popUpTitleWindow(window,this,true);
+				}
+			}
+			
+			public function update2(event:MouseEvent):void
+			{
+				if(this.vf606 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:titleF606 =new titleF606();
+					window.vf606 = this.vf606;
+					window.addEventListener("ok_click",refresh1);
+					CompMethod.popUpTitleWindow(window,this,true);
+				}
+			}
+			
+			public function refresh1(event:Event):void{
+				refresh();
+			}
+			
+			public function deletef606_():void{
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show('确认删除？','删除信息',1|2,this,deleteF606);
+			}
+			
+			
+			public function deleteF606(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+				f606Request = new F606Request();
+				if(this.vf606 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					f606Request.zhujian = vf606.f606_01;
+					
+					this.maternalCheckService.deletef606(f606Request);
+				}
+				}
+			}
+			
+			protected function deleteF606Handler(event:ResultEvent):void
+			{
+				var f606Response:Object = event.result;
+				if(f606Response.state){
+					if(f606Response.promptMessage != null){
+						Alert.show(f606Response.promptMessage, "系统提示");
+					}
+					Alert.show("删除成功", "系统提示");
+					flag_dele=false;
+					refresh();
+				} else {
+					Alert.show(f606Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function refresh():void
+			{
+				f606Request = new F606Request();
+				this.initQueryParam();
+				f606Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				f606Request.parameterPagesize = 20;
+				this.maternalCheckService.queryf606(f606Request);
+			}
+			
+			private function setStringDate(item:Object, column:GridColumn):String
+			{
+				var date:Date=item[column.dataField];
+				return DateField.dateToString(date,"YYYY-MM-DD");
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="seleall" width="100%" height="133" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%" height="100">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="检查机构"/>
+					<component:InstitutionComboBox id="f_jigou" width="100%" />
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+				
+					<s:Label text="检查日期"/>
+					
+					<s:Label text="按检查日期查询"/>
+					<component:CustomRangeDateField  id="timeStart" isSelectNow="true" isQuerySysDate="false" getRangesDate="{timeEnd.disabledRanges}"/>
+					
+					<s:Label text="至" />
+					<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+					
+					
+				</s:HGroup>
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+							  verticalAlign="middle">
+						<s:Label text="姓名"/><s:TextInput id="idname"/>
+						<s:Label text="证件号码"/><s:TextInput id="idcard" width="200"/>
+					<!--	<s:Button id="duka1" width="60" label="读卡" click="readCard_mother(event)" enabled="{systemUser.duka=='1'}"/>-->
+					
+						<s:Button label="查询" click="query(event)"  iconPlacement="left"/>
+						<s:Button label="详情" click="query1(event)"  iconPlacement="left"/>
+						<s:Button label="修改" click="update2(event)"  iconPlacement="left"/>
+						<s:Button label="删除" click="deletef606_()"  iconPlacement="left"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		
+	</mx:TabNavigator>
+	<s:Scroller y="140" width="100%" height="560" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="certificateDataGrid" width="100%" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="false" rowHeight="22" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="f606_01" headerText="主键"/>
+							<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="80" editable="false" dataField="f606_03" headerText="姓名"/>
+						<s:GridColumn width="150" editable="false" dataField="f606_05" headerText="证件号码"/>
+						<s:GridColumn width="100" editable="false" dataField="f606_06" headerText="年龄"/>
+						<s:GridColumn width="100" editable="false" dataField="f606_12" headerText="手机号"/>
+						<s:GridColumn width="100" editable="false" dataField="f606_02" headerText="保健号"/>
+						<s:GridColumn width="100" editable="false" dataField="f606_07" headerText="身高"/>
+						<s:GridColumn width="100" editable="false" dataField="f606_08" headerText="体重"/>
+						<s:GridColumn width="180" editable="false" dataField="vf606_01" headerText="单位名称"/>
+						<s:GridColumn width="100" editable="false" dataField="vf606_02" headerText="操作员名称" />
+						<s:GridColumn width="100" editable="false" dataField="f606_70" headerText="录入日期" labelFunction="setStringDate" />
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+			
+		</s:VGroup>	
+	</s:Scroller>	
+</s:Module>

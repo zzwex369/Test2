@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   width="628" height="188" chromeColor="#689FA9" 
+			   creationComplete="this.isPopUp=false"
+			   cornerRadius="5" close="Alert.show('点击确认即将刷新登记页面','系统提示',3,this,closeHandler);">
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.xq.fnbjxqsqcx.sqdTittle;
+			import com.xyw.module.msss.fnbj.model.VF601;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			public var vf601:VF601;
+			public function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var index:Object=this.owner;
+					PopUpManager.removePopUp(this);
+					index.refreshIndex();
+				}
+				
+			}
+			
+		
+			
+			private function button1_clickHandler(size:String=''):void
+			{
+				var urlRequest:URLRequest = new URLRequest(this.parentApplication.contextRoot + 
+					"/print_new/fnbj/printxkbh/xkbh.jsp?f60101=" + this.vf601.f60101+"&size="+size);
+				navigateToURL(urlRequest,"_blank");
+				
+			}
+			
+			private function button2_clickHandler(event:MouseEvent):void
+			{
+				var urlRequest:URLRequest = new URLRequest(this.parentApplication.contextRoot + 
+					"/print_new/fnbj/printxqscsqd/xqsqd.jsp?f60101=" + this.vf601.f60101);
+				navigateToURL(urlRequest,"_blank");
+				
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="100%" chromeColor="#CCCCCC" gap="30" horizontalAlign="center"
+			  verticalAlign="middle">
+		<s:Button height="45" label="打印血卡编号(单标签2.5cm)" fontSize="15" click="button1_clickHandler('big')"/>
+		<s:Button height="45" label="打印血卡编号(单标签3.3cm)" fontSize="15" click="button1_clickHandler()"/>
+		<s:Button height="44" label="打印产筛申请单" fontSize="15"  click="button2_clickHandler(event)"/>
+	</s:HGroup>  
+	
+</s:TitleWindow>

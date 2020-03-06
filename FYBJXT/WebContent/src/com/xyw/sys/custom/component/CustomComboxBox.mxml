@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component:CustomComboxImpl xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			xmlns:s="library://ns.adobe.com/flex/spark" 
+			xmlns:mx="library://ns.adobe.com/flex/mx" width="200" creationComplete="combobox1_creationCompleteHandler(event)" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.mx_internal;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.DropDownEvent;
+			import spark.utils.LabelUtil;
+			
+			use namespace mx_internal;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var flag_Com:Boolean = true;
+			
+			public function textch(event:Event):void{
+				var str_target:String=event.target.text;
+				str_target = StringUtil.trim(str_target);
+				if(str_target.length<2){
+					return;
+				}
+				var str:String="%";
+				for(var i:int=0;i<str_target.length;i++){
+					str+=str_target.charAt(i);
+					str+="%";
+				}
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t where t.d101_02 like '"+str+"'";
+				comboBoxDataRequest.flag ="D101_";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				flag_Com=false;
+				if(comboBoxDataList.length<1){
+					comboBoxDataList.addItemAt("没有数据",0);
+					flag_Com=true;					
+				}
+				
+				if(flag == "D101_")
+				{
+					//	Alert.show("combo");
+					this.dataProvider = comboBoxDataList;
+				//	this.selectedIndex = 1;
+				}
+			}
+			override public function sub():Boolean{
+				return flag_Com;
+			}
+			
+			function combobox1_creationCompleteHandler(event:FlexEvent):void
+			{
+				addEventListener(TextEvent.TEXT_INPUT,textch);				
+			}
+			
+		]]>
+	</fx:Script>
+	
+</component:CustomComboxImpl>

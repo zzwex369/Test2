@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				autoDrawBackground="true" creationComplete="creationCompleteHandler(event)">
+
+	
+		<fx:Declarations>  
+			
+			
+			<!--<s:Animate id="fader" 
+					   duration="500" 
+					   repeatBehavior="reverse" 
+					   repeatCount="0" 
+					   target="{border}"> 
+				<s:SimpleMotionPath property="alpha" 
+									valueFrom="1.0" valueTo="0.0" /> 
+			</s:Animate> -->
+			
+			<!--<s:DropShadowFilter id="myDSF"
+								color="0x0000FF"
+								distance="5"
+								angle="315"/>
+			
+			<s:AnimateFilter id="myFilter" 
+							 target="{border}"
+							 repeatCount="0"
+							 duration="500"
+							 repeatBehavior="reverse"
+							 bitmapFilter="{new spark.filters.GlowFilter ()}">
+				<s:SimpleMotionPath property="color" valueFrom="0" valueTo="0x0000FF"/>
+				<s:SimpleMotionPath property="distance" valueFrom="0" valueTo="10"/>
+				<s:SimpleMotionPath property="angle" valueFrom="270" valueTo="360"/>
+			</s:AnimateFilter>-->
+			<!--<s:GradientGlowFilter id="glow" 
+								  distance="1"
+								  blurX="50" blurY="50"
+								  quality="{BitmapFilterQuality.HIGH}"
+								  type="{BitmapFilterType.OUTER}" 
+								  knockout="false">
+				<s:entries>
+					<s:GradientEntry alpha="0" color="0xFF0000" ratio="0"/>
+					<s:GradientEntry alpha="1" color="0xFFFF00" ratio="128"/>
+					<s:GradientEntry alpha="1" color="0xFFFFFF" ratio="255"/>
+				</s:entries>
+			</s:GradientGlowFilter>
+			<s:AnimateFilter id="glower" target="{border}" bitmapFilter="{glow}" 
+							 duration="600" repeatCount="0" repeatBehavior="{RepeatBehavior.REVERSE}">
+				<s:SimpleMotionPath property="strength" valueFrom="0" valueTo="5" /> 
+			</s:AnimateFilter>
+			-->
+			
+			
+	</fx:Declarations> 
+	<fx:Script>
+		<![CDATA[
+			import flash.filters.BitmapFilterQuality;
+			import flash.filters.BitmapFilterType;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.effects.animation.RepeatBehavior;
+			[Bindable]
+			private var httpCode:int;
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				var picType:String=data.picType;
+				var picNum:String=data.picNum;
+				var suffix:Number=Number(data.suffix);
+				var picName:String=picType!="1"?(suffix<8?"左":"右"):"图";
+				if(picType=="1")
+					this.picType.text="宫颈癌阴道镜";
+				else if(picType=="2")
+					this.picType.text="乳腺癌超声";
+				else if(picType=="3")
+					this.picType.text="乳腺癌X线";
+				this.picPosition.text=picName+picNum;
+			}
+			
+			
+			private var animating:Boolean = false;
+			
+			protected function mouseOverHandler(event:MouseEvent):void
+			{
+//				if (!animating) 
+//				{ 
+//					glower.play(); 
+//					animating = true;
+//				}
+			/* 	glowFilter.alpha=0; */
+			}
+			
+			protected function mouseOutHandler(event:MouseEvent):void
+			{
+//				if (animating) 
+//				{ 
+//					glower.end(); 
+//					animating = false;
+//				}
+			/* 	glowFilter.alpha=1; */
+			}
+			
+			
+			protected function smallerimg_initializeHandler(event:FlexEvent):void
+			{
+				smallerimg.addEventListener(HTTPStatusEvent.HTTP_STATUS,http_statusHandler);
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function http_statusHandler(event:HTTPStatusEvent):void
+			{
+				httpCode=event.status;	
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal"/><!--//默认位置-->
+		<s:State name="hovered"/><!--鼠标悬浮位置-->
+		<s:State name="selected"/><!--鼠标选中位置-->
+	</s:states>
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:SolidColor alpha="0" color="0x999999"
+						  alpha.hovered="0.2"
+						  alpha.selected="0.6"/>
+		</s:fill>
+	</s:Rect>
+	<s:BorderContainer id="border" borderColor.hovered="blue" borderColor.selected="red"
+					   dropShadowVisible.hovered="true"
+					   mouseOver="mouseOverHandler(event)" 
+					   mouseOut="mouseOutHandler(event)"> 
+		<!--<s:filters>
+			<s:GlowFilter 
+				id="glowFilter"
+				color="0xFF33FF" 
+				alpha="0" 
+				blurX="6" 
+				blurY="6" 
+				strength=".65" 
+				quality="{BitmapFilterQuality.MEDIUM}"
+				inner="false" 
+				knockout="false"/>
+		</s:filters>
+		-->
+		<s:VGroup width="150" height="140" paddingBottom="2" paddingLeft="2" paddingRight="2"
+				  paddingTop="2"
+				  contentBackgroundColor.normal="#F71313">
+			<s:HGroup width="100%" height="12">
+				<s:Label width="59%" buttonMode="true" text="查看原图"
+						 color.hovered="blue"
+						 color.normal="black"
+						 color.selected="red" visible="{httpCode==200}"/>
+				<s:Label width="50%" buttonMode="true" text="删除" 
+						 color.hovered="blue"
+						 color.normal="black"
+						 color.selected="red" visible="{data.delStatus&amp;&amp;httpCode==200}"/>
+			</s:HGroup>  
+			<s:HGroup width="100%" height="90">
+				<s:Image id="smallerimg" width="100%" height="100%" source="{data.data}"
+						 visible="{httpCode==200}" includeInLayout="{httpCode==200}"
+						 initialize="smallerimg_initializeHandler(event)"/>
+				<s:Label visible="{httpCode!=200}" height="100%" includeInLayout="{httpCode!=200}"
+						 text=" 发生错误，请检查图片是否上传成功！" verticalAlign="middle" color="#F80F0F"/>
+			</s:HGroup>  
+			<s:HGroup width="100%">
+				<s:Label id="picType" width="70%"
+						 color.hovered="blue"
+						 color.normal="black"
+						 color.selected="red"/>
+				<s:Label id="picPosition" width="30%" 
+						 color.hovered="blue"
+						 color.normal="black"
+						 color.selected="red"/>
+			</s:HGroup>  
+			
+		</s:VGroup>  
+	</s:BorderContainer>
+	
+	
+	
+</s:ItemRenderer>

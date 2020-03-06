@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="25"
+		  verticalAlign="middle" horizontalAlign="left">
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.ItemClickEvent;
+			
+			import spark.components.DataGrid;
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			[Embed(source="image/first.gif")]
+			private var firstIcon:Class;
+			private var firstPage:uint;
+			
+			[Bindable]
+			[Embed(source="image/previous.gif")]
+			private var previousIcon:Class;
+			private var previousPage:uint;
+			
+			[Bindable]
+			[Embed(source="image/next.gif")]
+			private var nextIcon:Class;
+			private var nextPage:uint;
+			
+			[Bindable]
+			[Embed(source="image/last.gif")]
+			private var lastIcon:Class;
+			private var lastPage:uint;
+			
+			[Bindable]
+			[Embed(source="image/refresh.gif")]
+			private var refreshIcon:Class;
+			
+			[Bindable]
+			[Embed(source="image/separator.gif")]
+			private var separatorIcon:Class;
+			
+			[Bindable]
+			[Embed(source="image/excel.gif")]
+			private var excelIcon:Class;
+			
+			[Bindable]
+			public var pagerFunction:Function = null;
+			[Bindable]
+			public var exportEXCEL:Function = null;
+			[Bindable]
+			public var exportEXCELAll:Function = null;
+			
+			[Bindable]
+			[Embed(source="image/printer.gif")]
+			private var printerIcon:Class;
+			
+			[Bindable]
+			public var currentPageIndex:int = 1;
+			
+			[Bindable]
+			private var isInitial:Boolean = true;
+			
+			[Bindable]
+			private var pageCount:uint = 0;
+			
+			[Bindable]
+			private var navigatorSize:uint = 5;
+			
+			[Bindable]
+			public var navigatorData:ArrayCollection;
+			
+			[Bindable]
+			public var pageSizeDropDownListData:ArrayCollection = null;
+			
+			[Bindable]
+			public var dataGrid:DataGrid = null;
+			
+			[Bindable]
+			public var pageSize:uint = 20;
+			
+			[Bindable]
+			public var rowCount:uint;
+			
+			[Bindable]
+			private var navigatorPageIndex:uint = 1;
+			
+			[Bindable]
+			private var pagerBarPageCount:uint;
+			
+			[Bindable]
+			public var resultData:ArrayCollection;
+			
+			[Bindable]
+			private var viewNavigatorData:ArrayCollection;
+			
+			[Bindable]
+			private var isCreateNavigatorBar:Boolean = true;
+			
+			[Bindable]
+			public var isExcel:Boolean = true;
+			
+			[Bindable]
+			public var isExcel2:Boolean = true;
+			
+			[Bindable]
+			public var isPrinter:Boolean = true;
+			
+			public function dataBind():void{
+				if(this.isInitial){
+					if(this.pageSizeDropDownListData == null){
+						this.pageSizeDropDownListData = new ArrayCollection();
+						this.pageSizeDropDownListData.addItem({label:20, data:20});
+						this.pageSizeDropDownListData.addItem({label:30, data:30});
+						this.pageSizeDropDownListData.addItem({label:50, data:50});
+						this.pageSizeDropDownListData.addItem({label:100, data:100});
+						this.pageSizeDropDownListData.addItem({label:300, data:300});
+					}
+					this.isInitial = false;
+				}
+				//this.pageSizeDropDownList.dataProvider = this.pageSizeDropDownListData;
+				this.refreshDataGridDataProvider();
+				
+			}
+			
+			private function refreshDataGridDataProvider():void{
+				this.pageCount = this.rowCount % pageSize == 0 ? Math.floor(this.rowCount / pageSize) : Math.floor(this.rowCount / pageSize) +1;
+				this.pagerBarPageCount = this.pageCount % this.navigatorSize == 0 ? this.pageCount / this.navigatorSize : Math.floor(this.pageCount / this.navigatorSize) + 1;
+				this.dataGrid.dataProvider = this.resultData;
+				this.createNavigatorBar();
+			}
+			
+			private function createNavigatorBar():void{
+				
+				this.navigatorData = new ArrayCollection();
+				for(var i:uint = 1; i <= this.pageCount; i++){
+					this.navigatorData.addItem(i);
+				}
+				if(this.currentPageIndex > this.pageCount){
+					if(this.pageCount > 0) {
+						this.currentPageIndex = this.pageCount;
+					} else {
+						this.currentPageIndex = 1;
+					}
+					
+					if(this.pageCount % this.navigatorSize == 0){
+						this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice((Math.floor(this.pageCount / this.navigatorSize) - 1) * this.navigatorSize, Math.floor(this.pageCount / this.navigatorSize) * this.navigatorSize));
+					}else{
+						this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice(Math.floor(this.pageCount / this.navigatorSize) * this.navigatorSize, (Math.floor(this.pageCount / this.navigatorSize) +1) * this.navigatorSize));
+					}
+				}
+				if(this.isCreateNavigatorBar){
+					
+					this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice((this.navigatorPageIndex - 1) * this.navigatorSize, this.navigatorPageIndex * this.navigatorSize));
+					this.pageNavigator.dataProvider = this.viewNavigatorData;
+					if(this.pageCount > this.navigatorSize){
+						if(this.currentPageIndex == 1) {
+							this.disableFirstAndPreviousLinkButton();
+						}
+						
+						var viewNavigatorDataA:ArrayCollection;
+						if(this.pageCount % this.navigatorSize == 0){
+							viewNavigatorDataA = new ArrayCollection(this.navigatorData.source.slice((Math.floor(this.pageCount / this.navigatorSize) - 1) * this.navigatorSize, Math.floor(this.pageCount / this.navigatorSize) * this.navigatorSize));
+							
+						}else{
+							viewNavigatorDataA = new ArrayCollection(this.navigatorData.source.slice(Math.floor(this.pageCount / this.navigatorSize) * this.navigatorSize, (Math.floor(this.pageCount / this.navigatorSize) +1) * this.navigatorSize));
+						}
+						
+						if(viewNavigatorDataA.contains(this.currentPageIndex)) {
+							this.disableNextAndLastLinkButton();
+						}else 
+							this.enableNextAndLastLinkButton();
+						
+						var viewNavigatorDataB:ArrayCollection;
+						viewNavigatorDataB = new ArrayCollection(this.navigatorData.source.slice(0, 5));
+						if(viewNavigatorDataB.contains(this.currentPageIndex)) {
+							this.disableFirstAndPreviousLinkButton();
+						}
+						
+					}else{
+						this.disableFirstAndPreviousLinkButton();
+						this.disableNextAndLastLinkButton();
+						this.pageNavigator.dataProvider = this.navigatorData;
+					}
+					
+				}
+				//this.isCreateNavigatorBar = false;
+			}
+			
+			private function pageNavigatorButtonClick(event:ItemClickEvent):void{
+				this.currentPageIndex = int(event.item);
+				this.pagerFunction(this.currentPageIndex, this.pageSize);
+			}
+			
+			private function firstPageButtonClick():void{
+				this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice(0, this.navigatorSize));
+				this.pageNavigator.dataProvider = this.viewNavigatorData;
+				this.disableFirstAndPreviousLinkButton();
+				this.enableNextAndLastLinkButton();
+				this.navigatorPageIndex = 1;
+			}
+			private function previousPageButtonClick():void{
+				--this.navigatorPageIndex;
+				if(this.navigatorPageIndex <= 1){
+					this.disableFirstAndPreviousLinkButton();
+				}
+				
+				this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice((this.navigatorPageIndex - 1) * this.navigatorSize, this.navigatorPageIndex * this.navigatorSize));
+				this.pageNavigator.dataProvider = this.viewNavigatorData;
+				this.enableNextAndLastLinkButton();
+			}
+			private function nextPageButtonClick():void{
+				this.enableFirstAndPreviousLinkButton();
+				this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice(this.navigatorPageIndex * this.navigatorSize, (this.navigatorPageIndex + 1) * this.navigatorSize));
+				this.navigatorPageIndex++;
+				if(this.viewNavigatorData.contains(this.navigatorData.getItemAt(this.navigatorData.length - 1))){
+					this.disableNextAndLastLinkButton();
+				}
+			}
+			
+			private function lastPageButtonClick():void{
+				this.enableFirstAndPreviousLinkButton();
+				this.disableNextAndLastLinkButton();
+				if(this.pageCount % this.navigatorSize == 0){
+					this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice((Math.floor(this.pageCount / this.navigatorSize) - 1) * this.navigatorSize, Math.floor(this.pageCount / this.navigatorSize) * this.navigatorSize));
+					
+				}else{
+					this.viewNavigatorData = new ArrayCollection(this.navigatorData.source.slice(Math.floor(this.pageCount / this.navigatorSize) * this.navigatorSize, (Math.floor(this.pageCount / this.navigatorSize) +1) * this.navigatorSize));
+				}
+				this.navigatorPageIndex = this.pagerBarPageCount;
+			}
+			
+			private function enableFirstAndPreviousLinkButton():void{
+				this.firstPageButton.enabled = true;
+				this.firstPageButton.alpha = 1.0;
+				this.firstPageButton.toolTip = "首页";
+				this.previousPageButton.enabled = true;
+				this.previousPageButton.alpha = 1.0;
+				this.previousPageButton.toolTip = "上" + this.navigatorSize + "页";
+			}
+			
+			private function disableFirstAndPreviousLinkButton():void{
+				this.firstPageButton.enabled = false;
+				this.firstPageButton.alpha = 0.5;
+				this.firstPageButton.toolTip = null;
+				this.previousPageButton.enabled = false;
+				this.previousPageButton.alpha = 0.5;
+				this.previousPageButton.toolTip = null;
+			}
+			
+			private function enableNextAndLastLinkButton():void{
+				this.nextPageButton.enabled = true;
+				this.nextPageButton.alpha = 1.0;
+				this.nextPageButton.toolTip = "下" + this.navigatorSize + "页";
+				this.lastPageButton.enabled = true;
+				this.lastPageButton.alpha = 1.0;
+				this.lastPageButton.toolTip = "尾页";
+			}
+			
+			private function disableNextAndLastLinkButton():void{
+				this.nextPageButton.enabled = false;
+				this.nextPageButton.alpha = 0.5;
+				this.nextPageButton.toolTip = null;
+				this.lastPageButton.enabled = false;
+				this.lastPageButton.alpha = 0.5;
+				this.lastPageButton.toolTip = null;
+			}
+			
+			private function pageIndexInputChange(event:KeyboardEvent):void{
+				
+			}
+			
+			
+			private function pageSizeSelectChange(event:IndexChangeEvent):void{
+				
+			}
+			
+			public function dataGridRefresh():void{
+				this.pagerFunction(this.currentPageIndex, this.pageSize);
+			}
+			
+			private function dataGridPrint():void{
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup height="25" verticalAlign="middle">
+		<mx:LinkButton id="firstPageButton" icon="{firstIcon}" click="firstPageButtonClick()"/>
+		<mx:LinkButton id="previousPageButton" icon="{previousIcon}" click="previousPageButtonClick()"/>
+	</s:HGroup>
+	<s:HGroup verticalAlign="middle">
+		<mx:LinkBar id="pageNavigator" itemClick="pageNavigatorButtonClick(event)" dataProvider="{viewNavigatorData}"/>
+	</s:HGroup>
+	<s:HGroup verticalAlign="middle">
+		<mx:LinkButton id="nextPageButton" icon="{nextIcon}" click="nextPageButtonClick()"/>
+		<mx:LinkButton id="lastPageButton" icon="{lastIcon}" click="lastPageButtonClick()"/>
+	</s:HGroup>
+	<s:HGroup verticalAlign="middle">
+	<!--
+		<s:Image source="{separatorIcon}"/>
+		<s:Label text=" "/>
+		<s:TextInput id="pageNumber" fontSize="10" width="30" keyDown="pageIndexInputChange(event)"/>
+		<s:Label id="totalPagesLabel" fontSize="14" verticalAlign="middle" text=""/>
+		<s:Label height="25" fontSize="14" text="每页" verticalAlign="middle"/>
+		<s:DropDownList id="pageSizeDropDownList" selectedIndex="1" borderVisible="false" width="50" fontSize="14" change="pageSizeSelectChange(event)"/>
+		<s:Label height="25" fontSize="14" text="条" verticalAlign="middle"/>
+	-->
+		<s:Image source="{separatorIcon}"/>
+		<mx:LinkButton icon="{refreshIcon}" id="refresh" click="dataGridRefresh()" toolTip="刷新"/>
+		<mx:LinkButton icon="{excelIcon}"  id="excel" click="exportEXCEL()" toolTip="导出Excel(当前页)" 
+					   visible="{isExcel}" includeInLayout="{isExcel}"/>
+		<mx:LinkButton icon="{excelIcon}"  id="excel2" click="exportEXCELAll()" toolTip="导出Excel(全部)" 
+					   visible="{isExcel2}" includeInLayout="{isExcel2}"/>
+		<mx:LinkButton icon="{printerIcon}"  id="printer" click="dataGridPrint()" toolTip="打印" 
+					   visible="{isPrinter}" includeInLayout="{isPrinter}"/>
+	</s:HGroup>
+  <!--
+	<s:HGroup height="100%">
+		<s:Label id="totalRecordLabel" text=""/>
+	</s:HGroup>
+  -->
+	<s:HGroup height="100%" width="100%" horizontalAlign="right" paddingRight="10" verticalAlign="middle">
+		<s:Label text="当前  第 {this.currentPageIndex} 页    共 {this.pageCount} 页   共 {this.rowCount} 行数据"/>
+	</s:HGroup>
+</s:HGroup>

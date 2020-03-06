@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 2015-4-7 10:19:25 by Hibernate Tools 3.4.0.CR1 -->
+<!--schema属性指明了这个映射的表所在的schema名称。-->
+<hibernate-mapping>
+    <class name="com.xyw.medical.loadPicture.model.Pictures" table="PICTURE">
+        <comment>图片</comment>
+             <id name="pic01" type="long">
+            <column name="PIC01" precision="10" scale="0" />
+            <generator class="sequence">
+            	<param name="sequence">PICTURE_01_seq</param>
+            </generator>
+        	</id>
+            <property name="pic02" type="java.lang.String">
+                <column name="PIC02" length="200" />
+            </property>
+            <property name="pic03" type="java.lang.String">
+                <column name="PIC03" length="200" />
+            </property>
+            <property name="pic04" type="java.lang.String">
+                <column name="PIC04" length="200" />
+            </property>
+            <property name="pic05" type="java.util.Date">
+                <column name="PIC05" length="7" />
+            </property>
+            <property name="pic06" type="java.lang.String">
+                <column name="PIC06" length="200" />
+            </property>
+            <property name="pic07" type="java.lang.String">
+                <column name="PIC07" length="200" />
+            </property>
+            <property name="pic08" type="java.lang.String">
+                <column name="PIC08" length="200" />
+            </property>
+            <property name="pic09" type="java.lang.String">
+                <column name="PIC09" length="200" />
+            </property>
+            <property name="pic10" type="java.lang.String">
+                <column name="PIC10" length="200" />
+            </property>
+            <property name="pic11" type="java.lang.String">
+                <column name="PIC11" length="200" />
+            </property>
+            <property name="pic12" type="java.lang.String">
+                <column name="PIC12" length="200" />
+            </property>
+            <property name="pic13" type="java.lang.String">
+                <column name="PIC13" length="200" />
+            </property>
+            <property name="pic14" type="java.lang.String">
+                <column name="PIC14" length="200" />
+            </property>
+            <property name="pic15" type="java.lang.String">
+                <column name="PIC15" length="200" />
+            </property>
+            <property name="pic16" type="java.lang.String">
+                <column name="PIC16" length="200" />
+            </property>
+            <property name="pic17" type="java.lang.String">
+                <column name="PIC17" length="200" />
+            </property>
+            <property name="pic18" type="java.lang.String">
+                <column name="PIC18" length="200" />
+            </property>
+    </class>
+</hibernate-mapping>

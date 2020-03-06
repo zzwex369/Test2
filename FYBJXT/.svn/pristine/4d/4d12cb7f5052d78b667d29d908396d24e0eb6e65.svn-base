@@ -1,0 +1,125 @@
+package com.xyw.module.delivery.model
+{
+	[Bindable]
+	[RemoteClass(alias="com.xyw.medical.birth.csqxr.model.VD606")]
+	public class VD606
+	{
+		public var d60601:Number;//
+		public var d60602:String;
+		public var d60603:String;
+		public var d60604:String;
+		public var d60605:String;//产妇姓名
+		public var d60606:Date;//产妇文化程度 S606_01
+		public var d60607:String;//产妇年龄
+		public var d60608:String;//产妇职业 S606_02
+		public var d60609:String;//产妇民族 S301_04
+		public var d60610:String;//家族史遗传疾病
+		public var d60611:Number;//家族史近亲结婚 S606_04
+		public var d60612:Number;//末次月经
+		public var d60613:String ;//建卡日期
+		public var d60614:String;//建卡孕周
+		public var d60615:String;//建卡孕周天
+		public var d60616:String;//孕产保健  1:>=1   2: >=5
+		public var d60617:String;//高危孕产妇   S606_04
+		public var d60618:Date;//乙肝表面抗原  S606_05
+		public var d60619:Number;//孕次
+		public var d60620:Number;//产次
+		public var d60621:String;//孕周
+		public var d60622:String;//孕周天
+		public var d60623:String;//胎位 S606_06
+		public var d60624:String;//分娩时间
+		public var d60625:Date;//引产 S606_07
+		public var d60626:Number;//分娩方式 S606_08
+		public var d60627:String;//剖宫产指征
+		public var d60628:String;//总产程
+		public var d60629:String;//第一产程   (分钟)
+		public var d60630:String;//第二产程   (分钟)
+		public var d60631:String;//第三产程   (分钟)
+		public var d60632:String;//胎盘情况  S606_09
+		public var d60633:String;//会阴侧切  S606_04
+		public var d60634:String;//会阴裂伤分度
+		public var d60635:String;//会阴裂伤分度
+		public var d60636:String;//产时出血量(ml)
+		public var d60637:String;//产后2小时出血量(ml)
+		public var d60638:String;//羊水性状
+		public var d60639:Number;//羊水量(ml)
+		public var d60640:Number;//婴儿性别  S301_01
+		public var d60641:Number;//新生儿一分钟评分
+		public var d60642:String;//新生儿五分钟评分
+		public var d60643:String;//出生体重(g)
+		public var d60644:String;//身长(cm)
+		public var d60645:String;//卡介苗   S606_04
+		public var d60646:String;//乙肝疫苗   S606_04
+		public var d60647:String;//早吸吮   S606_04
+		public var d60648:String;//婴儿死亡情况   S606_14
+		public var d60649:String;//健康状况   S301_02
+		public var d60650:String;//备注
+		public var d60651:String;//胎数  S606_10
+		public var d60652:String;//畸形状态   S606_11
+		public var d60653:Date;//畸形种类部位
+		public var d60654:String;//畸形名称
+		public var d60655:String;//婴儿姓名
+		public var d60656:String;//出生证号
+		public var d60657:String;//签发机构
+		public var d60658:String;//签发人员
+		public var d60659:String;//领证人员
+		public var d60660:String;//签发日期
+		public var d60661:String;//产妇并发症、合并症及死因
+		public var d60662:String;//婴儿并发症、合并症及死因
+		public var d60663:String;//孕产妇死亡  S606_04
+		public var d60664:String;//接生员
+		public var d60665:String;//产妇身份证号
+		public var d60666:String;//产妇现住地址
+		public var d60667:String;//产妇户口地址
+		public var d60668:String;//生育证 S606_03
+		public var d60669:String;//联系电话
+		public var d60670:String;//孕妇户籍类别  S606_12
+		public var d60671:String;//孕妇户口类别  S606_13
+		public var d60672:String;//丈夫姓名
+		public var d60673:String;//丈夫年龄
+		public var d60674:String;//丈夫民族 S301_04
+		public var d60675:String;
+		public var d60676:String;
+		public var d60677:String;
+		public var d60678:String;
+		public var d60679:String;
+		public var d60680:String;
+		public var d60681:String;
+		public var d60682:String;
+		public var d60683:String;
+		public var d60684:String;
+		public var d60685:String;
+		public var d60686:String;
+		public var d60687:String;
+		public var d60688:String;
+		public var d60689:String;
+		public var d60690:String;
+		public var d60691:String;
+		public var d60692:String;
+		public var d60693:String;
+		public var d60694:String;
+		public var d60695:String;//
+		public var d60696:String;
+		public var d60697:String;//丈夫国籍
+		public var d60698:String;//
+		public var d60699:String;//孕
+		public var d60606Zh:String;
+		public var d60618Zh:String;
+		public var d60625Zh:String;
+		public var d60653Zh:String;
+		public var d60605Zh:String;
+		public var d60609Zh:String;
+		public var d60613Zh:String;
+		public var d60614Zh:String;
+		public var d60615Zh:String;
+		public var d60617Zh:String;
+		public var d60621Zh:String;
+		public var d60622Zh:String;
+		public var d60623Zh:String;
+		public var d60624Zh:String;
+		public var d60651Zh:String;
+		public function VD606()
+		{
+		}
+	}
+}

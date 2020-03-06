@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:skin="com.xyw.sys.custom.skin.*"
+			   backgroundColor="white" chromeColor="#5CACEE" close="removeWindow()"
+			   cornerRadius="5" 
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="条码编号列表">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager;
+			[Bindable]
+			private var dataGridArr:ArrayCollection;
+			private function removeWindow():void
+			{
+				var index:Object=this.owner;
+				index.queryF601Excel();//从新载入
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function setdata(arr:ArrayCollection):void
+			{
+				var obj:Object=null;
+				dataGridArr=new ArrayCollection();
+				for(var i:int=0;i<arr.length;i++)
+				{
+					obj=new Object();
+					obj.f60205=arr[i];
+					dataGridArr.addItem(obj);
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="177" height="330" borderAlpha="0.3"
+				alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin"
+				chromeColor="#cccccc" dataProvider="{dataGridArr}">
+		<s:columns>
+			<s:ArrayList>
+				<s:GridColumn headerText="序号" width="50" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+				<s:GridColumn  dataField="f60205" headerText="条码编号" id="col1"/>
+			</s:ArrayList>
+		</s:columns>
+	</s:DataGrid>
+</s:TitleWindow>

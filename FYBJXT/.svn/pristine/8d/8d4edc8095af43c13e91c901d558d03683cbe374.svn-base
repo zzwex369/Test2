@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  width="100%" height="100%">
+	<fx:Declarations>
+		<s:RemoteObject id="e301Service" destination="e301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE301" result="queryE301Handler(event)"/>
+			<s:method name="deleteE301" result="deleteE301Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.etbjzhcx.zhTitle;
+			import com.xyw.module.etbj.model.E301Request;
+			import com.xyw.module.etbj.model.E301Response;
+			import com.xyw.module.etbj.model.VE301;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var ve301:Object = null;
+			public var e301Request:E301Request=null;
+			public var systemUser:SystemUser =null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+				} 
+				
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				this.e301Data.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+				this.F301_05.addEventListener(FocusEvent.FOCUS_IN,validateN);
+				this.F301_05.addEventListener(FocusEvent.FOCUS_OUT,validateCard);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve301= DataGrid(event.target).selectedItem;
+			}
+			
+			private function initQueryParam():void
+			{
+				e301Request = new E301Request();
+				try{	
+					e301Request.e30116 = e301_16.getInstitutionCode();
+					if(this.seleAll.selectedIndex == 1){
+						e301Request.e30114Start = null;
+						e301Request.e30114End = null;
+						e301Request.e30131Start = null;
+						e301Request.e30131End = null;
+						e301Request.e30103 = this.e301_03.text;
+						
+						e301Request.f30102 = this.F301_02.text;
+						e301Request.f30105 = this.F301_05.text; 
+					}else{
+						if(this.deliveryTime.selected){
+							e301Request.e30114Start = this.timeStart.selectedDate;
+							e301Request.e30114End = this.timeEnd.selectedDate;
+							e301Request.e30131Start = null;
+							e301Request.e30131End = null;
+						}else if(this.systemTime.selected){
+							e301Request.e30114Start = null;
+							e301Request.e30114End = null;
+							e301Request.e30131Start = this.timeStart.selectedDate;
+							e301Request.e30131End = this.timeEnd.selectedDate;
+						}
+						if(this.e30109_.selected){
+							e301Request.e30109 = this.e301_09.getAreaCode();
+							e301Request.e30112 = null;
+						}else if(this.e30112_.selected){
+							e301Request.e30112 = this.e301_12.getAreaCode();
+							e301Request.e30109 = null;
+						}
+					}
+				}catch(error:Error) {		
+					
+				}
+			}
+			
+			public function validateCard(event:Event):void{
+				var IC:String = this.F301_05.text;
+				if(IC.length>=15){
+					if(IC.length != 15 && IC.length != 18){
+						Alert.show("身份证号长度是15或18位","系统提示");
+						return;
+					}else{
+						var n:String = IC.substring(IC.length-1,IC.length);
+						if((n>='a'&&n<='z')){
+							IC.replace(n,n.toLowerCase());
+							this.F301_05.text = IC.substring(0,IC.length-1)+n.toUpperCase();
+						}
+					}
+				}
+			}
+			
+			public function validateN(event:Event):void{}
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F301_02.text = array[0];//姓名
+							this.F301_05.text = array[5];//身份证号
+						}else{
+							Alert.show("请读妇女信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			} 
+			
+			public function querye301(event:MouseEvent):void
+			{
+				e301Request = new E301Request();
+				this.initQueryParam();
+				e301Request.parameterPageindex=1;
+				e301Request.parameterPagesize=20;
+				this.e301Service.queryE301(e301Request);
+			}
+			private function queryE301Handler(event:ResultEvent):void{
+				var e301Response:Object = event.result;
+				var e301s:ArrayCollection =e301Response.ve301s;
+				var rowCount:Number = e301Response.rowCount;
+				if(e301Response.errorMessage == null){
+					/* this.e301Data.dataProvider=e301s; */
+					this.pagerBar.pageSize = 20;
+					this.pagerBar.dataGrid = this.e301Data;  
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = e301s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}	
+				}else{
+					Alert.show(e301Response.errorMessage, "系统提示");
+				}
+			}
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				e301Request = new E301Request();
+				this.initQueryParam();
+				e301Request.parameterPageindex=currentPageIndex;
+				e301Request.parameterPagesize=pageSize;
+				this.e301Service.queryE301(e301Request);		
+			}		
+			public function update301(event:MouseEvent):void{
+				if(this.ve301 == null){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+				}
+				var window:title = new title();
+				window.ve301 = this.ve301;
+				CompMethod.popUpTitleWindow(window,this,true);
+				this.ve301=null;
+			}
+			public function delete301(event:MouseEvent):void
+			{
+				if(this.ve301 == null){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				
+				e301Request.e30101 =this.ve301.e30101;
+				e301Request.e30102 =this.ve301.e30102;
+				e301Request.e30103 = this.ve301.e30103;
+				e301Request.e30105 =this.ve301.e30105;
+				e301Request.e30113 =this.ve301.e30113;
+				e301Request.e30117 =this.ve301.e30117;
+				
+				Alert.yesLabel = '是'; 
+				Alert.noLabel = '否';
+				Alert.show('确认删除信息？','删除登记信息',1|2,this,deleteValidate);
+				//this.e301Service.deleteE301(e301Request);
+			}
+			
+			protected function deleteValidate(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+					this.e301Service.deleteE301(e301Request);
+				}
+			}
+			public function deleteE301Handler(event:ResultEvent):void
+			{
+				var e301Response:Object = event.result;
+				if(e301Response.errorMessage == null){
+					if(e301Response.promptMessage != null){
+						Alert.show(e301Response.promptMessage, "系统提示");
+					}
+				} else {
+					Alert.show(e301Response.errorMessage, "系统提示");
+				}
+				e301Request = new E301Request();
+				this.initQueryParam();
+				e301Request.parameterPageindex=1;
+				e301Request.parameterPagesize=20;
+				this.e301Service.queryE301(e301Request);
+				this.ve301=null;
+			}
+			public function refresh():void
+			{
+				e301Request = new E301Request();
+				this.initQueryParam();
+				e301Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				e301Request.parameterPagesize = 20;
+				this.e301Service.queryE301(e301Request);
+			}
+			
+			
+			private function querye303(event:MouseEvent):void
+			{
+				if(!this.ve301){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				var querywindow:QueryWindow = new QueryWindow();
+				querywindow.ve301 = this.ve301;
+				CompMethod.popUpTitleWindow(querywindow,this,true);
+			} 
+			
+			/**
+			 *
+			 */
+			private function queryAll(event:MouseEvent):void
+			{
+				
+				if(!this.ve301){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				var querywindow:zhTitle = new zhTitle();
+				querywindow.ve301 = this.ve301;
+				querywindow.creationMoveWindow(this);
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="seleAll" height="180" width="100%" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				<!--<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+				<s:Label text="所属地区"/>
+				<component:AreaComboBox id="d304_05" width="100%" paddingBottom="0" paddingTop="5" horizontalAlign="left"/>
+				</s:HGroup>-->
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="建档机构"/><!--<s:DropDownList id="d304_26" width="150"/>-->
+					<component:InstitutionComboBox id="e301_16" width="730" villageVisible="true"/>
+					
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="查询地址" />
+					<s:RadioButton id="e30109_" groupName="fm2" label="按户口地址查询" selected="true"/>
+					<s:Label id="text" text="户口地址" x="12"/>
+					<component:AreaComboBoxCommon id="e301_09"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="查询地址" visible="false"/>					
+					<s:RadioButton id="e30112_" groupName="fm2" label="按现住地址查询"/>
+					<s:Label text="现住地址"/>
+					<component:AreaComboBoxVillage id="e301_12"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="查询时间"/>
+					<s:RadioButton id="deliveryTime" groupName="fm1" label="按建档日期查询" selected="true"/>
+					<s:RadioButton id="systemTime" groupName="fm1" label="按录入日期查询" width="140"/>
+					<s:Label text="查询时间" width="65"/><mx:DateField yearNavigationEnabled="true" id="timeStart" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																   formatString="YYYY-MM-DD"/>
+					<s:Label text="至" width="22"/><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																formatString="YYYY-MM-DD"/>
+					<s:Label width="25"/>
+					<s:Button label="查询" click="querye301(event)"/>
+					<s:Button label="修改" click="update301(event)"/>
+					<s:Button label="删除" click="delete301(event)"/>
+					<s:Button label="历次检查" click="querye303(event)"/>
+					<s:Button label="综合查询" click="queryAll(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" label="精确查询">
+			<s:VGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="产妇姓名"/><s:TextInput id="F301_02"/>
+					<s:Label text="证件号码"/><s:TextInput id="F301_05" width="200"/>
+					<s:Button id="duka1" width="60" label="读卡" click="readCard_mother(event)" enabled="false"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="出生证号"/><s:TextInput id="e301_13"/>
+					<s:Label text="保健卡号"/><s:TextInput id="e301_17" width="200"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="儿童姓名"/><s:TextInput id="e301_03"/>
+					<s:Button label="查询" click="querye301(event)"/>
+					<s:Button label="修改" click="update301(event)"/>
+					<s:Button label="删除" click="delete301(event)"/>
+					<s:Button label="历次检查" click="querye303(event)"/>
+					<s:Button label="综合查询" click="queryAll(event)"/>
+				</s:HGroup>
+				
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="150" width="100%" height="460" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="e301Data" width="100%" height="320" 
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e30101" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="80" dataField="e30103" headerText="婴儿姓名"/>
+						<s:GridColumn width="80" dataField="e30104Zh" headerText="婴儿性别"/>
+						<s:GridColumn width="100" dataField="e30106Str" headerText="出生日期"/>
+						<s:GridColumn width="80" dataField="e30107Zh" headerText="国籍 "/>
+						<s:GridColumn width="80" dataField="e30108Zh" headerText="民族"/>
+						<s:GridColumn width="80" dataField="e30126" headerText="母亲姓名"/>
+						<s:GridColumn width="140" dataField="e30127" headerText="母亲证件证号"/>
+						<s:GridColumn width="80" dataField="e30128" headerText="父亲姓名"/>
+						<s:GridColumn width="140" dataField="e30129" headerText="父亲证件证号"/>
+						<s:GridColumn width="140" dataField="e30117" headerText="保健卡号"/>
+						<s:GridColumn width="100" dataField="e30112Zh" headerText="现在地址"/>
+						<s:GridColumn width="100" dataField="e30109Zh" headerText="户口地址"/>
+						<s:GridColumn width="100" dataField="e30116Zh" headerText="建档单位"/>
+						<s:GridColumn width="100" dataField="e30114Str" headerText="建档时间"/>
+						<s:GridColumn width="80" dataField="e30111" headerText="联系电话"/>
+						
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+			<component:PagerBar id="pagerBar" enabled="false" />
+		</s:VGroup>	
+	</s:Scroller>
+</s:Module>

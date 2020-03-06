@@ -1,0 +1,964 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin = "com.xyw.sys.custom.skin.*"
+			   title="信息修改" horizontalCenter="0" verticalCenter="0" backgroundColor="white"
+			   chromeColor="#5CACEE" close = "removeWindow()" cornerRadius="5" width="1200" 
+			   creationComplete="moduleCreationComplete()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<s:RemoteObject id="maternalCheckService" destination="maternalCheckService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="updateF303" result="updateF303Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		.myLabel {
+			fontSize:12px;
+			fontFamily:Consolas;
+			paddingTop:4px;
+		}
+		.myGrid {
+			verticalAlign:middle;
+		}
+		.myTextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F303;
+			import com.xyw.module.fnbj.model.VF303;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			public var i:int;
+			private var f30255_:Number=0;
+			public var n:String;
+			public var vf303:VF303;
+			public var f303:F303 =new F303();
+			public var systemUser:SystemUser =null;
+			public var array:Array = new Array();
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			[Bindable]
+			public var jianchaData:ArrayCollection = new ArrayCollection(
+				[	{label:"选择",data:0},
+					{label:"孕16~20周",data:2},
+					{label:"孕21~24周",data:3},
+					{label:"孕28~36周",data:4},
+					{label:"孕37~40周",data:5}]);
+			
+			public function moduleCreationComplete():void
+			{
+				this.systemUser =this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka =="1"){
+					this.duka2.enabled =true;
+				}
+				var now:Date = new Date();
+				this.F303_14.selectedDate =now;
+				this.F303_18.selectedDate =now;
+				this.F303_08.enabled =false;
+				this.F303_07.addEventListener(FlexEvent.CHANGING,setF303_08);
+				this.initializeComboBox();
+			}
+			
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.flag ="D101";
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t where t.d101_01 = '" + this.systemUser.institutionCode + "' or t.d101_11 ='" + this.systemUser.institutionCode +"'";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				/* 		comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.flag ="D201";
+				comboBoxDataRequest.sql ="select t.d201_01, t.d201_05 from D201 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest); */
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_06";
+				comboBoxDataRequest.sql = "select * from S301_06 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_03";
+				comboBoxDataRequest.sql = "select * from S601_03 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_04";
+				comboBoxDataRequest.sql = "select * from S601_04 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z301_02";
+				comboBoxDataRequest.sql = "select * from Z301_02 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from S301_03";
+				comboBoxDataRequest.flag ="S301_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_03";
+				comboBoxDataRequest.sql = "select * from Z303_03 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_04";
+				comboBoxDataRequest.sql = "select * from Z303_04 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_05";
+				comboBoxDataRequest.sql = "select * from Z303_05 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_06";
+				comboBoxDataRequest.sql = "select * from Z303_06 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_121";
+				comboBoxDataRequest.sql = "select * from Z303_121 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_123";
+				comboBoxDataRequest.sql = "select * from Z303_123 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S402_04 t";
+				comboBoxDataRequest.flag = "S402_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			private function getDroupDownListSelectedIndex(arrayCollection:ArrayCollection,defaultValue:String):int{
+				var len:int =arrayCollection.length;
+				var i:uint =0;
+				var index:int =0;
+				while(i<len){
+					var comboBoxDataP:Object =arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data ==defaultValue){
+						index =arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			public function setF303_08(event:Event):void{
+				if(this.F303_06.selectedItem.data == 1){
+					var cardId:String  = this.F303_07.text;
+					if(cardId.length >= 16){
+						var year:Number = Number(this.F303_07.text.substr(6,4));
+						var month:Number = Number(this.F303_07.text.substr(10,2));
+						var day:Number = Number(this.F303_07.text.substr(12,2));
+						var date:Date = new Date();
+						var nowDay:Number = date.date;
+						var nowMonth:Number = date.month + 1;
+						var nowYear:Number = date.fullYear;
+						
+						this.F303_08.text =year+"-"+month+"-"+day;
+					}
+				}
+			}
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag =="D101"){
+					var f303_15Index:int =this.getDroupDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					this.F303_15.dataProvider =comboBoxDataList;
+					this.F303_15.selectedIndex =f303_15Index;
+				}else if(flag =="S301_03"){
+					this.F303_124.dataProvider = comboBoxDataList;
+					var countryIndex:int = this.getDroupDownListSelectedIndex(comboBoxDataList,"CHN");
+					this.F303_124.selectedIndex = countryIndex;
+				}else if(flag == "S301_06"){
+					this.F303_06.dataProvider = comboBoxDataList;
+					var F303_06Index:int = this.getDroupDownListSelectedIndex(comboBoxDataList,"1");
+					this.F303_06.selectedIndex = F303_06Index;
+				}else if(flag == "S601_03"){
+					this.F303_33.dataProvider = comboBoxDataList;
+					this.F303_33.selectedIndex = 1;
+				}else if(flag == "S601_04"){
+					this.F303_10.dataProvider = comboBoxDataList;
+					this.F303_10.selectedIndex = 2;
+				}else if(flag == "Z301_02"){
+					this.F303_74.dataProvider = comboBoxDataList;
+					this.F303_74.selectedIndex = 0;
+				}else if(flag == "Z303_03"){
+					this.F303_45.dataProvider = comboBoxDataList;
+					this.F303_45.selectedIndex = 1;
+					
+					this.F303_46.dataProvider = comboBoxDataList;
+					this.F303_46.selectedIndex = 1;
+					
+					this.F303_77.dataProvider = comboBoxDataList;
+					this.F303_77.selectedIndex = 1;
+					
+					this.F303_87.dataProvider = comboBoxDataList;
+					this.F303_87.selectedIndex = 1;
+					
+					this.F303_95.dataProvider = comboBoxDataList;
+					this.F303_95.selectedIndex = 1;
+					
+					this.F303_95.dataProvider = comboBoxDataList;
+					this.F303_95.selectedIndex = 1;
+					
+					this.F303_112.dataProvider = comboBoxDataList;
+					this.F303_112.selectedIndex = 1;
+					
+					this.F303_117.dataProvider = comboBoxDataList;
+					this.F303_117.selectedIndex = 1;
+					
+					this.F303_119.dataProvider = comboBoxDataList;
+					this.F303_119.selectedIndex = 1;
+				}else if(flag == "Z303_04"){
+					this.F303_54.dataProvider = comboBoxDataList;
+					this.F303_54.selectedIndex = 0;
+				}else if(flag == "Z303_05"){
+					this.F303_56.dataProvider = comboBoxDataList;
+					this.F303_56.selectedIndex = 0;
+				}else if(flag == "Z303_06"){
+					this.F303_57.dataProvider = comboBoxDataList;
+					this.F303_57.selectedIndex = 0;
+				}else if(flag == "Z303_121"){
+					this.F303_121.dataProvider = comboBoxDataList;
+					this.F303_121.selectedIndex = 0;
+				/* }else if(flag == "Z303_123"){
+					this.F303_123.dataProvider = comboBoxDataList;
+					this.F303_123.selectedIndex = 0; */
+				}else if(flag =="S402_04"){
+					this.F303_12.dataProvider =comboBoxDataList;
+					this.F303_12.selectedIndex =1;
+				}
+				
+				this.putRecord();
+			}
+			private function putRecord():void
+			{
+				this.f303.f30301 =this.vf303.f30301;
+				this.f303.f30302 =this.vf303.f30302;
+				this.f303.f30303 =this.vf303.f30303;
+				this.f30255_ =Number(vf303.f30255);
+				this.F303_04.text =this.vf303.f30304;
+				this.F303_05.text =this.vf303.f30305;
+				this.F303_06.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_06.dataProvider),this.vf303.f30306);
+				this.F303_07.text =this.vf303.f30307;
+				if(vf303.f30308 != null){
+					this.F303_08.text =  this.vf303.f30308;
+				}else{
+					setMontherBirthday(null);
+				}
+				this.F303_10.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_10.dataProvider),this.vf303.f30310);
+				this.F303_11.text =this.vf303.f30311.toString();
+				this.F303_12.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_12.dataProvider),this.vf303.f30312);
+				this.F303_13.text =this.vf303.f30313;
+				this.F303_14.text = DateField.dateToString(this.vf303.f30314,"YYYY-MM-DD");
+				this.F303_15.selectedIndex  =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_15.dataProvider),this.vf303.f30315);
+				this.F303_17.text =this.vf303.f30317;
+				this.F303_18.text =DateField.dateToString(this.vf303.f30318,"YYYY-MM-DD");
+				this.F303_19.text =this.vf303.f30319;
+				this.F303_20.text =this.vf303.f30320;
+				this.F303_21.text =DateField.dateToString(this.vf303.f30321,"YYYY-MM-DD");
+				this.F303_23.text =this.vf303.f30323.toString();
+				this.F303_31.text =this.vf303.f30331;
+				this.F303_33.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_33.dataProvider),this.vf303.f30333);
+				this.F303_37.text =this.vf303.f30337;
+				this.f303.f30341 =this.vf303.f30341;
+				this.f303.f30339 =this.vf303.f30339;
+				this.F303_42.value =this.vf303.f30342;
+				this.F303_43.text =this.vf303.f30343;
+				this.F303_45.selectedIndex  =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_45.dataProvider),this.vf303.f30345);
+				this.F303_46.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_46.dataProvider),this.vf303.f30346);
+				this.F303_52.value =this.vf303.f30352;
+				this.F303_53.value =this.vf303.f30353;
+				this.F303_54.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_54.dataProvider),this.vf303.f30354);
+				this.F303_55.value =this.vf303.f30355;
+				this.F303_56.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_56.dataProvider),this.vf303.f30356);
+				this.F303_57.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_57.dataProvider),this.vf303.f30357);
+				this.F303_70.value =this.vf303.f30370;
+				this.F303_71.value =this.vf303.f30371;
+				this.F303_72.value =this.vf303.f30372;
+				this.F303_73.value =this.vf303.f30373;
+				this.F303_74.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_74.dataProvider),this.vf303.f30374);
+				this.F303_75.value =this.vf303.f30375;
+				this.F303_76.value =this.vf303.f30376;
+				this.F303_77.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_77.dataProvider),this.vf303.f30377);
+				this.F303_78.text =this.vf303.f30378;
+				this.F303_87.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_87.dataProvider),this.vf303.f30387);
+				this.F303_88.text =this.vf303.f30388;
+				this.F303_95.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_95.dataProvider),this.vf303.f30395);
+				this.F303_96.text =this.vf303.f30396;
+				
+				this.F303_111.text =this.vf303.f303111;
+				this.F303_112.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_112.dataProvider),this.vf303.f303112);
+				this.F303_113.text =this.vf303.f303113;
+				this.F303_114.text =this.vf303.f303114;
+				this.F303_116.text =this.vf303.f303116;
+				this.F303_117.selectedIndex  =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_117.dataProvider),this.vf303.f303117);
+				this.F303_118.text =this.vf303.f303118;
+				this.F303_119.selectedIndex  =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_119.dataProvider),this.vf303.f303119);
+				this.F303_120.text =this.vf303.f303120;
+				this.F303_121.selectedIndex  =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_121.dataProvider),this.vf303.f303121);
+				this.F303_122.text =this.vf303.f303122;
+				this.F303_123.selectedIndex  =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_123.dataProvider),this.vf303.f303123);
+				this.F303_124.selectedIndex =this.getDroupDownListSelectedIndex(ArrayCollection(this.F303_124.dataProvider),this.vf303.f303124);
+			}
+			private function setMontherBirthday(event:Event):void
+			{
+				if(this.F303_06.selectedItem.data == 1){
+					var cardId:String = this.F303_07.text;
+					if(cardId.length>=16){
+						cardId=cardId.substring(6,14);
+						this.F303_08.text = cardId.substring(0,4) + "-" + cardId.substring(4,6) + "-" + cardId.substring(6,8);
+					}else{
+						cardId=cardId.substring(6,12);
+						this.F303_08.text = "19" + cardId.substring(0,2) + "-" + cardId.substring(2,4) + "-" + cardId.substring(4,6);
+					}
+				}
+			}
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F303_05.text = array[0];//姓名
+							this.F303_07.text = array[5];//身份证号
+							this.F303_08.text = array[3];//出生日期
+							//setF303_08(null);
+							var nation:String = array[2] + "族";//民族
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			//验证信息
+			public function validate1():void
+			{
+				if(StringUtil.trim(this.F303_05.text) ==""){
+					Alert.show("请输入孕产妇的姓名","系统提示");
+					return ;
+				}
+				if(this.F303_06.selectedItem.data ==0){
+					Alert.show("请选择孕产妇证件类型","系统提示");
+					return ;
+				}
+				if(StringUtil.trim(this.F303_07.text) ==""){
+					Alert.show("请输入孕产妇的证件号码","系统提示");
+					return ;
+				}
+				if(this.F303_08.text ==""){
+					Alert.show("请输入孕产妇的出生日期","系统提示");
+					return ;
+				}
+				if(this.F303_124.selectedItem.data ==0){
+					Alert.show("请选择孕产妇国籍","系统提示");
+					return ;
+				}
+				var patternMonther:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+				if(this.F303_06.selectedItem.data==1 && this.F303_124.selectedItem.data=="CHN") 
+				{
+					if(!patternMonther.test(this.F303_07.text)){
+						Alert.show("母亲身份证号码有误!","系统提示");
+						return;
+					}
+				}
+				if(StringUtil.trim(this.F303_04.text) ==null){
+					Alert.show("请输入建册编号!","系统提示");
+					return ;
+				} 
+				if(this.F303_17.text ==""){
+					Alert.show("请输入检查医生!","系统提示");
+					return;
+				}
+				if(this.F303_15.selectedItem.data ==0){
+					Alert.show("请选择检查医院!","系统提示");
+					return;
+				}
+				if(this.F303_14.text == ""){
+					Alert.show("请选择检查日期!","系统提示");
+					return ;
+				}
+				if(this.F303_123.selectedItem.data ==0){
+					Alert.show("请选择检查阶段!","系统提示");
+					return;
+				}
+				
+				this.savePerinata();
+			}
+			public function savePerinata():void
+			{
+				this.f303.f30304 = this.F303_04.text;
+				this.f303.f30305 = this.F303_05.text;
+				this.f303.f30306 = this.F303_06.selectedItem.data;
+				this.f303.f30307 = this.F303_07.text;
+				this.f303.f30308 = this.F303_08.text;
+				this.f303.f30310 = this.F303_10.selectedItem.data;
+				this.f303.f30311 = Number(this.F303_11.text);
+				this.f303.f30312 = this.F303_12.selectedItem.data;
+				this.f303.f30313 = this.F303_13.text;
+				this.f303.f30314 = DateField.stringToDate(this.F303_14.text,'YYYY-MM-DD');
+				this.f303.f30315 = this.F303_15.selectedItem.data;
+				this.f303.f30317 = this.F303_17.text;
+				this.f303.f30318 = DateField.stringToDate(this.F303_18.text,'YYYY-MM-DD');
+				this.f303.f30319 = this.F303_19.text;
+				this.f303.f30320 = this.F303_20.text;
+				this.f303.f30321 = DateField.stringToDate(this.F303_21.text,'YYYY-MM-DD');
+				this.f303.f30323 = Number(this.F303_23.text); 
+				this.f303.f30331 = this.F303_31.text;
+				this.f303.f30333 = this.F303_33.selectedItem.data;
+				this.f303.f30337 = this.F303_37.text;
+				this.f303.f30342 = Number(this.F303_42.value);
+				this.f303.f30341 = 0.0;
+				this.f303.f30339 = 0.0;
+				this.f303.f30343 = this.F303_43.text;
+				this.f303.f30345 = this.F303_45.selectedItem.data;
+				this.f303.f30346 = this.F303_46.selectedItem.data;
+				this.f303.f30352 = Number(this.F303_52.value);
+				this.f303.f30353 = Number(this.F303_53.value); 
+				this.f303.f30354 = this.F303_54.selectedItem.data;
+				this.f303.f30355 = Number(this.F303_55.value); 
+				this.f303.f30356 = this.F303_56.selectedItem.data;
+				this.f303.f30357 = this.F303_57.selectedItem.data;
+				this.f303.f30370 = Number(this.F303_70.value);
+				this.f303.f30371 = Number(this.F303_71.value);
+				this.f303.f30372 = Number(this.F303_72.value);
+				this.f303.f30373 = Number(this.F303_73.value); 
+				this.f303.f30374 = this.F303_74.selectedItem.data;
+				this.f303.f30375 = Number(this.F303_75.value);
+				this.f303.f30376 = Number(this.F303_76.value); 
+				this.f303.f30377 = this.F303_77.selectedItem.data;
+				this.f303.f30378 = this.F303_78.text;
+				this.f303.f30387 = this.F303_87.selectedItem.data;
+				this.f303.f30388 = this.F303_88.text;
+				this.f303.f30395 = this.F303_95.selectedItem.data;
+				this.f303.f30396 = this.F303_96.text;
+				
+				this.f303.f303111 =this.F303_111.text;
+				this.f303.f303112 =this.F303_112.selectedItem.data;
+				this.f303.f303113 =this.F303_113.text;
+				this.f303.f303114 =this.F303_114.text;
+				this.f303.f303116 =this.F303_116.text;
+				this.f303.f303117 =this.F303_117.selectedItem.data;
+				this.f303.f303118 =this.F303_118.text;
+				this.f303.f303119 =this.F303_119.selectedItem.data;
+				this.f303.f303120 =this.F303_120.text;
+				this.f303.f303121 =this.F303_121.selectedItem.data;
+				this.f303.f303122 =this.F303_122.text;
+				this.f303.f303123 =this.F303_123.selectedItem.data;
+				this.f303.f303124 =this.F303_124.selectedItem.data;
+				this.maternalCheckService.updateF303(f303);
+			}
+			public function updateF303Handler(event:ResultEvent):void
+			{
+				var f303Response:Object =event.result;
+				if(!f303Response.state){
+					Alert.show(f303Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show("修改成功！ ","系统提示");
+				this.removeWindow();
+			}
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			public function validateGaowei():void
+			{
+				var aa1:int=0;
+				var aa2:int=0;
+				var aa4:int=0;
+				var aa5:int=0;
+				var aa12:int=0;
+				var aa13:int=0;
+				var aa14:int=0;
+				/* if(this.F303_41.value ==0){ //身高
+				aa1=0;
+				}else if(this.F303_41.value >0 &&this.F303_41.value <145){ 
+				aa1=10;
+				}else if(this.F303_41.value ==145){   
+				aa1=10;
+				}else{
+				aa1 =0;
+				} */	
+				if(this.F303_42.value ==0){  
+					aa2=0;
+				}else if(this.F303_42.value >0 && this.F303_42.value <80){  //体重
+					aa2=5;
+				}else if(this.F303_42.value ==80){ 
+					aa2=5;
+				}else if(this.F303_42.value >80 && this.F303_42.value <160){ 
+					aa2=5;
+				}else{
+					aa2=0;
+				}  
+				if(this.F303_75.value ==0){  //血红蛋白 
+					aa4 =0;
+				}else if(this.F303_75.value >0 && this.F303_75.value <60){
+					aa4 =10;
+				}else if(this.F303_75.value ==60){  
+					aa4 =5;
+				}else if(this.F303_75.value >60 && this.F303_75.value <100){  
+					aa4 =5;
+				}else{
+					aa4 =0;
+				}  
+				if(this.F303_87.selectedItem.data ==2){ //血糖 异常
+					aa5 =15;
+				}else{
+					aa5 =0;
+				} 
+				//高血压
+				if(this.F303_72.value ==0){  //骶耻外径
+					aa12 =0;
+				}else if(this.F303_72.value >0 &&this.F303_72.value <18){  
+					aa12 =10;
+				}else{
+					aa12 =0;
+				}
+				if(this.F303_73.value ==0){ //坐骨结节间径
+					aa13 =0;
+				}else if(this.F303_73.value >0 &&this.F303_73.value <8){ 
+					aa13 =10;
+				}else if(this.F303_73.value ==8){ 
+					aa13 =10;
+				}else{
+					aa13 =0;
+				}
+				if(this.F303_55.value ==0){  //胎心率  次/分
+					aa14 =0;
+				}else if(this.F303_55.value >0 && this.F303_55.value <100){
+					aa14 =15;
+				}else if(this.F303_55.value ==100){  
+					aa14 =15;
+				}else if(this.F303_55.value <120 && this.F303_55.value >100){  
+					aa14 =10;
+				}else if(this.F303_55.value ==120){  
+					aa14 =10;
+				}else if(this.F303_55.value ==160){  
+					aa14 =10;
+				}else if(this.F303_55.value >160){  
+					aa14 =10;
+				}else{
+					aa14 =0;
+				}
+				
+				this.F303_11.text =(aa1+aa2+aa4+aa5+aa12+aa13+aa14+f30255_).toString();
+				if(Number(this.F303_11.text) ==5){
+					this.F303_12.selectedIndex =2;
+				}else if(Number(this.F303_11.text) ==10){
+					this.F303_12.selectedIndex =3;
+				}else if(Number(this.F303_11.text) >10 && Number(this.F303_11.text) <15){
+					this.F303_12.selectedIndex =3;
+				}else if(Number(this.F303_11.text) ==15){	
+					this.F303_12.selectedIndex =3;
+				}else if(Number(this.F303_11.text) ==20){
+					this.F303_12.selectedIndex =4;
+				}else if(Number(this.F303_11.text) >20){
+					this.F303_12.selectedIndex =4;
+				}else{
+					this.F303_12.selectedIndex =1;
+				} 
+				this.F303_13.text ="围产保健高危评分值:"+f30255_
+					+";身高高危评分:"+aa1+";体重评分:"+aa2+";血红蛋白评分:"+aa4
+					+";胎心率:"+aa14+";骶耻外径:"+aa12+";坐骨结节间径:"+aa13+";血糖评分:"+aa5;
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+						<mx:TabNavigator width="1165" chromeColor="#ffffff" creationPolicy="all">
+							<s:NavigatorContent width="100%" label="基本情況">	
+								<mx:Grid paddingLeft="8" paddingBottom="10">
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="孕产妇姓名"/>	
+											<s:TextInput id="F303_05" width="130" enabled="false"/>	
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="证件类型" paddingLeft="15"/>
+											<s:DropDownList id="F303_06" width="130" enabled="false"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="证件号码" paddingLeft="15"/>
+											<s:TextInput id="F303_07" width="140" enabled="false"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="出生日期" paddingLeft="15"/>
+											<mx:DateField yearNavigationEnabled="true" id="F303_08" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														  formatString="YYYY-MM-DD" />
+											<s:Label text="*" styleName="must"/>
+											<s:Button label="读卡" id="duka2" enabled="false" width="50" click="readCard_mother(event)"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="国       籍"/>
+											<s:DropDownList id="F303_124" width="130" enabled="false"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="血        型" paddingLeft="15"/>
+											<s:DropDownList id="F303_74" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="建册编号" paddingLeft="15"/>	
+											<s:TextInput id="F303_04" width="140" enabled="false"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="检查医生" paddingLeft="15"/>
+											<s:TextInput id="F303_17" width="130"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="检查医院"/>
+											<s:DropDownList id="F303_15" width="130" enabled="false"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>	
+										<mx:GridItem>
+											<s:Label text="检查日期" paddingLeft="15"/>
+											<mx:DateField yearNavigationEnabled="true" id="F303_14" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														  formatString="YYYY-MM-DD"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="登记人员" paddingLeft="15"/>
+											<s:TextInput id="F303_19" width="140"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="登记时间" paddingLeft="15"/>
+											<mx:DateField yearNavigationEnabled="true" id="F303_18" width="140" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														  formatString="YYYY-MM-DD"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="复诊时间"/>
+											<mx:DateField yearNavigationEnabled="true" id="F303_21" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														  formatString="YYYY-MM-DD"/>
+										</mx:GridItem>
+										<!--	<mx:GridItem colSpan="4">
+										<s:Label text="归属地"/>
+										<component:AreaComboBoxCommon id="F303_16" width="800"/>
+										</mx:GridItem>-->
+									</mx:GridRow>
+								</mx:Grid>
+							</s:NavigatorContent>
+						</mx:TabNavigator>
+						<mx:TabNavigator width="1165" chromeColor="#ffffff" creationPolicy="all">
+							<s:NavigatorContent width="100%" label="检查信息">	
+								<mx:Grid paddingLeft="8" paddingBottom="10">
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="孕       周  "/>
+											<s:TextInput id="F303_23" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="体   重(g)" paddingLeft="10"/>
+											<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_42" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="血      压    " paddingLeft="10"/>
+											<s:BorderContainer width="130" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_43" width="70" borderVisible="false" textAlign="right" restrict="0-9|."/>
+													<s:Label text="(mmHg)"/>
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="心       脏" paddingLeft="10"/>
+											<s:DropDownList id="F303_45" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="肺       部    " paddingLeft="10"/>
+											<s:DropDownList id="F303_46" width="130"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="宫高(cm)"/>
+											<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_53" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="腹 围(cm)" paddingLeft="7"/>
+											<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_52" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="胎  方 位" paddingLeft="10"/>
+											<s:DropDownList id="F303_54" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="胎心率(次/分)"/>
+											<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_55" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="先       露" paddingLeft="10"/>
+											<s:DropDownList id="F303_56" width="130"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="衔       接"/>
+											<s:DropDownList id="F303_57" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="浮       肿" paddingLeft="10"/>
+											<s:DropDownList id="F303_33" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="双  顶 径" paddingLeft="10"/>
+											<s:BorderContainer width="130" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_111" width="90" borderVisible="false" textAlign="right" restrict="0-9|."/>
+													<s:Label text="(cm)"/>
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="宫颈赘生物"/>
+											<s:DropDownList id="F303_112" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="宫颈赘生物"/>
+											<s:TextInput id="F303_122" width="130"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="自觉症状"/>
+											<s:TextInput id="F303_31" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="处理指导" paddingLeft="10"/>
+											<s:TextInput id="F303_20" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="其      他" paddingLeft="10"/>
+											<s:TextInput id="F303_37" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="尿  蛋  白" paddingLeft="10"/>
+											<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_76" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="血  色  素" paddingLeft="10"/>
+											<s:BorderContainer width="130" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_113" width="90" borderVisible="false" textAlign="right" restrict="0-9|."/>
+													<s:Label text="(g/L)"/>
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="尿 E3 值"/>
+											<s:TextInput id="F303_114" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="血红蛋白(g/L)"/>
+											<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_75" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="检查阶段" paddingLeft="10"/>
+											<s:DropDownList id="F303_123" width="130" dataProvider="{jianchaData}" labelField="label" selectedIndex="0"/>
+											<s:Label text="*" styleName="must"/>
+										</mx:GridItem>
+									</mx:GridRow>
+								</mx:Grid>
+							</s:NavigatorContent>
+						</mx:TabNavigator>
+			<mx:TabNavigator width="1165" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="骨盆外测量">	
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="髂前上棘间径"/>
+								<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_70" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="髂嵴间径(cm)" paddingLeft="7"/>
+								<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_71" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="坐骨结节间径(cm)" paddingLeft="7"/>
+								<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_73" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="骶耻外径(cm)" paddingLeft="7"/>
+								<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="F303_72" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备  注" paddingLeft="7"/>
+								<s:TextInput id="F303_116" width="150"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+							</s:NavigatorContent>
+						</mx:TabNavigator>	
+						<mx:TabNavigator width="1165" chromeColor="#ffffff" creationPolicy="all">
+							<s:NavigatorContent width="100%" label="化验项目">	
+								<mx:Grid paddingLeft="8" paddingBottom="10">
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="血  常 规"/>
+											<s:DropDownList id="F303_77" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="血 常 规 异 常" paddingLeft="10"/>
+											<s:TextInput id="F303_78" width="190"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="血糖检查" paddingLeft="10"/>
+											<s:DropDownList id="F303_87" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="血糖检查异常" paddingLeft="10"/>
+											<s:TextInput id="F303_88" width="190"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="检查项目"/>
+											<s:DropDownList id="F303_117" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="检查项目异常" paddingLeft="10"/>
+											<s:TextInput id="F303_118" width="190"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="B超检查" paddingLeft="13"/>
+											<s:DropDownList id="F303_95" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="B超检查异常    " paddingLeft="13"/>
+											<s:TextInput id="F303_96" width="190"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="情      况"/>
+											<s:DropDownList id="F303_119" width="130"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="情  况  异  常" paddingLeft="10"/>
+											<s:TextInput id="F303_120" width="190"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="大畸形检查" paddingLeft="10"/>
+											<s:DropDownList id="F303_121" width="130"/>
+										</mx:GridItem>
+									</mx:GridRow>
+								</mx:Grid>
+							</s:NavigatorContent>
+						</mx:TabNavigator>	
+						
+			<mx:TabNavigator width="1165" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="高危评分" width="100%">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Button label="高危评分" id="gaowei" click="validateGaowei()"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="是否高危" paddingLeft="10"/>
+								<s:DropDownList id="F303_10" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="高危评分" paddingLeft="10"/>
+								<s:TextInput id="F303_11" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="高危级别" paddingLeft="10"/>
+								<s:DropDownList id="F303_12" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="高危原因" paddingLeft="10"/>
+								<s:TextInput id="F303_13" width="360" text="无"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+						<s:HGroup verticalAlign="middle" horizontalAlign="right" paddingBottom="5" paddingTop="5" width="80%">
+							<s:Button label="保存" id="saveF303" click="validate1()"/>
+						</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>
+
+

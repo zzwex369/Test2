@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DateField xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			  xmlns:s="library://ns.adobe.com/flex/spark" 
+			  xmlns:mx="library://ns.adobe.com/flex/mx"
+			  restrict="0-9\-" 
+			  creationComplete="creationCompleteHandler(event)" width="130">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getServiceDate" result="getServiceDateHandler(event)"/>
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>	
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="getSysDate", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ServiceDateRequest;
+			
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Button;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.DropdownEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.IFocusManagerComponent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.TextInput;
+			[Bindable]
+			public var  now:Date;
+			private var input:TextInput;//提示信息
+			private var mainServiceNow:Date;//系统当前时间
+			private var hasFocus:Boolean=false;//是否得到焦点
+			private var isChange:Boolean=false;//输入框值变化
+ 			public var 	isQuerySysDate:Boolean=true;// 是否查询服务器时间  默认 true
+			public var  formatStr:String=null;
+			public var  isSelectFirst:Boolean=false;//默认选择当前月第一天
+			public var  isSelectNow:Boolean=false;//默认选择今天
+			public var  isDisabledRanges:Boolean=true;//是否限制选择范围   默认一天
+			public var  disabledRangesDate:Number=1;//是否限制选择范围   默认一天
+			private var buttonDown:Boolean=false;// true down 事件触发   false up 事件触发
+			
+			/**
+			 *根据参数类型得到不同的日期结果 
+			 */
+			private function getDateResult(val:*):*
+			{
+				var result:*;
+				if(val is Date)
+					result=DateField.dateToString(val,formatString);
+				else
+					result=DateField.stringToDate(val,formatString);
+				return result;
+			}
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				setDefaultVal();
+				getServiceDate();
+				isEditableAddEventListener();
+			}
+			
+			
+			
+			/**
+			 *
+			 */
+			private function clearDate(isClear:Boolean):void
+			{
+				if(isClear)
+				{
+					this.text=null
+					this.selectedDate=null;	
+				}
+			}
+			
+			/**
+			 * 输入信息不合法 等 提示信息
+			 */
+			private function showMessage(message:String,isClear:Boolean=false):void
+			{
+				if(isSelectFirst||isSelectNow)
+					setRangesDate(mainServiceNow);//加载默认时间
+				else
+				{
+					setInputParam(this.input,true);//还原提示信息
+					callLater(clearDate,[isClear]);
+				}
+				Alert.show(message,"系统提示",1,Sprite(FlexGlobals.topLevelApplication),
+					function(event:CloseEvent):void
+					{
+						FlexGlobals.topLevelApplication.setFocus();
+					});
+			}
+			
+			/**
+			 *用于按下但是没有监听到弹起时使用的回退键
+			 */
+			private function dateKeyUp(event:KeyboardEvent):void
+			{
+				if(event.keyCode!=Keyboard.BACKSPACE||!buttonDown)//不是取消键 或者 已触发up事件
+					return;
+				dateFocusIn();
+			}
+			
+			/**
+			 *用于输入框获取焦点
+			 */
+			private function dateClick(event:MouseEvent):void
+			{
+
+				if(event.target is Button)
+					return ;
+				buttonDown=event.buttonDown;
+				if(!buttonDown)
+					dateFocusIn();
+			}
+			
+			/**
+			 *用于弹出选择日期
+			 */
+			private function dateOpen(event:DropdownEvent):void
+			{
+				dateFocusIn(false);
+			}
+			
+			
+			
+			/**
+			 *用于证件号码生成的日期
+			 */
+			private function DateText(event:Event):void
+			{
+				if(!isChange&&focusManager.getFocus()!=this)//初始化系统默认时间不进行验证
+				{
+					dateFocusIn(false);
+					if(this.text&&text.length>7)//有值
+						if(!CustomRegex.testRegExp(CustomRegex.DATE,text))//格式不正确
+							dateFocusOut(null);
+				}
+			}
+			
+			
+			
+			/**
+			 * 鼠标离开焦点触发信息
+			 */
+			private function dateFocusIn(isSetFocus:Boolean=true):void
+			{
+				hasFocus=true;
+				if(this.numChildren>3)//是否添加
+				{
+					this.input=this.getChildAt(3) as TextInput;
+					this.removeChild(DisplayObject(this.getChildAt(3)));
+				}
+				if(isSetFocus)
+					this.textInput.setFocus();	
+			}
+			
+			
+			/**
+			 * 鼠标离开焦点触发信息
+			 */
+			private function dateFocusOut(event:FocusEvent):void
+			{
+				FlexGlobals.topLevelApplication.setFocus();
+				if(!hasFocus)
+					return ;
+				hasFocus=isChange=false;
+				var message:String;
+				if(!text)//无值
+				{
+					message=isSelectFirst||isSelectNow?
+						"日期不能为空，系统默认加载初始化时间，请从新输入或者选择":"日期为空，请从新输入或者选择";
+					showMessage(message);
+					
+				}else//有值
+				{
+					var inputDate:Date;
+					message=",请从新输入";
+					if(!CustomRegex.testRegExp(CustomRegex.DATE,text))//格式不正确
+						showMessage("非法日期格式，(正确格式："+getDateResult(new Date())+")"+message,true);
+					else//格式正确
+					{
+						inputDate=getDateResult(text);//得到date 类型
+						if(!inputDate)//输入值不能正常转换
+							showMessage("输入日期错误，无法正常显示"+message,true);
+						else//输入值正确
+						{
+							if(isDisabledRanges&&(mainServiceNow.time-inputDate.time)<0)//验证是否输入日期大于系统当前时间
+								showMessage("输入时间不能大于当前时间"+message,true);
+							else//开始赋值
+							{
+								this.selectedDate=inputDate;
+								this.text=getDateResult(inputDate);
+							}
+						}
+					}
+				}
+				
+			}
+			
+			
+			/**
+			 *创建提示组件
+			 */
+			private function setInputParam(_input:TextInput,isAdd:Boolean=false):void
+			{
+				_input.width=this.textInput.width;
+				_input.height=this.textInput.height;
+				if(!_input.text)
+				{
+					_input.setStyle("color","red");
+					_input.text="格式:"+getDateResult(new Date());
+					this.toolTip="支持手动输入，"+_input.text;
+				}
+				if(isAdd)
+					this.addChild(_input);
+			}
+			
+			
+			
+			
+			/**
+			 *是否添加监听
+			 */
+			private function isEditableAddEventListener():void
+			{
+				var param:Object=this.parentApplication.paramPermission.datePermission;
+				if(enabled&&param=="1")
+				{
+					this.editable=true;
+					this.textInput.maxChars=10;
+					setInputParam(new TextInput(),!(isSelectFirst||isSelectNow));
+					ChangeWatcher.watch(this.textInput,"text",DateText);
+					this.addEventListener(DropdownEvent.OPEN,dateOpen);
+					this.addEventListener(MouseEvent.MOUSE_UP,dateClick);
+					this.addEventListener(KeyboardEvent.KEY_UP,dateKeyUp);
+					this.addEventListener(MouseEvent.MOUSE_DOWN,dateClick);
+					this.addEventListener(FocusEvent.FOCUS_OUT,dateFocusOut);
+					
+				}
+			}
+			
+			/**
+			 *默认返回String 日期  类型
+			 */
+			private function getServiceDate():void
+			{
+				mainServiceNow=this.parentApplication.serviceNow;
+				if(mainServiceNow)
+					setRangesDate(mainServiceNow);
+				else if(isQuerySysDate)
+				{
+					var dateRequest:ServiceDateRequest=new ServiceDateRequest();
+					this.systemService.getServiceDate(dateRequest);
+				}
+			}
+			
+			private function getServiceDateHandler(event:ResultEvent):void 
+			{
+				var serviceDateResponse:Object=event.result;
+				var dateStr:String=serviceDateResponse.date.toString();
+				var date:Date=DateField.stringToDate(dateStr,formatString);
+				this.now=date;
+				setRangesDate(date);
+			}
+			
+			/**
+			 * 设置显示格式
+			 */
+			private function setDefaultVal():void
+			{
+				
+				buttonMode=true;
+				formatString=formatStr?formatStr:"YYYY-MM-DD"
+				yearNavigationEnabled=true;
+				//	dayNames = ["    周日      ","    周一    ","    周二    ","    周三    ","    周四    ","    周五    ","    周六       "];
+				dayNames = ["  周日    ","  周一    ","  周二    ","  周三    ","  周四    ","  周五    ","  周六  "];
+				
+				monthNames = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
+				
+			}
+			
+			/**
+			 * 
+			 */
+			public function setRangesDate(date:*):void
+			{
+				if(date)
+				{
+					date=date is String?DateField.stringToDate(date,formatString):date;
+					if(isSelectNow)
+						this.selectedDate=date;
+					else if(isSelectFirst)
+						this.selectedDate=new Date(date.fullYear,date.month,1);
+					var _date:Date=CompMethod.cloneObject(date);
+					disabledRanges=isDisabledRanges?[{rangeStart:CompMethod.getRangeStart(_date,disabledRangesDate)}]:[];
+					if((isSelectFirst||isSelectNow)&&!this.text)//验证是否输入框为空
+						this.text=DateField.dateToString(this.selectedDate,formatString);
+				}
+				callLater(function():void{isChange=false});
+				this.dispatchEvent(new Event("getSysDate"));
+			}
+			
+			/**
+			 *根据开始禁止日期  设置时间
+			 */
+			public function set getRangesDate(_disabledRanges:Array):void
+			{
+				var range:Object=_disabledRanges[0];
+				var date:Date=CompMethod.cloneObject(range.rangeStart);
+				date=new Date(date.time-=24*60*60*1000);
+				setRangesDate(date);
+			}
+			
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "C101")
+				{
+					this.parentApplication.paramPermission.c101=comboBoxDataList.getItemAt(0).data;
+					isEditableAddEventListener();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+</mx:DateField>

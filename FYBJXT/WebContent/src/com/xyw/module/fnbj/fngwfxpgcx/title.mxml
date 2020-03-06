@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin = "com.xyw.sys.custom.skin.*"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow"
+			   title="信息修改" horizontalCenter="0" verticalCenter="0" backgroundColor="white"
+			   chromeColor="#5CACEE" close = "removeWindow()" cornerRadius="5" width="1180" 
+			   rollOut="overAndUp(event)"
+			   rollOver="overAndUp(event)"
+			   >
+	<fx:Declarations>
+		
+		<s:RemoteObject id="f309Service" destination="f309Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="renewF309"  result="renewF309Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<mx:DateValidator id="dateValidator"  property="text"
+						  inputFormat="yyyy-mm-dd" 
+						  wrongLengthError="格式错误  正确格式例：2008-01-01"
+						  wrongDayError="天数错误"
+						  wrongMonthError="月份错误"
+						  wrongYearError="年份错误"
+						  invalidCharError="内容无效"
+						  requiredFieldError="内容不能为空"/>
+		
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		.textInput{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomTextInputSkin");
+		}
+		
+		
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		.myGrid {
+			verticalAlign:middle;
+		}
+		.myTextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		.errorTip
+		{
+			font-size: 15;
+			border-color: red;/* //控制背景色 */
+			color: #fff;
+			font-weight: bold;
+			paddingBottom:1; 
+			cornerRadius:5;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F308;
+			import com.xyw.module.fnbj.model.F308Request;
+			import com.xyw.module.fnbj.model.F309;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			[Embed(source="images/add.png")] 
+			private var addicon:Class; 
+			[Embed(source="images/del.png")] 
+			private var delicon:Class; 
+			[Bindable]
+			private var rowVGroup:int =1;
+			[Bindable]
+			private var systemUser:SystemUser =null;
+			public var vf309:Object;
+			private var f309:F309;
+			private var count:int=2;
+			private var f308Request:F308Request =null; 
+			private var arrayTip:Array=[null,null,null,null];//保存提示信息  objId:Object,objType:String,errorString:String,tip:ToolTip
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser =this.parentApplication.systemUser;
+				initializeComboBox();
+			}
+			
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.flag ="D101";
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t where t.d101_01 = '" + this.systemUser.institutionCode + "' or t.d101_11 ='" + this.systemUser.institutionCode +"'";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_06 t";
+				comboBoxDataRequest.flag = "S301_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+			}
+			
+			
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				--count;
+				var index:int=0;
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag =="D101"){
+					index=CompMethod.getDropDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					this.F309_13.dataProvider =comboBoxDataList;
+					this.F309_13.selectedIndex =index;
+				}else if(flag == "S301_06"){
+					index =CompMethod.getDropDownListSelectedIndex(comboBoxDataList,"1");
+					this.F309_05.dataProvider = comboBoxDataList;
+					this.F309_05.selectedIndex = index;
+				}
+				if(!count)
+					loadF309(vf309);
+			}
+			
+			private function overAndUp(event:MouseEvent):void
+			{
+				if(event.type==MouseEvent.ROLL_OVER)
+				{ 
+					if(!arrayTip[3])
+						arrayTip=CompMethod.showTip(arrayTip[0],arrayTip[1],arrayTip[2],arrayTip[3]);
+					if(!this.hasEventListener(Event.ENTER_FRAME))
+						this.addEventListener(Event.ENTER_FRAME,enterFrameHandler); 
+				}else
+				{
+					this.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);			
+					arrayTip[3]=CompMethod.destoryTip(arrayTip[3]);		
+				}
+			}
+			
+			/***************显示删除提示信息*********************/
+			private function enterFrameHandler(event:Event):void
+			{
+				if(arrayTip[3])	
+					arrayTip=CompMethod.showTip(arrayTip[0],arrayTip[1],arrayTip[2],arrayTip[3]);		 
+			}
+			
+			
+			/**
+			 *加载高危档案信息
+			 */
+			private function loadF309(vf309:Object):void
+			{
+				f309=new F309();
+				f309.f30901=vf309.f30901;
+				f309.f30902=vf309.f30902;
+				F309_03.text=vf309.f30903;
+				F309_06.text=vf309.f30906;
+				F309_07.text=vf309.f30907;
+				F309_08.text=vf309.f30908;
+				F309_12.text=vf309.f30912;
+				setF309_10Row(vf309.f30910);
+				if(vf309.f30909=='4')F309_09_02.selected=true;
+				F309_04.text=DateField.dateToString(vf309.f30904,'YYYY-MM-DD');
+				F309_11.text=DateField.dateToString(vf309.f30911,'YYYY-MM-DD');
+				F309_14.text=DateField.dateToString(vf309.f30914,'YYYY-MM-DD');
+				F309_05.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(F309_05.dataProvider),vf309.f30905);
+				F309_13.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(F309_13.dataProvider),vf309.f30913);
+				age.text=CompMethod._getAge(F309_04.text);
+			}
+			/**
+			 *根据高危原因动态添加行数
+			 */
+			private function setF309_10Row(f30910:String):void
+			{
+				var f310Arr:Array=f30910.split("!");
+				var length:int=(f310Arr.length)-2;
+				for(var i:int=0;i<length;i++)
+				{
+					addRowHandler(null);
+				}
+				for(var j:int=0;j<vgroup.numElements;j++)
+				{
+					var textInput:Object=vgroup.getElementAt(j);
+					textInput.text=f310Arr[j];
+				}
+			}
+			
+			/**
+			 *验证是否为空
+			 */
+			private function validateF309_10():Boolean
+			{
+				var num:int=0;
+				for(var k:int=0;k<vgroup.numElements;k++)
+				{
+					var textInput:Object=vgroup.getElementAt(k);
+					if(!StringUtil.trim(textInput.text))
+						num++;
+				}
+				if(num==vgroup.numElements)
+					return false;
+				return true;
+			}
+			
+			/**
+			 *得到诊断内容
+			 */
+			private function getF309_10Text():String
+			{
+				var str:String='';
+				for(var k:int=0;k<vgroup.numElements;k++)
+				{
+					var textInput:Object=vgroup.getElementAt(k);
+					if(StringUtil.trim(textInput.text))
+						str+=(StringUtil.trim(textInput.text)+"!");
+				}
+				return  str; 
+			}
+			
+			
+			/**
+			 *读卡
+			 */
+			private function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var array:Array = CompMethod.readCard();
+					var flag:Boolean=CompMethod.sex('女',array[1])
+					if(flag){
+						this.F309_03.text = array[0];//姓名
+						this.F309_06.text = array[5];//身份证号
+						this.F309_04.text = array[3];//出生日期
+						//	setF303_08(null);
+						var nation:String = array[2] + "族";//民族
+					}else{
+						Alert.show("请读母亲信息！","系统提示");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			
+			/**
+			 *时间输入验证
+			 */
+			private function focusOut(id:Object):Boolean
+			{
+				var textDate:Date=DateField.stringToDate(id.text,"YYYY-MM-DD");
+				if(id.errorString&&!textDate)
+				{
+					var str:String=id.errorString;
+					id.errorString='';
+					dateValidator.source=null;
+					if((str.lastIndexOf("yyyy-mm-dd"))!=-1)
+						str=str.substring(0,str.lastIndexOf("yyyy-mm-dd"));
+					//保存提示信息  objId:Object,objType:String,errorString:String,tip:ToolTip
+					arrayTip=CompMethod.showTip(id,"3",str,arrayTip[3]);
+					return true;
+				}else
+					return dateValidatorHandler(id,textDate);
+			}
+			
+			/**
+			 *清空提示 格式化日期
+			 */
+			private function dateValidatorHandler(id:Object,textDate:Date):Boolean
+			{
+				dateValidator.source=null;
+				id.errorString='';
+				if(arrayTip[3])
+				{
+					CompMethod.destoryTip(arrayTip[3]);	
+					arrayTip=[null,null,null,null]
+				}					
+				if(textDate)
+					id.text=DateField.dateToString(textDate,"YYYY-MM-DD");
+				return false;
+			}
+			
+			
+			/**
+			 *保存验证
+			 */
+			private function validatePerinata():void
+			{
+				if(arrayTip[3])
+					return;
+				if(StringUtil.trim(F309_07.text)=="")
+				{
+					Alert.show("请输入联系电话","系统提示");
+					return ;
+				}
+				if(StringUtil.trim(F309_08.text)=="")
+				{
+					Alert.show("请输入孕周","系统提示");
+					return ;
+				}
+				if(!validateF309_10())
+				{
+					Alert.show("请输入初步诊断","系统提示");
+					return ;
+				}
+				if(StringUtil.trim(F309_11.text)=="")
+				{
+					Alert.show("请输入评估时间","系统提示");
+					return ;
+				}
+				if(StringUtil.trim(F309_12.text)=="")
+				{
+					Alert.show("请输入报告人","系统提示");
+					return ;
+				}
+				
+				if(StringUtil.trim(F309_14.text)=="")
+				{
+					Alert.show("请输入报告时间","系统提示");
+					return ;
+				}
+				saveF309();	
+			}
+			
+			private function saveF309():void
+			{
+				f309.f30903=StringUtil.trim(F309_03.text);	
+				f309.f30904=DateField.stringToDate(F309_04.text,'YYYY-MM-DD');		
+				f309.f30905=F309_05.selectedItem.data;
+				f309.f30906=StringUtil.trim(F309_06.text);	
+				f309.f30907=StringUtil.trim(F309_07.text);	
+				f309.f30908=StringUtil.trim(F309_08.text);	
+				f309.f30909=F309_09_01.selected?F309_09_01.value.toString():F309_09_02.value.toString();	
+				f309.f30910=getF309_10Text();	
+				f309.f30911=DateField.stringToDate(F309_11.text,'YYYY-MM-DD');	
+				f309.f30912=StringUtil.trim(F309_12.text);	
+				f309.f30913=F309_13.selectedItem.data;	
+				f309.f30914=DateField.stringToDate(F309_14.text,'YYYY-MM-DD');	
+				f309Service.renewF309(f309);
+			}
+			
+			
+			private function renewF309Handler(event:ResultEvent):void
+			{
+				
+				var f309Response:Object=event.result;
+				if(f309Response.state)
+				{
+					Alert.show(f309Response.promptMessage+",点击确定即将关闭","系统提示",1,this,closeHander);
+				}else
+					Alert.show(f309Response.errorMessage,"系统提示");
+			}
+			
+			
+			private function closeHander(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var index:Object=this.owner;
+					index.refresh();
+					this.removeWindow();
+				}
+			}
+			
+			
+			/**
+			 *添加行
+			 */
+			private function addRowHandler(event:FlexEvent):void
+			{
+				if(rowVGroup==5)
+					return ;
+				tab.height+=21;
+				navigator.height+=21;
+				vgroup.height+=20;
+				var text:TextInput=new TextInput();
+				text.width=859;
+				text.setFocus();
+				text.styleName='textInput';
+				text.setStyle("height",20);
+				text.setStyle('paddingLeft',20);
+				text.addEventListener(FlexEvent.ENTER,addRowHandler);
+				vgroup.addElementAt(text,vgroup.numElements);
+				rowVGroup=vgroup.numElements;
+				
+			}
+			
+			/**
+			 *删除行
+			 */
+			private function delRowHandler(event:MouseEvent):void
+			{
+				tab.height-=21;
+				navigator.height-=21;
+				vgroup.height-=20;
+				vgroup.removeElementAt(vgroup.numElements-1);
+				rowVGroup=vgroup.numElements;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Scroller x="-6" y="1" width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10" creationComplete="creationCompleteHandler(event)">
+			<mx:TabNavigator id="content" width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="基本信息">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label  styleName="myLabel" text="孕 妇  姓 名"/>	
+								<s:TextInput id="F309_03" width="130" editable="false"/>	
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="证件类型" paddingLeft="15"/>
+								<component:CustomDropDownList id="F309_05" width="130" enabled="false"/>
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="证件号码" paddingLeft="15"/>
+								<s:TextInput id="F309_06" width="140" editable="false"/>
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="出生日期" paddingLeft="15"/>
+								<mx:DateField id="F309_04" width="130"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  enabled="false" yearNavigationEnabled="true"
+											  />
+								
+								<s:Button id="duka2" label="读卡" buttonMode="true"
+										  click="readCard_mother(event)"
+										  enabled="{systemUser.duka =='1'}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>	
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="年            龄" />
+								<s:TextInput id="age" restrict="0-9" maxChars="2"/>
+								
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="联系电话" paddingLeft="15"/>
+								<s:TextInput id="F309_07" restrict="0-9"
+											 focusIn="arrayTip=CompMethod.showTip(age,'1','请输入年龄',arrayTip[3])"
+											 />
+								
+							</mx:GridItem>
+							
+							<mx:GridItem colSpan="2">
+								<s:Label styleName="myLabel" text="孕        周 " paddingLeft="15"/>
+								<s:TextInput id="F309_08" maxChars="2" width="140" restrict="0-9"  text="40"
+											 focusIn="arrayTip=CompMethod.showTip(F309_07,'1','请输入联系电话',arrayTip[3])"
+											 />
+								
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all" id="tab">
+				<s:NavigatorContent width="100%" label="评估内容" id="navigator">	
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="评估分级" paddingLeft="10"/>
+								<s:HGroup width="1000" gap="50">
+									<s:RadioButton label="橙色" id="F309_09_01" value="3" buttonMode="true" selected="true" mouseEnabled="false"/>
+									<s:RadioButton label="红色" id="F309_09_02" value="4" buttonMode="true" mouseEnabled="false"/>
+								</s:HGroup>
+								
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow paddingTop="5">
+							<mx:GridItem width="100%">
+								<s:Label styleName="myLabel" text="评估时间" paddingLeft="10"/>
+								<mx:DateField yearNavigationEnabled="true" id="F309_11" width="140" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD" editable="true" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}" 
+											  focusIn="dateValidator.source=F309_11;arrayTip=CompMethod.showTip(F309_08,'1','请输入孕周',arrayTip[3])"
+											  focusOut="focusOut(F309_11)" 
+											  restrict="0-9\-"
+											  />
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow paddingTop="5">
+							<mx:GridItem paddingLeft="10">
+								<s:Label styleName="myLabel" text="初步诊断：" />
+								<s:Label styleName="myLabel" text="(友情提示，在本行按回车添加行或者点击按钮)" color="red"/>
+								<s:Button label="添加行" click="addRowHandler(null)" icon="{addicon}" enabled="{rowVGroup&lt;5}" iconPlacement="left"/>
+								<s:Button label="删除行" click="delRowHandler(event)" icon="{delicon}" enabled="{rowVGroup&gt;1}" iconPlacement="left"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem paddingLeft="55">
+								<s:VGroup id="vgroup">
+									<s:TextInput width="859" height="20" id="F309_10" enter="addRowHandler(null)" 
+												 focusIn="arrayTip=CompMethod.showTip(F309_11,',','评估时间不能为空!',arrayTip[3])"
+												 styleName="textInput"/>
+								</s:VGroup>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="登记信息">	
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="报告人"/>
+								<s:TextInput id="F309_12" width="130" focusIn="if(!validateF309_10())arrayTip=CompMethod.showTip(F309_10,'1','请填写初步诊断内容!',arrayTip[3])"/>
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="报告机构" paddingLeft="20"/>
+								<component:CustomDropDownList id="F309_13" width="130" enabled="false"/>
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="报告时间" paddingLeft="10"/>
+								<mx:DateField yearNavigationEnabled="true" id="F309_14" width="140" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD" editable="true" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}" 
+											  focusIn="dateValidator.source=F309_14;arrayTip=CompMethod.showTip(F309_12,'1','请填写报告人!',arrayTip[3])"
+											  focusOut="focusOut(F309_14)" 
+											  restrict="0-9\-"
+											  />
+								
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup verticalAlign="middle" horizontalAlign="center" paddingBottom="5" paddingTop="5" width="1155">
+				<s:Button buttonMode="true" label="保存" click="validatePerinata()" chromeColor="#cccccc"
+						  mouseOver="arrayTip=CompMethod.showTip(F309_14,'1','请填写报告人!',arrayTip[3])"  enabled="{F309_03.text}"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>
+
+

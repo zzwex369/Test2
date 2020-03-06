@@ -1,0 +1,110 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   title="批量邮寄" backgroundColor="#FFFFFF"
+			   chromeColor="#5CACEE"  cornerRadius="5"
+			   creationComplete="creationCompleteHandler(event)"
+			   close="removeWindow()" width="328" height="152">
+	<fx:Declarations>
+		<s:RemoteObject id="f601Service" destination="f601Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="renewF601" result="renewF601Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.model.F601;
+			import com.xyw.module.msss.fnbj.model.F601Request;
+			import com.xyw.module.msss.fnbj.model.VF601;
+			import com.xyw.sys.custom.component.CompMethod;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			
+			public var itemArr:ArrayCollection=null;
+			private var f60101list:ArrayCollection=null;
+			private var f601:F601=null;
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				if(itemArr)
+				{
+					f60101list=new ArrayCollection();
+					for(var i:int=0;i<itemArr.length;i++)
+					{
+						var vf601:Object=itemArr.getItemAt(i);
+						f60101list.addItem(vf601.f60101);
+					}
+				}
+				
+			}
+			
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				if(CompMethod.validate('1',F601_58,'标本邮寄医生'))
+					return ;
+				if(CompMethod.validate('1',F601_57,'标本邮寄日期'))
+					return ;
+				f601=new F601();
+				f601.f60159='2';
+				f601.f60158=StringUtil.trim(F601_58.text);
+				f601.f60157=DateField.stringToDate(F601_57.text,"YYYY-MM-DD");
+				var f601Request:F601Request=new F601Request();
+				f601Request.f601=f601;
+				f601Request.f60101List=f60101list;
+				f601Service.renewF601(f601Request);
+			}
+			
+			private function renewF601Handler(event:ResultEvent):void
+			{
+				var f601Response:Object = event.result;
+				if(f601Response.state){
+					Alert.show(f601Response.promptMessage, "系统提示",1,this,closeHandler);
+					
+				} else {
+					Alert.show(f601Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var index:Object=this.owner;
+					index.refresh();
+					this.removeWindow();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:VGroup gap="15" width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" chromeColor="#CCCCCC">
+		<s:HGroup  >
+			<s:Label styleName="myLabel" text="标本邮寄医生"/>
+			<s:TextInput width="140" id="F601_58"/>
+		</s:HGroup>  
+		<s:HGroup >
+			<s:Label styleName="myLabel" text="标本邮寄日期"/>
+		
+			<component:CustomRangeDateField  id="F601_57"  width="140" />
+		</s:HGroup> 
+		<s:HGroup>
+			<s:Button label="保存" click="button1_clickHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

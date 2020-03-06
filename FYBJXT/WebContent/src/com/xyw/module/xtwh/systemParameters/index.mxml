@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemParametersService" destination="systemParametersService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="query" result="queryHandler(event)" />
+			<s:method name="save" result="saveHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.S900;
+			import com.xyw.module.xtwh.model.SystemParametersRequest;
+			import com.xyw.module.xtwh.model.SystemParametersResponse;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			[Bindable]
+			public var s900:S900 = null;
+			public var systemParametersRequest:SystemParametersRequest = null;
+			
+			private function init():void
+			{
+				this.dataGridInfo.addEventListener(GridSelectionEvent.SELECTION_CHANGE, onSelectionChange);
+			}
+			
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.s900 = DataGrid(event.target).selectedItem as S900;
+				this.s900_01.text = this.s900.s90001;
+				this.s900_02.text = this.s900.s90002;
+				this.s900_03.text = this.s900.s90003;
+				this.s900_04.text = this.s900.s90004;
+				this.s900_05.value = Number(this.s900.s90005);
+			}
+			
+			private function query():void
+			{
+				this.systemParametersRequest = new SystemParametersRequest();
+				this.systemParametersRequest.s90002 = this.parametersName.text;
+				this.systemParametersRequest.s90005 = String(this.year.value);
+				
+				this.systemParametersService.query(systemParametersRequest);
+			}
+			
+			private function queryHandler(event:ResultEvent):void
+			{
+				var systemParametersResponse:Object = event.result;
+				var listS900:ArrayCollection = systemParametersResponse.listS900;
+				this.dataGridInfo.dataProvider = listS900;
+			}
+			
+			private function save():void
+			{
+				if(this.s900_01.text == "")
+				{
+					Alert.show("请选择要操作的行!","系统提示");
+					return;
+				}
+				this.s900 = new S900();
+				s900.s90001 = this.s900_01.text;
+				s900.s90002 = this.s900_02.text;
+				s900.s90003 = this.s900_03.text;
+				s900.s90004 = this.s900_04.text;
+				s900.s90005 = String(this.s900_05.value);
+				
+				this.systemParametersService.save(s900);
+			}
+			
+			private function saveHandler(event:ResultEvent):void
+			{
+				var systemParametersResponse:Object = event.result;
+				if(systemParametersResponse.errorMessage == null)
+				{
+					Alert.show(systemParametersResponse.promptMessage,"系统提示");
+					this.query();
+				}else
+				{
+					Alert.show(systemParametersResponse.errorMessage,"系统提示");
+				}
+			}
+			
+			private function resetForm():void
+			{
+				this.s900_01.text = "";
+				this.s900_02.text = "";
+				this.s900_03.text = "";
+				this.s900_04.text = "";
+				this.s900_05.value = 0;
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:TabNavigator width="100%" paddingTop="0" creationPolicy="all" chromeColor="#ffffff">
+			<s:NavigatorContent label="参数查询" height="40">
+				<s:VGroup width="100%">
+					<s:HGroup paddingLeft="10" paddingBottom="10"  paddingTop="10" verticalAlign="middle" horizontalAlign="center">
+						<s:Label text="年度"/><s:NumericStepper minimum="2012" creationComplete="year.value = new Date().fullYear" maximum="100000" id="year" width="60"/>
+						<s:Label text="参数名称"/><mx:TextInput id="parametersName"/>
+						<s:Button label="查询" click="query()"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:HGroup width="100%">
+			<s:VGroup width="75%" height="100%">
+				<s:Panel id="parametersPanel" title="参数维护" horizontalCenter="0" width="100%" backgroundColor="#90C4FE" borderColor="#0B85CC" cornerRadius="0">
+					<s:VGroup width="100%">
+						<s:DataGrid id="dataGridInfo" editable="true" borderAlpha="0.3" width="100%" height="330" rowHeight="22" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+							<s:columns>
+								<s:ArrayList>
+									<s:GridColumn headerText="序号" width="45" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+									<s:GridColumn dataField="s90001" headerText="参数编码" width="100"/>
+									<s:GridColumn dataField="s90002" headerText="参数名称" width="260"/>
+									<s:GridColumn dataField="s90003" headerText="参数取值" width="80"/>
+									<s:GridColumn dataField="s90004" headerText="参数备注" width="260"/>
+									<s:GridColumn dataField="s90005" headerText="使用年度" width="90"/>
+								</s:ArrayList>
+							</s:columns>
+						</s:DataGrid>
+					</s:VGroup>
+				</s:Panel>
+			</s:VGroup>
+			<s:VGroup width="25%" height="100%">
+				<s:Panel id="parameterPanel" title="参数详细" height="360" horizontalCenter="0" width="100%" backgroundColor="#90C4FE" borderColor="#0B85CC" cornerRadius="0">
+					<s:Form width="100%" horizontalCenter="0">
+						<s:FormItem label="参数编码" required="false"><s:TextInput id="s900_01" maxChars="20" width="120" enabled="false"/></s:FormItem>
+						<s:FormItem label="参数名称" required="false"><s:TextInput id="s900_02" maxChars="20" width="120"/></s:FormItem>
+						<s:FormItem label="参数取值" required="false"><s:TextInput id="s900_03" maxChars="20" width="120"/></s:FormItem>
+						<s:FormItem label="参数备注" required="false"><s:TextInput id="s900_04" maxChars="20" width="120"/></s:FormItem>
+						<s:FormItem label="使用年度" required="false"><s:NumericStepper id="s900_05" minimum="0" maximum="10000000" enabled="false" width="120"/></s:FormItem>
+					</s:Form>
+				</s:Panel>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingLeft="10" paddingRight="20" width="100%">
+			<s:Button label="保存" click="save()"/>
+			<s:Button label="清空" click="resetForm()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Module>

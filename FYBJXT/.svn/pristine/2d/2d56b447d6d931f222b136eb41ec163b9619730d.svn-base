@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   backgroundColor="white" chromeColor="#5CACEE"
+			   close="removeWindow()" cornerRadius="5" creationComplete="putRecord()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="孕产妇妊娠风险评估分级报告单">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		.textInput{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomTextInputSkin");
+		}
+		.myLabel {
+			fontSize:12px;
+			paddingTop:1px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.custom.component.CompMethod;
+			
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.managers.PopUpManager;
+			import mx.messaging.channels.StreamingAMFChannel;
+			import mx.printing.FlexPrintJob;
+			import mx.printing.FlexPrintJobScaleType;
+			[Bindable]
+			public var vf309:Object;
+			[Bindable]
+			private var now:Date=null;
+			[Bindable]
+			private var rowVGroup:int =1;
+			private var f309Arr:Array;
+			private var _length:int;
+			private var str:String='';
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+			private function putRecord():void
+			{
+				addRow();
+				now=vf309.f30911; 
+				age.text=CompMethod._getAge(F309_04.text)
+				
+			}
+			
+			public  function setF309Arr():void
+			{
+				f309Arr=vf309.f30910.toString().split("!");
+				f309Arr.pop();
+				for(var i:int=0;i<f309Arr.length;i++)
+				{
+					refresh(f309Arr[i].toString());
+				}
+				
+			}
+			
+			/**
+			 *重新组合字符串排列方式
+			 */
+			private function refresh(f309Str:String):String
+			{
+				
+				if(f309Str.length>41)
+				{
+					var str1:String=f309Str.substring(0,41)+"!";
+					var str2:String=f309Str.substring(41,f309Str.length); 
+					str+=str1;
+					if(str2.length>41)
+					{	
+						refresh(str2);
+					}else
+						str+=(str2+"!");
+					
+				}else 
+					str+=(f309Str+"!");
+				return str;
+			}
+			
+			/**
+			 *添加行
+			 */
+			private function addRow():void
+			{
+				f309Arr=str.split("!");
+				_length=(f309Arr.length)-2;
+				rowVGroup=++_length;
+				for(var i:int=0;i<_length;i++)
+				{
+					if(rowVGroup!=vgroup.numElements)
+					{
+						vgroup.height+=19;
+						data.height+=19;
+						var text:TextInput=new TextInput();
+						text.width=vgroup.getElementAt(0).width;
+						text.styleName='textInput';
+						text.setStyle("height",15);
+						text.editable=false;
+						vgroup.addElementAt(text,vgroup.numElements);				
+					}
+					var textInput:Object=vgroup.getElementAt(i);
+					textInput.text=f309Arr[i]; 
+				}
+			}
+			
+			
+			/**
+			 *打印
+			 */
+			private function printF309():void
+			{
+				var flexPrintJob:FlexPrintJob = new FlexPrintJob();
+				flexPrintJob.printAsBitmap = false;
+				if(flexPrintJob.start())
+				{
+					 flexPrintJob.addObject(data,FlexPrintJobScaleType.NONE);
+					flexPrintJob.send(); 
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup paddingBottom="10">
+		<s:VGroup id="data" width="568"  horizontalAlign="center"  gap="10" paddingBottom="10" >
+			<s:HGroup width="100%">
+				<s:Label width="100%" fontSize="20" paddingTop="35" paddingBottom="5"
+						 text="孕产妇妊娠风险评估分级报告单"
+						 textAlign="center"/>
+			</s:HGroup>
+			<mx:Grid horizontalGap="1" verticalGap="10" id="grid">
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label width="100%" paddingLeft="5" text="姓       名：" textAlign="center"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label id="F309_03" width="100%"  text="{vf309.f30903}" styleName="myLabel"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label width="100%" text="出生日期：" textAlign="center"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label id="F309_04"  width="100%"  text="{DateField.dateToString(vf309.f30904,'YYYY-MM-DD')}" styleName="myLabel"/>
+					</mx:GridItem>	
+					<mx:GridItem>
+						<s:Label width="100%" text="年       龄：" textAlign="center" />
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label id="age" styleName="myLabel"/>
+						<s:Label text="（周岁）"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label width="100%" paddingLeft="5" text="孕       周：" textAlign="center"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label id="F309_08"  text="{vf309.f30908}" styleName="myLabel"/>
+						<s:Label text="（周）" />
+					</mx:GridItem>	
+					<mx:GridItem>
+						<s:Label width="100%" text="联系电话：" textAlign="center"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label id="F309_07" text="{vf309.f30907}" styleName="myLabel"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label width="100%" text="证件号码：" textAlign="center"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label id="F309_06" text="{vf309.f30906}" styleName="myLabel"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow>
+					<mx:GridItem colSpan="6">
+						<s:Label paddingLeft="7" text="初步诊断："/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow id="gridRow">
+					<mx:GridItem  id="gridItem" colSpan="6" paddingLeft="8">
+						<s:VGroup id="vgroup" width="100%">
+							<s:TextInput width="100%" height="15" styleName="textInput" editable="false"/>
+						</s:VGroup>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow>
+					<mx:GridItem >
+						<s:Label  textAlign="center" text="评估时间：" paddingLeft="7"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="6">
+						<s:Label width="50"  text="{now.fullYear}"  textAlign="right" styleName="myLabel"/>
+						<s:Label   text="年"  styleName="myLabel"/>
+						<s:Label width="20"  text="{now.month+1}"  textAlign="right" styleName="myLabel"/>
+						<s:Label    text="月" styleName="myLabel"/>
+						<s:Label width="20"  text="{now.date}"  textAlign="right" styleName="myLabel"/>
+						<s:Label   text="日" styleName="myLabel"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow>
+					<mx:GridItem colSpan="6">
+						<s:Label  paddingLeft="7" text="评估分级："/>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow>
+					<mx:GridItem colSpan="6">
+						<s:HGroup  chromeColor="#FFFFFF" gap="75" horizontalAlign="center" verticalAlign="middle" paddingLeft="10">
+							<s:CheckBox label="橙色" mouseEnabled="false"  selected="{vf309.f30909=='3'}"/>
+							<s:CheckBox label="红色" mouseEnabled="false" selected="{vf309.f30909=='4'}"/>
+						</s:HGroup>
+					</mx:GridItem>
+				</mx:GridRow>
+				<mx:GridRow>
+					<mx:GridItem colSpan="4">
+						<s:Label text="报  告 人：" width="100%" textAlign="right"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="2">
+						<s:Label width="100%" id="F308_15" text="{vf309.f30912}" styleName="myLabel"/>
+					</mx:GridItem>
+				</mx:GridRow>	
+				<mx:GridRow>
+					<mx:GridItem colSpan="4">
+						<s:Label text="报告机构："  width="100%" textAlign="right"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="2">
+						<s:Label width="100%" text="{vf309.f30913zh}" styleName="myLabel"/>
+					</mx:GridItem>
+				</mx:GridRow>	
+				<mx:GridRow>
+					<mx:GridItem colSpan="4">
+						<s:Label text="报告日期：" width="100%" textAlign="right"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="2">
+						<s:Label width="100%"  text="{DateField.dateToString(vf309.f30914,'YYYY-MM-DD')}" styleName="myLabel"/>
+					</mx:GridItem>
+				</mx:GridRow>	
+			</mx:Grid>
+			</s:VGroup>
+			<s:HGroup id="print" width="100%" buttonMode="true" horizontalAlign="right" paddingRight="20">
+						<s:Button label="打印" chromeColor="0XFFFFFF" click="printF309()" cornerRadius="5"/>
+				</s:HGroup>
+		</s:VGroup>
+</s:TitleWindow>

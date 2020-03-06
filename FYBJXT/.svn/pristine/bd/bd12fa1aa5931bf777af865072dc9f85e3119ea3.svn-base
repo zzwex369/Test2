@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin="com.xyw.sys.custom.skin.*"
+			   width="1200" backgroundColor="white" chromeColor="#5CACEE" fontFamily="微软雅黑" close="removeWindow()"
+			   cornerRadius="5" creationComplete="moduleComplete()" horizontalCenter="0"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="信息修改"
+			   verticalCenter="0">
+	<fx:Declarations>
+		<s:RemoteObject id="e501Service" destination="e501Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="renewE501" result="renewE501Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.myLabel {
+			paddingTop:4px;
+		}
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.model.E303;
+			import com.xyw.module.etbj.model.E501;
+			import com.xyw.module.etbj.model.VE303;
+			import com.xyw.module.etbj.model.VE501;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			private var e501:E501 =new E501();
+			public var ve501:VE501;
+			public var systemUser:SystemUser = null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var d60101:Number;
+			private var e50101:Number;
+			[Bindable]
+			private var sexData:ArrayCollection = new ArrayCollection([{label:"请选择",data:0},{label:"男",data:1},{label:"女",data:2},{label:"未知",data:3},{label:"未说明",data:4}]);
+			
+			private function moduleComplete():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//var now:Date =new Date();
+				this.initializeComboBox();
+			}
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t where t.D101_01 = " + this.systemUser.institutionCode + " or t.D101_11 = " + this.systemUser.institutionCode;
+				comboBoxDataRequest.flag = "D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				var comboBoxDataP:Object=new Object();
+				comboBoxDataP.data="0";
+				comboBoxDataP.label="其他";
+				comboBoxDataList.addItem(comboBoxDataP);
+				if(flag == "D101")
+				{
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.E501_11.dataProvider = comboBoxDataList;
+					this.E501_11.selectedIndex=0;
+					this.E501_19.dataProvider = comboBoxDataList;
+					this.E501_19.selectedIndex = index;	
+				}
+					putVE501();
+			}
+			/****************选择对应的信息********************/
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String,flag:Boolean=false):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				var comboBoxDataP:Object =new Object();
+				if(!flag)
+				{
+					while(i < len) {
+						comboBoxDataP= arrayCollection.getItemAt(i);
+						if(comboBoxDataP.data == defaultValue) {
+							index = arrayCollection.getItemIndex(comboBoxDataP);
+							break;
+						}
+						i++;
+					}
+				}else if(flag)
+				{
+					while(i < len) {
+						comboBoxDataP = arrayCollection.getItemAt(i);
+						if(comboBoxDataP.label == defaultValue) {
+							index = arrayCollection.getItemIndex(comboBoxDataP);
+							break;
+						}
+						i++;
+					}
+				}
+				return index;
+			}
+			/*********************读卡***************/
+			private function _readCard(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+							E501_03.text=array[0];
+							E501_04.text=array[5]
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			} 
+			/*******************验证地址选项是否选择到最下级*****************/
+			private function validateAreaCode(areaCode:String):Boolean
+			{
+				if(areaCode == "" || areaCode.length == 0){
+					return false;
+				} else if(areaCode.length < 9){
+					return false;
+				} else if(areaCode.length == 9){
+					if(areaCode.substr(0,4) == "4113"){
+						return false;
+					} else {
+						return true;
+					}
+				} else {
+					return true;
+				}
+			}
+			/*****************保存验证*******************/
+			private function saveE501():void
+			{
+				e501=new E501();
+				if(E501_06.text==""){
+					Alert.show("请输入儿童（新生儿）姓名","系统提示");
+					return ;
+				}
+				if(E501_07.selectedIndex==0){
+					Alert.show("请选择儿童（新生儿）性别","系统提示");
+					return ;
+				}
+				if(E501_08.text==""){
+					Alert.show("请选择出生日期","系统提示");
+					return ;
+				}
+				if(E501_08H.text==""){
+					Alert.show("请选择分娩时间小时","系统提示");
+					return ;
+				}
+				if(E501_08M.text==""){
+					Alert.show("请选择分娩时间分钟","系统提示");
+					return ;
+				}
+				if(E501_09.text==""){
+					Alert.show("请输入孕周","系统提示");
+					return ;
+				}
+				if(E501_11.selectedIndex==0){
+					Alert.show("请选择出生医院","系统提示");
+					return ;
+				} 
+				if(E501_10.text==""){
+					Alert.show("请输入出生体重","系统提示");
+					return ;
+				}
+				if(E501_03.text==""){
+					Alert.show("请输入家长姓名","系统提示");
+					return ;
+				}
+				if(E501_04.text==""){
+					Alert.show("请输入身份证号","系统提示");	
+					return ;
+				}
+				if(E501_05.text==""){
+					Alert.show("请输入联系电话","系统提示");
+					return ;
+				}
+				if(E501_20.text==""){
+					Alert.show("请输入筛查编号","系统提示");
+					return ;
+				}
+				E501_12_01.selected?e501.e50112="1":e501.e50112="2";
+				if(E501_13_01.selected){
+					e501.e50113="1";
+				}
+				if(E501_13_02.selected){
+					e501.e50113="2";
+				}
+				if(E501_14_01.selected){
+					e501.e50114="1";
+				}
+				if(E501_14_02.selected){
+					e501.e50114="2";
+				}
+				if(E501_14_03.selected){
+					e501.e50114="3";
+				}
+				if(E501_15_01.selected){
+					e501.e50115="1";
+				}
+				if(E501_15_02.selected){
+					e501.e50115="2";
+				}
+				if(E501_15_03.selected){
+					e501.e50115="3";
+				}
+				if(E501_16_01.selected){
+					e501.e50116="1";
+				}
+				if(E501_16_02.selected){
+					e501.e50116="2";
+				}
+				if(E501_16_03.selected){
+					e501.e50116="3";
+				}
+				if(E501_17.text==""){
+					Alert.show("请输入筛查者签名","系统提示");
+					return ;
+				}
+				if(E501_18.text==""){
+					Alert.show("请选择筛查日期","系统提示");
+					return ;
+				}
+				if(E501_21.text==""){
+					Alert.show("请输入录入人员","系统提示");
+					return ;
+				}
+				if(E501_22.text==""){
+					Alert.show("请选择录入时间","系统提示");
+					return ;
+				}
+				E501_23_01.selected?e501.e50123="1":e501.e50123="2";
+				if(!validateAreaCode(E501_24.getAreaCode()))
+				{
+					Alert.show("母亲地址选择到最下级","系统提示");
+					return ;
+				}
+				_saveE501();
+			}
+				/***************保存发送数据*********************/
+			private function _saveE501():void
+			{
+				try
+				{
+					e501.e50103=StringUtil.trim(E501_03.text);
+					e501.e50104=StringUtil.trim(E501_04.text);
+					e501.e50105=StringUtil.trim(E501_05.text);
+					e501.e50106=StringUtil.trim(E501_06.text);
+					e501.e50107=E501_07.selectedItem.data;	
+					e501.e50108=DateFormatter.parseDateString(E501_08.text+" "+E501_08H.text+":"+E501_08M.text);
+					e501.e50109=StringUtil.trim(E501_09.text);
+					e501.e50110=Number(StringUtil.trim(E501_10.text));
+					e501.e50111=E501_11.selectedItem.data;
+					e501.e50117=StringUtil.trim(E501_17.text);
+					e501.e50118=DateField.stringToDate(this.E501_18.text, "YYYY-MM-DD");
+					e501.e50119=systemUser.institutionCode;
+					e501.e50120=StringUtil.trim(E501_20.text);
+					e501.e50121=StringUtil.trim(E501_21.text);
+					e501.e50122=DateField.stringToDate(this.E501_22.text, "YYYY-MM-DD");
+					e501.e50124=E501_24.getAreaCode();
+					e501.e50101=e50101;
+					save.enabled=false;
+					e501Service.renewE501(e501);
+				}
+				catch(error:Error) 
+				{
+					Alert.show("保存失败","系统提示");
+					trace("index._saveE501()"+error);
+					
+				}
+			}
+			/*****************保存返回的信息*******************/
+			private function saveE501Handler(event:ResultEvent):void
+			{
+				var e501Response:Object=event.result;
+				if(!e501Response.state){
+					Alert.show(e501Response.errorMessage,"系统提示");
+					return ;
+				}
+				Alert.show(e501Response.promptMessage,"系统提示");
+			}
+			/*****************更新返回的信息*******************/
+			private function renewE501Handler(event:ResultEvent):void
+			{
+				var e501Response:Object=event.result;
+				if(!e501Response.state){
+					Alert.show(e501Response.errorMessage,"系统提示");
+					return ;
+				}
+				Alert.show(e501Response.promptMessage,"系统提示");
+			}
+			/*******************得到需要修改的信息*****************/
+			private function putVE501():void
+			{	
+				try
+				{
+					if(ve501!=null){
+						e50101=ve501.e50101;
+						d60101=ve501.e50102;
+						E501_03.text=ve501.e50103;
+						E501_04.text=ve501.e50104;
+						E501_05.text=ve501.e50105;
+						E501_06.text=ve501.e50106;
+						E501_07.selectedIndex=int(ve501.e50107);
+						E501_08.text=ve501.e50108.substring(0,10);
+						E501_08H.text = ve501.e50108.substring(11,13);
+						E501_08M.text= ve501.e50108.substring(14,16);
+						E501_09.text=ve501.e50109;
+						E501_10.text=String(ve501.e50110);
+						E501_11.selectedIndex=getDropDownListSelectedIndex(ArrayCollection(E501_11.dataProvider),ve501.e50111);
+						E501_20.text=ve501.e50120;
+						ve501.e50112=="1"?E501_12_01.selected=true:E501_12_02.selected=true;
+						ve501.e50113=="1"?E501_13_01.selected=true:E501_13_02.selected=true;
+						if(ve501.e50114=="1")
+						{
+							E501_14_01.selected=true;
+						}
+						if(ve501.e50114=="2")
+						{
+							E501_14_02.selected=true;
+						}
+						if(ve501.e50114=="3")
+						{
+							E501_14_03.selected=true;
+						}
+						if(ve501.e50115=="1")
+						{
+							E501_15_01.selected=true;
+						}
+						if(ve501.e50115=="2")
+						{
+							E501_15_02.selected=true;
+						}
+						if(ve501.e50115=="3")
+						{
+							E501_15_03.selected=true;
+						}
+						if(ve501.e50116=="1")
+						{
+							E501_16_01.selected=true;
+						}
+						if(ve501.e50116=="2")
+						{
+							E501_16_02.selected=true;
+						}
+						if(ve501.e50116=="3")
+						{
+							E501_16_03.selected=true;
+						}
+						E501_17.text=ve501.e50117;
+						E501_18.text=ve501.e50108Str;
+						E501_19.selectedIndex=getDropDownListSelectedIndex(ArrayCollection(E501_19.dataProvider),ve501.e50119);;
+						E501_21.text=ve501.e50121;
+						E501_22.text=ve501.e50122Str;
+						ve501.e50123=="1"?E501_23_01.selected=true:E501_23_02.selected=true;
+						E501_24.setAreaCode(ve501.e50124);
+						save.enabled=true;
+					}
+				} 
+				catch(error:Error) 
+				{
+					trace("index.putVE501()"+error);
+				}
+			}
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup  paddingBottom="20" paddingLeft="28" paddingRight="10" paddingTop="10">	
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="1140" label="新生儿信息">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid>
+						<mx:GridRow>
+							<mx:GridItem>
+							<s:Label text="姓      名" width="55" styleName="myLabel"/><s:TextInput id="E501_06" restrict="^0-9"/>
+							</mx:GridItem>
+							<mx:GridItem>
+							<s:Label text="性      别" styleName="myLabel"/><s:DropDownList id="E501_07" width="130"
+																   buttonMode="true"
+																   dataProvider="{sexData}"
+																   selectedIndex="0"/>
+							</mx:GridItem>
+							<mx:GridItem>
+							<s:Label text="出生日期" styleName="myLabel"/>
+							<mx:DateField id="E501_08" width="130" buttonMode="true"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+							<s:Label text="分娩时间" styleName="myLabel"/>
+							<s:BorderContainer width="140" height="23">
+								<s:HGroup width="138" verticalAlign="middle">
+									<s:TextInput id="E501_08H" width="43" borderVisible="false" textAlign="right"/>
+									<s:Label text="时"/>
+									<s:TextInput id="E501_08M" width="40" borderVisible="false" textAlign="right"/>
+									<s:Label text="分"/>
+									</s:HGroup>
+							</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+							<s:Label text="体重" styleName="myLabel"/>
+							<s:BorderContainer y="3" width="127" height="24">
+								<s:TextInput id="E501_10" width="90" borderVisible="false"/><s:Label x="101"
+																									 y="0"
+																									 height="23"
+																									 text="kg"
+																									 textAlign="center"
+																									 verticalAlign="middle"/>
+							</s:BorderContainer>
+							</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="出生医院" width="55" styleName="myLabel"/><s:DropDownList id="E501_11" width="130"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="筛查编号" styleName="myLabel"/><s:TextInput id="E501_20"/>
+								</mx:GridItem>
+								<mx:GridItem>
+							<s:Label  text="付费方式 " styleName="myLabel"/>
+							<s:HGroup width="129" paddingBottom="2" verticalAlign="middle">
+								<s:RadioButton width="70" label="免费" buttonMode="true" groupName="E501_23" id="E501_23_01" selected="true"/>
+								<s:RadioButton width="53" label="自费" buttonMode="true" groupName="E501_23" id="E501_23_02"/>
+							</s:HGroup>
+								</mx:GridItem>
+								
+						</mx:GridRow>
+					</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="1140" label="母亲信息">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label width="59" styleName="myLabel" text="母亲姓名"/><s:TextInput id="E501_03" restrict="^0-9" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="身份证号" width="52" styleName="myLabel"/><s:TextInput id="E501_04" width="140" enabled="false"/>
+									<s:Button id="readCard1" width="60" label="读卡" buttonMode="true"
+											  click="_readCard(event)"  enabled="{systemUser.duka=='1'}"/>	
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="联系电话 " paddingLeft="8" width="60" styleName="myLabel"/><s:TextInput id="E501_05"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="2" text="孕周" styleName="myLabel"/>
+									<s:TextInput id="E501_09"  maxChars="4"
+												 restrict="0-9+" text="例如：39+4或40"/>
+									
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem  colSpan="4">
+									<s:Label text="现住址" styleName="myLabel"/>
+									<component:AreaComboBoxVillage id="E501_24" width="799"
+																   buttonMode="true"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="1140" label="检查信息">
+					<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label width="60" text="检查方法  "/>
+							<s:RadioButton id="E501_12_01" width="123" label="耳声发射（OAE）"
+										   buttonMode="true" groupName="CheckMethod" selected="true"/>
+							<s:RadioButton id="E501_12_02" width="222" label="自动听性脑干反应（AABR）"
+										   buttonMode="true" groupName="CheckMethod"/>
+							<s:HGroup paddingLeft="20" verticalAlign="middle">
+								<s:Label width="60" text="初筛/复筛"/>
+								<s:RadioButton id="E501_13_01" width="56" label="初筛"
+											   buttonMode="true" groupName="CheckNum"
+											   selected="true"/>
+								<s:RadioButton id="E501_13_02" width="56" label="复筛"
+											   buttonMode="true" groupName="CheckNum"/>
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+								  verticalAlign="middle">
+							<s:HGroup verticalAlign="middle">
+								<s:Label width="60" text="右      耳  "/>
+								<s:RadioButton id="E501_14_01" width="53" label="通过"
+											   buttonMode="true" groupName="RightEar"
+											   selected="true"/>
+								<s:RadioButton id="E501_14_02" width="65" label="未通过"
+											   buttonMode="true" groupName="RightEar"/>
+								<s:RadioButton id="E501_14_03" width="227" label="未筛"
+											   buttonMode="true" groupName="RightEar"/>
+							</s:HGroup>
+							<s:HGroup width="476" paddingLeft="12" verticalAlign="middle">
+								<s:Label width="62" text="左      耳" paddingLeft="5"/>
+								<s:RadioButton id="E501_15_01" width="57" label="通过"
+											   buttonMode="true" groupName="LeftEar" selected="true"/>
+								<s:RadioButton id="E501_15_02" width="65" label="未通过"
+											   buttonMode="true" groupName="LeftEar"/>
+								<s:RadioButton id="E501_15_03" label="未筛" buttonMode="true"
+											   groupName="LeftEar"/>
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+								  verticalAlign="middle">
+							<s:HGroup verticalAlign="middle">
+								<s:Label width="60" text="筛查结果  "/>
+								<s:RadioButton id="E501_16_01" width="53" label="通过"
+											   buttonMode="true" groupName="Opinion" selected="true"/>
+								<s:RadioButton id="E501_16_02" width="65" label="未通过"
+											   buttonMode="true" groupName="Opinion"/>
+								<s:RadioButton id="E501_16_03" width="85" label="复查未通过"
+											   buttonMode="true" groupName="Opinion"/>
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="1140" label="报告信息">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="筛查者签名"/><s:TextInput id="E501_17" restrict="^0-9"/>
+							<s:Label text="筛查时间"/>
+							<mx:DateField id="E501_18" width="130" buttonMode="true"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							<s:Label text="   筛查医院"/><s:DropDownList id="E501_19" enabled="false" width="130"/>
+							<s:Label text="   录入人员"/><s:TextInput id="E501_21" restrict="^0-9"/>
+							<s:Label text="   录入时间"/>
+							<mx:DateField id="E501_22" width="130" buttonMode="true" enabled="false"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup width="100%" height="30" contentBackgroundColor="#FF0000"
+					  horizontalAlign="center" paddingBottom="20" paddingLeft="10" paddingTop="10"
+					  verticalAlign="middle">
+				<s:Button id="save" label="保存" buttonMode="true" click="saveE501()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+
+</s:TitleWindow>
+
+

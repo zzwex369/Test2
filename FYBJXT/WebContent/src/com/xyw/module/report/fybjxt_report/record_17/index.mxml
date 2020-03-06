@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete="creationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Label
+		{
+			fontSize:13;
+		}	
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				date_satrt.selectedDate=new Date(new Date().fullYear,new Date().month,'01');
+				date_end.selectedDate=new Date();
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+					this.E305_17.dataProvider=comboBoxDataList;
+					E305_17.dataProvider.removeItemAt(0);
+				}
+			}	
+			
+			private function textInputHandler(event:TextEvent):void
+			{
+				var e305_17Str:String=StringUtil.trim(E305_17.textInput.text);
+				if(e305_17Str.length>1)
+				{
+					var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+					comboBoxDataRequest.showPrompt = true;
+					comboBoxDataRequest.flag = "D101";//单位
+					comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t where t.d101_02 like '%"+e305_17Str+"%'";
+					this.systemService.getComboBoxData(comboBoxDataRequest);
+				}
+			}
+			private function E305_17_focusInHandler(event:FocusEvent):void
+			{
+				if(E305_17.textInput.text=="请最少输入俩个汉字!")
+					E305_17.textInput.text="";
+			}
+			private function query():void
+			{
+				if(this.date_satrt.text == "")
+				{
+					Alert.show("请选择开始时间!","系统提示!");
+					return;
+				}else if(this.date_end.text == "")
+				{
+					Alert.show("请选择结束时间!","系统提示!");
+					return;
+				}
+				if((this.date_end.selectedDate.time)-(this.date_satrt.selectedDate.time)<0)
+				{
+					Alert.show("开始时间不能大于结束时间","系统提示");
+					return;
+				}
+				var date_start:String = this.date_satrt.text;
+				var date_end:String = this.date_end.text;
+				var date_status:String="0";
+				var e305_74_status:String="";
+				var e305_74_data:String="";
+				var institution:String = this.institution.getLastSelectedInstitutionCode();
+				var institutionType:String = this.institution.getLastSelectedInstitution();		
+				
+				institution = (institutionType == "10")?institution:institution.substring(0,Number(institutionType));
+				date_status=(E305_74.selected)?"0":"1";
+				if(Yes.selected)
+				{
+					if(E305_17.selectedIndex==-1)
+					{
+						Alert.show("请选择条件","系统提示");
+						return;
+					}
+					e305_74_status="0";
+					e305_74_data=E305_17.selectedItem.data;
+					
+				}else
+				{
+					e305_74_status="1";
+				}
+				var url:String = null;
+				url = this.parentApplication.contextRoot + "/report_new/jsp/Report_17.jsp?e305_74_data="+e305_74_data+"&e305_74_status="+e305_74_status+"&date_status="+date_status+"&date_start="+date_start+"&date_end="+date_end+"&institution="+institution;
+				navigateToURL(new URLRequest(url), null);
+			}
+			//测试路径
+			private function printCertificate2():void
+			{
+				var urlRequest:URLRequest = null;
+				urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print_new/PrintDirect/Report.htm") ;
+				navigateToURL(urlRequest,"_blank");
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<mx:TabNavigator  width="900" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="儿童随访登记本" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid width="100%">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="检查单位"/>
+								<component:InstitutionComboBox id="institution" width="730" villageVisible="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="按助产机构查询"/>
+								<s:RadioButton id="Yes" label="是" groupName="c" buttonMode="true" click="row.enabled=true"/>
+								<s:RadioButton id="No" label="否" groupName="c" buttonMode="true" click="row.enabled=false;E305_17.textInput.text='请最少输入俩个汉字!';E305_17.dataProvider=null"  selected="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow id="row" enabled="false">
+							<mx:GridItem>
+								<s:Label text="助产机构名称"/>
+								<s:ComboBox id="E305_17"  width="250" focusIn="E305_17_focusInHandler(event)" creationComplete="E305_17.textInput.text='请最少输入俩个汉字!'" textInput="textInputHandler(event)" restrict="^0-9 ^a-z"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="查询时间"/>
+								<s:RadioButton id="E305_74" label="按本次访问时间查询" groupName="cx" buttonMode="true" click="labelName.text='本次访问时间'" selected="true"/>
+								<s:RadioButton id="E305_76" label="按下次访问时间查询" groupName="cx" buttonMode="true" click="labelName.text='下次访问时间'"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="本次访问时间" id="labelName"/>
+								<mx:DateField yearNavigationEnabled="true" id="date_satrt" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD"/>
+								<s:Label text="至"/>
+								<mx:DateField yearNavigationEnabled="true" id="date_end" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD"/>
+								<s:Button label="查询" id="loadDelivery" click="query()"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

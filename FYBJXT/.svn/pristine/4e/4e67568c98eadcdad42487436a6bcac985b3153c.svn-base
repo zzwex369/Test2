@@ -1,0 +1,103 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   title="围产信息加载" backgroundColor="#FFFFFF"
+			   chromeColor="#5CACEE" close="removeWindow()" width="1024" height="246"
+			   creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="perinatalHealthService" destination="perinatalHealthService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF302"  result="queryF302Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F302Request;
+			import com.xyw.module.fnbj.model.VF302;
+			import com.xyw.module.fnbj.model.F302;
+			
+			import com.xyw.module.fnbj.yzqjcdj.index;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var f30203:String;
+			public var f30205:String;
+			public var f30250:String;
+			public var vf302:VF302;
+			
+			public function init():void {
+				var f302Request:F302Request  = new F302Request();
+				f302Request.f30203 = this.f30203;
+				f302Request.f30205 = this.f30205;
+			//	f302Request.f30250 = this.f30250;
+				/* f302Request.f30252Start =null;
+				f302Request.f30252End =null;
+				f302Request.f30202 =0; 
+				f302Request.f30207 =null;  */
+				f302Request.parameterPageindex = 1;
+				f302Request.parameterPagesize = 20;
+				
+				this.perinatalHealthService.queryF302(f302Request);
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			public function queryF302Handler(event:ResultEvent):void {
+				var f302Response:Object = event.result;
+				
+				if(f302Response.state){
+					this.certificateDataGrid.dataProvider = f302Response.vf302s;
+				}else{
+					Alert.show(f302Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function onSelected(event:Event):void{
+				this.vf302 = DataGrid(event.target).selectedItem as VF302;
+				
+				if(this.vf302 == null){
+					Alert.show("请选择要加载的数据！","系统提示");
+					this.vf302 =null;
+				}
+				var sfindex:index=this.owner as index;
+				sfindex.loadF302(this.vf302);
+				this.removeWindow();
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+		<s:HGroup paddingBottom="5" paddingLeft="15" paddingTop="10"  paddingRight="5" width="100%" height="100%" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF">
+			<s:DataGrid id="certificateDataGrid" alternatingRowColors="[#FFFFFF,#EEEEEE]" chromeColor="#5CACEE" editable="true" rowHeight="22" width="980" height="158" >
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn visible="false" dataField="f30201" headerText="主键"/>
+						<s:GridColumn width="80" dataField="f30203" headerText="孕产妇姓名"/>
+						<s:GridColumn width="150" dataField="f30205" headerText="身份证号"/>
+						<s:GridColumn width="150" dataField="f30207" headerText="保健卡号"/>
+						<s:GridColumn width="80" dataField="f30255" headerText="高危评分"/>
+						<s:GridColumn width="100" dataField="f30256Zh" headerText="高危级别"/>
+						<s:GridColumn width="100" dataField="f30216Str" headerText="末次月经"/>
+						<s:GridColumn width="100" dataField="f30251" headerText="建册医生"/>
+						<s:GridColumn width="150" dataField="f30250Zh" headerText="建册单位"/>
+						<s:GridColumn width="100" dataField="f30252Str" headerText="建册时间"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>					
+		</s:HGroup>
+		
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			<s:Button label="关闭" click="removeWindow();"/>
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:TitleWindow>

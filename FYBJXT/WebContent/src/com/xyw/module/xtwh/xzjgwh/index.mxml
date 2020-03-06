@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%" backgroundColor="#FFFFFF"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete = "creationCompleteHandle(event)">
+
+	<fx:Declarations>
+		<s:RemoteObject id="governmentService" destination="governmentService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="query" result="queryHandler(event)" />
+			<s:method name="remove" result="removeHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		component|AreaComboBox
+		{
+			fontSize:13;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+			cornerRadius:3;
+		}
+		mx|Alert{
+			/*borderColor: red;*/
+			borderVisible:false;
+			backgroundColor: yellow;
+			dropShadowVisible: true;
+			chromeColor: yellow;
+			titleStyleName: alertTitle;
+			messageStyleName: alertMessage;
+			buttonStyleName: alertButton;
+		}
+		.alertTitle{
+			fontSize: 15;
+			fontWeight: bold;
+			color: black;
+		}
+		.alertMessage {
+			fontWeight: normal;
+			color: black;
+		}
+		.alertButton {
+			color: black;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.D101Request;
+			import com.xyw.module.xtwh.model.D201;
+			import com.xyw.module.xtwh.model.D201Request;
+			import com.xyw.module.xtwh.model.D201Response;
+			import com.xyw.module.xtwh.model.VD201;
+			import com.xyw.sys.custom.component.PagerBar;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var pageIndex:int=0;
+			public var pageSize:int=10;
+			
+			[Bindable]
+			public var d201:D201 = null;
+			public var selectIndex:String;
+			public var selectIndexName:String;
+			public var vd201:VD201 = null;
+			
+			private function creationCompleteHandle(event:FlexEvent):void
+			{
+				var orfData:ArrayCollection = new ArrayCollection();
+				this.dataGridInfo.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelectionChange);
+			}
+			
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.vd201 = DataGrid(event.target).selectedItem as VD201;
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				var d201Request:D201Request = new D201Request();
+			    d201 = new D201();
+				var d20102_AreaCode:String = this.area.getAreaCode();
+				d201.d20102 = d20102_AreaCode;
+				d201Request.d201 = d201;
+				d201Request.pageIndex = 1;
+				d201Request.pageSize = 20;
+				
+				this.governmentService.query(d201Request);
+			}
+			
+			private function queryHandler(event:ResultEvent):void
+			{  
+				var d201Response:D201Response = event.result as D201Response;
+				
+				var rowCount:Number = d201Response.rowCount;
+				var d201s:ArrayCollection = d201Response.vd201s;
+				
+				if(d201Response.errorMessage == null) {
+					this.pagerBar.dataGrid = this.dataGridInfo;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = d201s;
+					this.pagerBar.pagerFunction = pagerFunction;
+					this.pagerBar.dataBind();
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(d201Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function pagerFunction(currentPageIndex:int,pageSize:int):void
+			{
+				var d201Request:D201Request = new D201Request();
+				d201 = new D201();
+				var d20102_AreaCode:String = this.area.getAreaCode();
+				d201.d20102 = d20102_AreaCode;
+				
+				d201Request.d201 = d201;
+				d201Request.pageIndex = currentPageIndex;
+				d201Request.pageSize = pageSize;
+				
+				this.governmentService.query(d201Request);
+			}
+			
+			private function add(event:MouseEvent):void
+			{
+				if(area.getAreaCode().length == 12){
+					Alert.show("组不能添加下级机构","系统提示");
+					return;
+				}
+				var window:AddTitleWindow=new AddTitleWindow();
+				window.owner = this;
+				PopUpManager.addPopUp(window,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+				var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+				window.move(x,y);
+				
+				window.d20102_text = area.getAreaCode();
+				window.d20105_text = area.getAreaName();
+			}
+			
+			private function modify(event:MouseEvent):void
+			{
+				if(this.vd201 ==  null){
+					Alert.show("请选择要操作的行!", "系统提示");
+					return;
+				}
+				var window:ModifyTitleWindow = new ModifyTitleWindow();
+				window.owner = this;
+				window.vd201 = this.vd201;
+				PopUpManager.addPopUp(window,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+				var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+				window.move(x, y);
+				window.d20105_text = area.getAreaName();
+				window.areaCode = this.area.getAreaCode();
+			}
+			
+			private function remove(event:MouseEvent):void
+			{
+				if(this.vd201 == null){
+					Alert.show("请选择要操作的行！", "系统提示");
+					return;
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show("确定要删除所选的行吗？", "系统提示", (Alert.YES|Alert.NO), this, alertCallBack);
+			}
+			
+			private function alertCallBack(event:CloseEvent):void
+			{
+				var d201Request:D201Request =  new D201Request();
+				var d201:D201 = new D201();
+				d201.d20101 = this.vd201.d20101;
+				d201Request.d201 = d201;
+				
+				if(event.detail == Alert.YES){
+					this.governmentService.remove(d201Request);
+				}
+				
+			}
+			
+			private function removeHandler(event:ResultEvent):void
+			{
+				var d201Response:D201Response = event.result as D201Response;
+				if(d201Response.errorMessage == null){
+					this.refrashPage();
+					Alert.okLabel = "确认";
+					Alert.show(d201Response.promptMessage, "系统提示");
+				}else{
+					Alert.show(d201Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function refrashPage():void
+			{
+				var d201Request:D201Request = new D201Request();
+				d201 = new D201();
+				var d20102_AreaCode:String = this.area.getAreaCode();
+				d201.d20102 = d20102_AreaCode;
+				
+				d201Request.pageIndex = this.pagerBar.currentPageIndex;
+				d201Request.pageSize = 20;
+				d201Request.d201 = d201;
+				
+				this.governmentService.query(d201Request);
+			}
+		]]>
+	</fx:Script>
+	
+	<!--<component:AreaComboBox id="area"/>-->
+	<s:VGroup width="100%" height="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:TabNavigator width="100%" paddingTop="0" creationPolicy="all" chromeColor="#ffffff">
+			<s:NavigatorContent label="行政区划查询" height="75">
+				<s:VGroup width="100%">
+					<component:AreaComboBoxCommon id="area" width="100%" paddingLeft="10" paddingTop="5" horizontalAlign="left"/>
+					<!--component:AreaComboBox id="area" width="100%" paddingLeft="10" paddingTop="5" horizontalAlign="left"/-->
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5">
+						<s:Button label="查询" id="queryButton" click="query(event)"/>
+						<s:Button label="添加" id="addButton" click="add(event)"/>
+						<s:Button label="修改" id="modifyButton" click="modify(event)"/>
+						<s:Button label="删除" id="removeButton" click="remove(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+
+		<s:VGroup width="100%">
+			<s:DataGrid id="dataGridInfo" editable="true" borderAlpha="0.3" width="100%" height="330" rowHeight="22" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="45" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d20101" headerText="行政区划编码"/>
+						<s:GridColumn dataField="d20102" headerText="上级行政区划编码"/>
+						<s:GridColumn dataField="d20103" headerText="行政级别" visible="false"/>
+						<s:GridColumn dataField="d20103Zh" headerText="行政级别"/>
+						<s:GridColumn dataField="d20104" headerText="行政区划简称"/>
+						<s:GridColumn dataField="d20105" headerText="行政区划全称"/>
+						<s:GridColumn dataField="d20106" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d20107" headerText="备注" visible="false"/>
+						
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+		</s:VGroup>
+	</s:VGroup>
+</s:Module>

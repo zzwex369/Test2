@@ -1,0 +1,1396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin = "com.xyw.sys.custom.skin.*"
+			   title="信息修改" backgroundColor="white"
+			   chromeColor="#5CACEE" close = "removeWindow()" cornerRadius="5" 
+			   width="1200"  maxHeight="{this.parentApplication.stage.stageHeight-50}"
+			   creationComplete="moduleCreationComplete()" xmlns:local="*">
+	
+	
+	
+	
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<s:RemoteObject id="f606Service" destination="f606Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="updatef606" result="saveF606Handler(event)"/>
+			
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		<s:ArrayCollection id="someData">
+			<s:Button label="aa"/>
+			<s:Button label="bb"/>
+			<s:Button label="cc"/>
+		</s:ArrayCollection>
+	</fx:Declarations>
+	
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|SkinnableTextBase:disabledWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		s|SkinnableTextBase:normalWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.errorTip
+		{
+			font-size: 15;
+			border-color: red;/* //控制背景色 */
+			color: #fff;
+			font-weight: bold;
+			paddingBottom:1; 
+			cornerRadius:5;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		
+		<![CDATA[
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			import mx.validators.StringValidator;
+			import com.xyw.module.msss.fnbj.model.Vf606s;
+			import com.xyw.module.msss.fnbj.model.F606;
+			
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			var vf606:Vf606s;
+			[Bindable]
+			var flag:Boolean = false;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			var stringVal:StringValidator = new StringValidator();
+			var result:ValidationResultEvent;
+			
+			
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+			public function focusHandler(list:Array):void{
+				for each(var obj:TextInput in list){
+					obj.addEventListener(FocusEvent.FOCUS_OUT,vali);
+				}
+			}
+			
+			public function focusHandler1(list:Array):void{
+				for each(var obj:RadioButton in list){
+					
+					if(obj.id.substr(obj.id.length-1,1)=="1"&&obj.selected){
+						var str:String = "f"+(Number(obj.id.substr(1,2))+1);
+						this[str].addEventListener(FocusEvent.FOCUS_OUT,vali);
+					}
+					obj.addEventListener(FlexEvent.VALUE_COMMIT,ff);
+					
+					
+					
+					
+					
+				}
+			}
+			//event.target.id.substr(event.target.id.length-1,1)=="1"
+			public function ff(event:Event):void{
+				var str:String = "f"+(Number(event.target.id.substr(1,2))+1);
+				if(event.target.id.substr(event.target.id.length-1,1)=="1"&&event.target.selected){
+					//	event.target.addEventListener(FocusEvent.FOCUS_OUT,vali);
+					this[str].addEventListener(FocusEvent.FOCUS_OUT,vali);
+				}else if(event.target.id.substr(event.target.id.length-1,1)!="1"&&!(event.target.selected)){
+					this[str].addEventListener(FocusEvent.FOCUS_OUT,vali);
+					//	f03.removeEventListener(
+				}else{
+					this[str].removeEventListener(FocusEvent.FOCUS_OUT,vali);
+				}
+			}
+			
+			public function vali(event:FocusEvent):void{
+				stringVal.source=event.target;
+				stringVal.property="text";
+				stringVal.minLength=1;
+				stringVal.requiredFieldError="不能为空";
+				//	Alert.show(event.target.id);
+				result=stringVal.validate();
+				
+			}
+			
+			public function putVaule():void{
+				f02.text=vf606.f606_02;
+				f71.text=vf606.f606_71;
+				f03.text=vf606.f606_03;
+				f05.text=vf606.f606_05;
+				f06.text=vf606.f606_06;
+				f07.text=vf606.f606_07;
+				f08.text=vf606.f606_08;
+				f09.text=vf606.f606_09;
+				f10.text=vf606.f606_10;
+				f11.selectedDate=vf606.f606_11;
+				f12.text=vf606.f606_12;
+				f13.text=vf606.f606_13;
+				f14.text=vf606.f606_14;
+				if("1"==vf606.f606_15){
+					f15_1.selected=true;
+					f16.text=vf606.f606_16;
+				}else{
+					f15_2.selected=true;
+				}
+				f17.text=vf606.f606_17;
+				f18.text=vf606.f606_18;
+				f19.text=vf606.f606_19;
+				f20.text=vf606.f606_20;
+				if("1"==vf606.f606_22){
+					f22_1.selected=true;
+					f23.text=vf606.f606_23;
+				}else{
+					f22_2.selected=true;
+				}
+				f25.text=vf606.f606_25;
+				f27.text=vf606.f606_27;
+				if("1"==vf606.f606_28){
+					f28_1.selected=true;
+				}else{
+					f28_2.selected=true;
+				}
+				if("1"==vf606.f606_29){
+					f29_1.selected=true;
+					f30.text=vf606.f606_30;
+				}else{
+					f29_2.selected=true;
+				}
+				if("1"==vf606.f606_31){
+					f31_1.selected=true;
+				}else{
+					f31_2.selected=true;
+				}
+				f32.text=vf606.f606_32;
+				f33.text=vf606.f606_33;
+				f34.text=vf606.f606_34;
+				if("1"==vf606.f606_35){
+					f35_1.selected=true;
+					f36.selectedDate=vf606.f606_36;
+				}else{
+					f35_2.selected=true;
+				}
+				if("1"==vf606.f606_38){
+					f38_1.selected=true;
+					f39.text=vf606.f606_39;
+				}else{
+					f38_2.selected=true;
+				}
+				if("1"==vf606.f606_40){
+					f40_1.selected=true;
+					f41.text=vf606.f606_39;
+				}else{
+					f40_2.selected=true;
+				}
+				if("1"==vf606.f606_42){
+					f42_1.selected=true;
+					f43.text=vf606.f606_39;
+				}else{
+					f42_2.selected=true;
+				}
+				if("1"==vf606.f606_44){
+					f44_1.selected=true;
+					f45.text=vf606.f606_39;
+				}else{
+					f44_2.selected=true;
+				}
+				if("1"==vf606.f606_46){
+					f46_1.selected=true;
+					f47.text=vf606.f606_39;
+				}else{
+					f46_2.selected=true;
+				}
+				f48.text=vf606.f606_48;
+				f49.selectedDate=vf606.f606_49;
+				f50.text=vf606.f606_50;
+				//	f51.text=vf606.f606_51;
+				//	f53.text=vf606.f606_53;
+				if("3"==vf606.f606_54){
+					f54_1.selected=true;
+				}else{
+					f54_1.selected=true;
+				}
+				f55.text=vf606.f606_55;
+				f56.text=vf606.f606_56;
+				f57.text=vf606.f606_57;
+				f58.text=vf606.f606_58;
+				//	f59.text=vf606.f606_59;
+				//	f60.text=vf606.f606_60;
+				//f61.text=vf606.f606_61;
+				if("1"==vf606.f606_62){
+					f62_1.selected=true;
+				}else{
+					f62_2.selected=true;
+				}
+				
+				if("2"==vf606.f606_63){
+					f63_1.selected=true;
+					f64.text=vf606.f606_64;
+				}else{
+					f63_2.selected=true;
+				}
+				f66.text=vf606.f606_66;
+			}
+			
+			public function moduleCreationComplete():void
+			{ 
+				//f04.dataProvider=someData;
+				//	f21.dataProvider=someData;
+				//	f24.dataProvider=someData;
+				//	f26.dataProvider=someData;
+				//	f37.dataProvider=someData;
+				//	f65.dataProvider=someData;
+				//	f68.dataProvider=someData;
+				//	f69.dataProvider=someData;
+				this.systemUser =this.parentApplication.systemUser;
+				//	Alert.show("complete");
+				var now:Date = new Date();
+				this.f70.selectedDate =now;
+				initializeComboBox();
+				putVaule();
+				var list:Array=[f03,f05,f02,f71,f06,f07,f08,f09,f10,f13,f12,f17,f18,f19,f20];
+				focusHandler(list);
+				var list1:Array=[f15_1,f22_1,f29_1,f38_2,f40_1,f42_1,f44_1,f46_1,f63_1];
+				focusHandler1(list1);
+			}	
+			private function initializeComboBox():void
+			{
+				//	Alert.show("init");
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t where t.d101_01 = '" + this.systemUser.institutionCode + "' or t.d101_11 ='" + this.systemUser.institutionCode +"'";
+				comboBoxDataRequest.flag ="D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t" ;
+				comboBoxDataRequest.flag ="D101_";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_06";
+				comboBoxDataRequest.flag = "S301_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select * from Z606_01";
+				comboBoxDataRequest.flag = "Z606_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z606_02";
+				comboBoxDataRequest.flag = "Z606_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z606_03";
+				comboBoxDataRequest.flag = "Z606_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z606_04";
+				comboBoxDataRequest.flag = "Z606_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z606_05";
+				comboBoxDataRequest.flag = "Z606_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='1' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='10' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='2' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10_2";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='7' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10_7";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='0' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10_0";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}	
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S301_06")
+				{
+					//Alert.show("combo");
+					this.f04.dataProvider = comboBoxDataList;
+					this.f04.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_04);
+				}else if(flag=="Z606_01"){
+					this.f24.dataProvider = comboBoxDataList;
+					this.f24.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_24);
+				}else if(flag=="Z606_02"){
+					this.f21.dataProvider = comboBoxDataList;
+					this.f21.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_21);
+				}else if(flag=="Z606_03"){
+					this.f26.dataProvider = comboBoxDataList;
+					this.f26.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_26);
+				}else if(flag=="Z606_04"){
+					this.f37.dataProvider = comboBoxDataList;
+					this.f37.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_37);
+				}else if(flag=="Z606_05"){
+					this.f65.dataProvider = comboBoxDataList;
+					this.f65.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_65);
+				}else if(flag=="S301_10"){
+					this.f69.dataProvider = comboBoxDataList;
+					this.f69.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_69);
+				}else if(flag =="D101"){
+					var index:int =this.getDroupDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					this.f68.dataProvider =comboBoxDataList;
+				//	this.f52.dataProvider =comboBoxDataList;
+				//	this.f52.selectedIndex=this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_52);
+					this.f68.selectedIndex =index;
+				}else if(flag=="S301_10_10"){
+					this.f53.dataProvider = comboBoxDataList;
+					this.f53.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_53);
+				}else if(flag=="S301_10_2"){
+					this.f59.dataProvider = comboBoxDataList;
+					this.f59.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_59);
+				}else if(flag=="S301_10_7"){
+					this.f60.dataProvider = comboBoxDataList;
+					this.f60.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_60);
+				}else if(flag=="S301_10_0"){
+					this.f61.dataProvider = comboBoxDataList;
+					this.f61.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_61);
+				}else if(flag=="D101_"){
+					this.f52.dataProvider = comboBoxDataList;
+					this.f52.selectedIndex = this.getDroupDownListSelectedIndex(comboBoxDataList,vf606.f606_52);
+				}
+			}	
+			
+			private function getDroupDownListSelectedIndex(arrayCollection:ArrayCollection,defaultValue:String):int{
+				var len:int =arrayCollection.length;
+				var i:uint =0;
+				var index:int =0;
+				while(i<len){
+					var comboBoxDataP:Object =arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data ==defaultValue){
+						index =arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			//保存结果处理
+			public function saveF606Handler(event:ResultEvent):void{
+				var response:Object = event.result;
+				if(response.state){
+					Alert.show("保存成功","系统提示");
+					dispatchEvent(new Event("ok_click"));
+					removeWindow();
+				}else{
+					Alert.show(response.errorMessage);
+				}
+			}
+			
+			public function commit_():void{
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show('确认保存？','保存信息',1|2,this,f606_commit_hanlder);
+			}
+			
+			//信息提交
+			public function f606_commit_hanlder(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					//验证
+					validate();
+					if(!flag){
+						//Alert.show("");
+						return;
+					}
+					var f606:F606 = new F606();
+					//初始化
+					init_parm(f606);
+					//	Alert.show(f606.toString());
+					//提交
+					f606Service.updatef606(f606);
+				}
+				//	Alert.show("end");
+			}
+			
+			
+			function vil_huai():Boolean{
+				if(Number(StringUtil.trim(f17.text))<Number(StringUtil.trim(f18.text))){
+					Alert.show("生产次数不能大于怀孕次数","系统提示");
+					return false;
+				}
+				return true;
+			}
+			
+			function validate():void{
+				flag = true;
+				if(StringUtil.trim(f02.text)==""){
+					Alert.show("保健号不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				
+				if(StringUtil.trim(f71.text)==""){
+					Alert.show("实验编号不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				
+				if(StringUtil.trim(f03.text)==""){
+					Alert.show("姓名不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				
+				if(f04.selectedItem.data==""){
+					Alert.show("请选择证件类型","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f05.text)==""){
+					Alert.show("证件号码不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f06.text)==""){
+					Alert.show("年龄不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f07.text)==""){
+					Alert.show("身高不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f08.text)==""){
+					Alert.show("体重不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f09.text)==""){
+					Alert.show("孕周周不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f10.text)==""){
+					Alert.show("孕周天不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f12.text)==""){
+					Alert.show("手机号不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				
+				if(StringUtil.trim(f17.text)==""){
+					Alert.show("怀孕次数不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f18.text)==""){
+					Alert.show("生产次数不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f19.text)==""){
+					Alert.show("人流次数不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(StringUtil.trim(f20.text)==""){
+					Alert.show("自然流产次数不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				
+				if(!vil_huai()){
+					flag=false;
+					return;
+				}
+				var patternMonther:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+				if(this.f04.selectedItem.data == 1 &&  !patternMonther.test(this.f05.text))
+				{	//只有在证件类别为身份证，国籍为中国的时候才验证身份证格式是否正确
+					Alert.show("证件号码有误!","系统提示");
+					flag=false;
+					return;
+				}
+				if(f24.selectedItem.data!="1"&&StringUtil.trim(f25.text)==""){
+					Alert.show("染色体核型非正常描述不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(f26.selectedItem.data=="6"&&StringUtil.trim(f27.text)==""){
+					Alert.show("妊娠情况为其它时描述不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(f35_1.selected&&StringUtil.trim(f36.text)==""){
+					Alert.show("预约日期不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(f35_2.selected&&StringUtil.trim(f37.selectedItem.data)==""){
+					Alert.show(f37.selectedItem.label);
+					Alert.show(f37.selectedItem);
+					Alert.show(f37.selectedItem.data);
+					Alert.show("请选择未预约情况","系统提示");
+					flag=false;
+					return;
+				}
+				
+				if(DateField.stringToDate(f11.text,'YYYY-MM-DD')==null){
+					Alert.show("末次月经日期不能为空","系统提示");
+					flag=false;
+					return;
+				}
+				if(f69.selectedItem.data==""){
+					Alert.show("录入人不能为空","系统提示");
+					flag=false;
+					return;
+				}
+			}
+			
+			public function init_parm(f606:F606):void{
+				f606.f606_01=vf606.f606_01;
+				f606.f606_02=StringUtil.trim(f02.text);
+				f606.f606_03=StringUtil.trim(f03.text);
+				f606.f606_04=StringUtil.trim(f04.selectedItem.data);
+				f606.f606_05=StringUtil.trim(f05.text);
+				f606.f606_06=StringUtil.trim(f06.text);
+				f606.f606_07=StringUtil.trim(f07.text);
+				f606.f606_08=StringUtil.trim(f08.text);
+				f606.f606_09=StringUtil.trim(f09.text);
+				f606.f606_10=StringUtil.trim(f10.text);
+				f606.f606_11=DateField.stringToDate(f11.text,'YYYY-MM-DD');
+				// f606.f606_11=f11.selectedDate;
+				f606.f606_12=StringUtil.trim(f12.text);
+				f606.f606_13=StringUtil.trim(f13.text);
+				f606.f606_14=StringUtil.trim(f14.text);
+				if(f15_1.selected){
+					f606.f606_15="1";
+					f606.f606_16=StringUtil.trim(f16.text);
+				}else{
+					f606.f606_15="0";
+				}
+				
+				f606.f606_17=StringUtil.trim(f17.text);
+				
+				f606.f606_18=StringUtil.trim(f18.text);
+				
+				f606.f606_19=StringUtil.trim(f19.text);
+				
+				f606.f606_20=StringUtil.trim(f20.text);
+				
+				f606.f606_21=StringUtil.trim(f21.selectedItem.data);
+				if(f22_1.selected){
+					f606.f606_22="1";
+					f606.f606_23=StringUtil.trim(f23.text);
+				}else{
+					f606.f606_22="0";
+				}
+				f606.f606_24=StringUtil.trim(f24.selectedItem.data);
+				f606.f606_26=StringUtil.trim(f26.selectedItem.data);
+				if(f28_1.selected){
+					f606.f606_28="1";
+				}else{
+					f606.f606_28="0";
+				}
+				if(f29_1.selected){
+					f606.f606_29="1";
+					f606.f606_30=StringUtil.trim(f23.text);
+				}else{
+					f606.f606_29="0";
+				}
+				if(f31_1.selected){
+					f606.f606_31="1";
+				}else{
+					f606.f606_31="0";
+				}
+				
+				f606.f606_32=StringUtil.trim(f32.text);
+				
+				f606.f606_33=StringUtil.trim(f33.text);
+				
+				f606.f606_34=StringUtil.trim(f34.text);
+				if(f35_1.selected){
+					f606.f606_35="1";
+					f606.f606_36=DateField.stringToDate(f36.text,'YYYY-MM-DD');
+				}else{
+					f606.f606_35="0";
+					f606.f606_37=StringUtil.trim(f37.selectedItem.data);
+				}
+				if(f38_1.selected){
+					f606.f606_38="1";
+					f606.f606_39=StringUtil.trim(f39.text);
+				}else{
+					f606.f606_38="0";
+				}
+				if(f40_1.selected){
+					f606.f606_40="1";
+					f606.f606_41=StringUtil.trim(f41.text);
+				}else{
+					f606.f606_40="0";
+				}
+				if(f42_1.selected){
+					f606.f606_42="1";
+					f606.f606_43=StringUtil.trim(f43.text);
+				}else{
+					f606.f606_42="0";
+				}
+				if(f44_1.selected){
+					f606.f606_44="1";
+					f606.f606_45=StringUtil.trim(f45.text);
+				}else{
+					f606.f606_44="0";
+				}
+				if(f46_1.selected){
+					f606.f606_46="1";
+					f606.f606_47=StringUtil.trim(f47.text);
+				}else{
+					f606.f606_46="0";
+				}
+				f606.f606_48=StringUtil.trim(f48.text);
+				f606.f606_49=DateField.stringToDate(f49.text,'YYYY-MM-DD');
+				f606.f606_50=StringUtil.trim(f50.text);
+				
+				var bool :Boolean = false;
+				for each(var obj:Object in f52.dataProvider){
+					if(f52.textInput.text==obj.label&&obj.label!="没有数据"){
+						bool = true;
+					}
+				}
+				if(bool){
+					f606.f606_52=StringUtil.trim(f52.selectedItem.data);
+				}else{
+					Alert.show("无效的机构","系统提示");
+					flag=false;
+					return;
+				}
+			//	f606.f606_52=StringUtil.trim(f52.selectedItem.data);
+				f606.f606_53=StringUtil.trim(f53.selectedItem.data);
+				if(f54_1.selected){
+					f606.f606_54="3";
+				}else{
+					f606.f606_54="1";
+				}
+				
+				f606.f606_55=StringUtil.trim(f55.text);
+				
+				f606.f606_56=StringUtil.trim(f56.text);
+				
+				f606.f606_57=StringUtil.trim(f57.text);
+				
+				f606.f606_58=StringUtil.trim(f58.text);
+				f606.f606_59=StringUtil.trim(f59.selectedItem.data);
+				f606.f606_60=StringUtil.trim(f60.selectedItem.data);
+				f606.f606_61=StringUtil.trim(f61.selectedItem.data);
+				if(f62_1.selected){
+					f606.f606_62="1";
+				}else{
+					f606.f606_62="0";
+				}
+				if(f63_1.selected){
+					f606.f606_63="2";
+					f606.f606_64=StringUtil.trim(f64.text);
+				}else{
+					f606.f606_63="3";
+				}
+				f606.f606_67=f68.selectedItem.data;
+				f606.f606_68=f68.selectedItem.label;
+				f606.f606_69=StringUtil.trim(f69.selectedItem.data);
+				f606.f606_71=StringUtil.trim(f71.text);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:states> 
+		<s:State name="normal"/>			
+		<s:State name="special"/>
+	</s:states>
+	<s:Scroller id="scroller"  width="100%" height="100%"
+				horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" clipAndEnableScrolling="true" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all"
+							 width="1210">
+				<s:NavigatorContent  label="基本信息" width="100%">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5"
+										 text="姓       名:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f03" 
+											 width="129"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingTop="5" text="证   件  类   型:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList id="f04"  width="130"></s:DropDownList>
+							</mx:GridItem>
+							<mx:GridItem>	
+								<s:Label paddingLeft="3" paddingTop="5" text="证件号码:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f05"  width="188" restrict="0-9X"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem width="41">	
+								<s:Label paddingLeft="3" paddingTop="5" text="保健号:"/>
+							
+								<s:TextInput id="f02"
+											 width="141"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>	
+								<s:Label paddingLeft="3" paddingTop="5" text="实验编号:"/>
+							</mx:GridItem>
+							<mx:GridItem>	
+								<s:TextInput id="f71"  width="148"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>	
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="孕妇年龄:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f06" maxChars="2" restrict="0-9"
+											 width="130"
+											 />
+								
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5"
+										 text="身             高:"/>
+							</mx:GridItem>
+						<!--	<mx:GridItem>
+								
+								<s:TextInput id="f07"  maxChars="3" restrict="0-9"
+											 width="89"
+											 />
+								<s:Label paddingTop="5" text="cm"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>-->
+							<mx:GridItem>
+								
+								<s:BorderContainer width="118" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="f07" borderVisible="false"
+													 maxChars="3" restrict="0-9." textAlign="right"
+													 width="85"/>
+										<s:Label text="(cm)"/>
+									</s:HGroup>
+									
+								</s:BorderContainer>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>	
+								<s:Label paddingLeft="3" paddingTop="5"
+										 text="体      重:"/>
+							</mx:GridItem>
+							<!--<mx:GridItem>	
+								<s:TextInput id="f08"  width="65" maxChars="3" restrict="0-9."/>
+								<s:Label paddingTop="5" text="kg"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>-->
+							
+							<mx:GridItem>
+								
+								<s:BorderContainer height="23"
+												   width="188">
+									<s:HGroup verticalAlign="middle"
+											  width="186">
+										<s:TextInput id="f08" borderVisible="false"
+													 maxChars="3" restrict="0-9." textAlign="right"
+													 width="155"/>
+										<s:Label text="(kg)"/>
+									</s:HGroup>
+									
+								</s:BorderContainer>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							
+							
+						<!--	<mx:GridItem colSpan="2">	
+								<s:Label paddingTop="5"
+										 paddingLeft="2" text=" 孕    周:"/>
+								<s:TextInput id="f09" width="36" maxChars="2" restrict="0-9"/>
+								<s:Label paddingTop="5" text="周+"/>
+								<s:TextInput id="f10" maxChars="1" restrict="0-9"
+											 width="40"/>
+								<s:Label paddingTop="5" text="天"/>
+							</mx:GridItem>	-->
+							
+							<mx:GridItem width="211">	
+								
+								<s:Label width="43" paddingLeft="3" text="孕  周"
+										 paddingTop="6"/>
+								<s:BorderContainer width="140" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="f09" width="41" borderVisible="false" maxChars="2" textAlign="right"  restrict="0-9"/>
+										<s:Label paddingRight="0" text="周"/>
+										<s:TextInput id="f10" width="42" borderVisible="false" maxChars="1" textAlign="right"  restrict="0-6"/>
+										<s:Label paddingRight="0" text="天"/>
+									</s:HGroup>
+								</s:BorderContainer>
+								<s:Label text="*" styleName="must"/>
+								
+							</mx:GridItem>	
+							<mx:GridItem>	
+								<s:Label paddingLeft="3" paddingTop="5" text="末次月经:"/>
+							</mx:GridItem>	
+							<mx:GridItem>
+								<component:CustomRangeDateField id="f11" 
+																width="150"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>	
+						</mx:GridRow>	
+						<mx:GridRow>
+							<mx:GridItem>	
+								<s:Label paddingLeft="3" paddingTop="5" text="手  机  号:"/>
+							</mx:GridItem>	
+							<mx:GridItem>	
+								<s:TextInput id="f12"  restrict="0-9"
+											 width="131"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>	
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="紧急联系电话:"/>
+							</mx:GridItem>	
+							<mx:GridItem>
+								<s:TextInput id="f13" width="130" restrict="0-9"/>
+							</mx:GridItem>	
+						</mx:GridRow>					
+					</mx:Grid>
+					
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1180"  chromeColor="#ffffff" creationPolicy="all"
+							 height="95"
+							>
+				<s:NavigatorContent label="孕产史" width="100%">
+					<mx:Grid  paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem colSpan="2"
+										 width="321">
+								
+								<s:Label styleName="myLabel" paddingRight="0" text="孕"/>
+								<s:TextInput id="f17"  maxChars="1" restrict="0-9"
+											 width="30"
+											 />
+								
+								
+								<s:Label styleName="myLabel" paddingRight="0" text="次"/>
+								<s:Label styleName="myLabel" paddingRight="0" text="产"/>
+								<s:TextInput id="f18"  maxChars="1" restrict="0-9"
+											 width="31"
+											 />
+								
+								<s:Label styleName="myLabel" paddingRight="0" text="次"/>
+								
+							</mx:GridItem>
+							<mx:GridItem colSpan="2"
+										 width="305">
+								<s:Label paddingLeft="3" paddingTop="5" text="人流:"/>
+								<s:TextInput id="f19"  maxChars="1" restrict="0-9"
+											 width="33"
+											 />
+								<s:Label paddingLeft="3" paddingTop="5" text="次"/>
+								<s:Label paddingLeft="3" paddingTop="5" text="                "
+										 width="17"/>
+								<s:Label paddingLeft="3" paddingTop="5" text="自然流产:"/>
+								<s:TextInput id="f20"  maxChars="1" restrict="0-9"
+											 width="31"
+											/>
+								<s:Label paddingLeft="3" paddingTop="5" text="次"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="不良孕产史:"/>
+								<s:DropDownList id="f21" width="165"></s:DropDownList>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="家族遗传病:"/>
+								<s:RadioButton id="f22_1"  label="有" groupName="y_c"/>
+								<s:RadioButton id="f22_2"  label="无" groupName="y_c" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								
+								<s:TextInput id="f23" width="171" enabled="{f22_1.selected}" 
+											 color="#000000" prompt="遗传病描述"/>
+							</mx:GridItem>
+							<mx:GridItem width="126">
+								<s:Label paddingLeft="3" paddingTop="5" text="夫妻双方染色体核型:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList id="f24"
+												width="174"></s:DropDownList>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f25" color="#000000"
+											 enabled="{f24.selectedItem.data!=1}"
+											 prompt="夫妻双方染色体核型非正常描述"
+											 width="238"/>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+				<s:NavigatorContent width="100%" label="现病史">
+					
+					<s:Label x="16" y="11" text="目前患何种疾病:"/>
+					<s:TextInput id="f14" x="109" y="7" paddingBottom="3"/>
+					<s:Label x="288" y="11" text="是否接受治疗:"/>
+					<s:RadioButton id="f15_1" x="367" y="8" label="是" groupName="z_l"/>
+					<s:RadioButton id="f15_2" x="429" y="8" label="否" selected="true" groupName="z_l"/>
+					<s:TextInput id="f16" x="470" y="7" enabled="{f15_1.selected}"  color="#000000" prompt="治疗描述"/>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator id="familyInfo" width="1186" height="133" chromeColor="#ffffff"
+							 creationPolicy="all">
+				<s:NavigatorContent width="100%" label="临床检查">
+					
+					<mx:Grid  paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5"
+										 text="妊      娠    情      况:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList id="f26" 
+												width="140"
+												></s:DropDownList>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f27" width="195" color="#000000"
+											 enabled="{f26.selectedItem.data==6}"  prompt="其它描述"
+											 />
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="试  管 婴 儿:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f28_1"  label="是" groupName="s_g_y_r"/>
+								<s:Label text="  "
+										 width="4"/>
+								<s:RadioButton id="f28_2"  label="否" groupName="s_g_y_r" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label height="16" paddingLeft="3" paddingTop="3" text="风险值:"/>
+								<s:Label paddingLeft="3" paddingTop="5" text="21三体: 1/"/>
+								
+								<s:TextInput id="f32"  width="39" height="17" restrict="0-9"/>
+								
+								<s:Label paddingLeft="3" paddingTop="5" text="18三体: 1/"/>
+								<s:TextInput id="f33"  width="43" restrict="0-9"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="超      声    检      查:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f29_2"  label="未见异常" groupName="c_s" selected="true"/>
+								<s:RadioButton id="f29_1"  groupName="c_s"
+											   label="提示异常   "/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f30" color="#000000"
+											 enabled="{f29_1.selected}" prompt="异常描述" 
+											 width="200"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="血 清  筛 查:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f31_1"  label="已做" groupName="x_s"/>
+								<s:RadioButton id="f31_2"  label="未做" groupName="x_s" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="其    他:"/>
+								<s:TextInput id="f34" 
+											 width="222"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="预约介入性穿刺手术:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f35_1"  label="已预约" groupName="shoushu"/>
+								<s:Label text="  "
+										 width="4"/>
+								<s:RadioButton id="f35_2"  label="未预约" groupName="shoushu" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="预约日期:"/>
+								
+								<component:CustomRangeDateField id="f36" enabled="{f35_1.selected}"/>
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="未预约情况:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList enabled="{f35_2.selected}" id="f37" width="169"></s:DropDownList>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+				
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1189" chromeColor="#ffffff" creationPolicy="all"
+							 height="166">
+				<s:NavigatorContent label="其他信息" width="100%">
+					
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="异   体  细   胞   治  疗:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f38_1"  label="是" groupName="yiti"/>
+								<s:RadioButton id="f38_2"  label="否" groupName="yiti" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f39" color="#000000"
+											 enabled="{f38_1.selected}" prompt="异体细胞治疗描述" 
+											 width="232"
+											 />
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="手   术   移   植:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f40_1"  label="是" groupName="yizhi"/>
+								<s:RadioButton id="f40_2" label="否" groupName="yizhi" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f41" color="#000000"
+											 enabled="{f40_1.selected}" prompt="移植手术描述" 
+											 width="208"
+											 />
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="采   血  时   间:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<component:CustomRangeDateField id="f49"
+																width="175"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5"
+										
+										 text="肿       瘤      患      者:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f42_1"  label="是" groupName="zhouliu"/>
+								<s:RadioButton id="f42_2"  label="否" groupName="zhouliu" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f43" width="232" color="#000000"
+											 enabled="{f42_1.selected}" prompt="肿瘤患者描述" 
+											 />
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="一年内异体输血:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f44_1"  label="是" groupName="yitishuxie"/>
+								<s:RadioButton id="f44_2"  label="否" groupName="yitishuxie" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f45"  color="#000000"
+											 enabled="{f44_1.selected}" prompt="异体输血描述" 
+											 width="206"
+											 />
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="采   血   地   点:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f50"
+											 width="178"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="有无介入性手术禁忌症:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f46_1"  label="是" groupName="jinji"/>
+								<s:RadioButton id="f46_2"  label="否" groupName="jinji" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="f47" color="#000000" enabled="{f46_1.selected}"
+											 prompt="禁忌症描述"
+											 width="233"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="监   测    机  构:"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2"
+										 width="292">
+								<s:ComboBox id="f52" width="288"/>
+								
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="检测前咨询人员:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:ComboBox id="f53"
+											width="179"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="特   殊   情  况   备  注:"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:TextInput id="f48"
+											 width="305"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+					
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator id="fam" width="1189"  chromeColor="#ffffff"
+							 creationPolicy="all">
+				<s:NavigatorContent width="100%" label="结果随访">
+					<mx:Grid  paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="检    测   结   果:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f54_1"  label="低风险" groupName="fenxian" selected="true"/>
+								<s:RadioButton id="f54_2"  label="高风险" groupName="fenxian"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2"
+										 width="352">
+								<s:Label paddingLeft="3" paddingTop="5" text="21三体: Z值"/>
+								
+								<s:TextInput id="f55" restrict="0-9."
+											 width="30"
+											 />
+								
+								<s:Label paddingLeft="3" paddingTop="5" text="18三体: Z值"/>
+								<s:TextInput id="f56" restrict="0-9."
+											 width="30"/>
+								
+								<s:Label paddingLeft="3" paddingTop="5" text="13三体: Z值"/>
+								<s:TextInput id="f57" restrict="0-9."
+											 width="30"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="其         他:"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="3"
+										 width="434">
+								<s:TextInput id="f58"
+											 width="433"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="介入性产前诊断:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:RadioButton id="f62_1"  label="已做" groupName="zhenduan"/>
+								<s:Label text="  "
+										 width="4"/>
+								<s:RadioButton id="f62_2"  label="未做" groupName="zhenduan" selected="true"/>
+							</mx:GridItem>
+							<mx:GridItem width="65">
+								<s:Label paddingLeft="3" paddingTop="5" text="实验检测者:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:ComboBox id="f59"
+											width="264"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="实验审核者:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:ComboBox id="f60" 
+											width="128"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="检测后临床报告签发者:"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:ComboBox id="f61" 
+											width="159"/>
+							</mx:GridItem>
+						</mx:GridRow>	
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" 
+										 text="胎   儿   随    访:"
+										 />
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList id="f65" 
+												width="135"></s:DropDownList>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:TextInput id="f66" color="#000000"
+											 enabled="{f65.selectedItem.data==3}" prompt="新生儿健康状况"
+											 width="342"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5"
+										 text="结          果:"
+										 />
+							</mx:GridItem>
+							<mx:GridItem width="122">
+								<s:RadioButton id="f63_2"  label="正常" groupName="jie" selected="true"/>
+								<s:RadioButton id="f63_1"  label="异常" groupName="jie"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2"
+										 width="302">
+								<s:TextInput id="f64" color="#000000"
+											 enabled="{f63_1.selected}" prompt="异常描述"
+											 width="299"/>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+					</mx:Grid>
+					
+				</s:NavigatorContent>
+				
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1192" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent label="录入信息">
+					<mx:Grid  paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="录入单位"/>
+								<s:DropDownList id="f68" width="246" enabled="false"></s:DropDownList>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="录入人员"/>
+								<s:ComboBox id="f69" width="216"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" paddingTop="5" text="录入时间"/>
+								<component:CustomRangeDateField   id="f70" isSelectNow="true"  enabled="false"/>
+								
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+					
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup verticalAlign="middle" horizontalAlign="right" paddingBottom="5" paddingTop="5" width="80%">
+				<s:Button id="f606_commit" includeIn="normal" buttonMode="true" label="保存" click="commit_()"/>
+				<s:Button  buttonMode="true" label="关闭" click="removeWindow()"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+	</s:Scroller>
+	
+</s:TitleWindow>

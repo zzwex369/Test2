@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin = "com.xyw.sys.custom.skin.*"
+			   title="换发申请表修改" horizontalCenter="0" verticalCenter="0" backgroundColor="white"
+			   chromeColor="#5CACEE" close = "removeWindow()" cornerRadius="5"
+			   width="1200" creationComplete="moduleCreationComplete()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<s:RemoteObject id="d306Service" destination="d306Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="updateD306" result="updateD306Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		.myLabel {
+			fontSize:12px;
+			fontFamily:Consolas;
+			paddingTop:4px;
+		}
+		.myGrid {
+			verticalAlign:middle;
+		}
+		.myTextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.VD306;
+			import com.xyw.module.csyxzm.model.D306;
+			import com.xyw.sys.custom.component.SecurityControler;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.controls.DateField;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var systemUser:SystemUser = null;
+			private var d306:D306 = new D306();
+			public var vd306:VD306;
+			public var array:Array = new Array();
+			[Bindable]
+			public var care:ArrayCollection = new ArrayCollection(
+				[	{zh:">=1",data:1},
+					{zh:">=5",data:2}]);
+			
+			private var d306_13data:ArrayCollection = new ArrayCollection([
+				{label:"选择",data:0},
+				{label:"变更姓名",data:6},
+				{label:"无效证件",data:8},
+				{label:"变更父母信息",data:7}
+			]);
+			
+			//****************启动按钮权限控制****************//
+			private function security():void{
+				SecurityControler.start(null,'visible');
+				SecurityControler.addAllPerms(this.parentApplication.permissionList);
+			}
+			
+			public function moduleCreationComplete():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+					this.duka3.enabled = true;
+				}
+				this.d306_23.text = DateField.dateToString(new Date, "YYYY-MM-DD");
+				this.initializeComboBox();
+			}
+			
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t";
+				comboBoxDataRequest.flag = "D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_01";
+				comboBoxDataRequest.flag = "S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S401_01";
+				comboBoxDataRequest.flag = "S401_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_06";
+				comboBoxDataRequest.flag = "S301_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_07";
+				comboBoxDataRequest.flag = "S301_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select t.s_01,t.s_02 from S301_10 t where t.S_05='0' and t.S_03 ="+this.systemUser.institutionCode;
+				comboBoxDataRequest.flag = "S301_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag == "D101")
+				{
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.d306_22.dataProvider = comboBoxDataList;
+					this.d306_22.selectedIndex = index;
+					this.d306_21.dataProvider = comboBoxDataList;
+					this.d306_21.selectedIndex = 0;
+					this.d306_22.enabled =false;
+					this.d306_21.enabled =false;
+				}else if(flag == "S301_01")
+				{
+					this.d306_05.dataProvider = comboBoxDataList;
+					this.d306_05.selectedIndex = 1;
+				}else if(flag == "S401_01")
+				{
+					/* this.d306_13.dataProvider = comboBoxDataList;
+					this.d306_13.selectedIndex = 0; */
+				}else if(flag == "S301_06")
+				{
+					var d30607Index:int = this.getDropDownListSelectedIndex(comboBoxDataList, "1");
+					this.d306_07.dataProvider = comboBoxDataList;
+					this.d306_07.selectedIndex = d30607Index;
+					this.d306_11.dataProvider = comboBoxDataList;
+					this.d306_11.selectedIndex = d30607Index;
+				}else if(flag == "S301_07")
+				{
+					this.d306_10.dataProvider = comboBoxDataList;
+					this.d306_10.selectedIndex = 0;
+				}
+				
+				this.d306_05.selectedIndex = 0;
+				this.d306_13.selectedIndex = 0;
+				this.putDelivery();
+			}
+			private function putDelivery():void
+			{
+				this.d306.d30601 =vd306.d30601
+				this.d306.d30602 =vd306.d30602;
+				this.d306_03.text = vd306.d30603;
+				this.d306_04.text = vd306.d30604;
+				this.d306_05.selectedIndex =this.getDropDownListSelectedIndex(ArrayCollection(this.d306_05.dataProvider),vd306.d30605);
+				this.d306_06.text =vd306.d30606;	
+				this.d306_07.selectedIndex =this.getDropDownListSelectedIndex(ArrayCollection(this.d306_07.dataProvider),vd306.d30607);
+				this.d306_08.text =vd306.d30608;
+				this.d306_09.text =vd306.d30609;
+				this.d306_10.selectedIndex =this.getDropDownListSelectedIndex(ArrayCollection(this.d306_10.dataProvider),vd306.d30610);
+				this.d306_11.selectedIndex =this.getDropDownListSelectedIndex(ArrayCollection(this.d306_11.dataProvider),vd306.d30611);
+				this.d306_12.text =vd306.d30612;
+				this.d306_13.selectedIndex =this.getDropDownListSelectedIndex(ArrayCollection(this.d306_13.dataProvider),vd306.d30613);
+				this.d306_20.text =vd306.d30620;
+				this.d306_21.selectedIndex =this.getDropDownListSelectedIndex(ArrayCollection(this.d306_21.dataProvider),vd306.d30621);
+				this.d306_22.selectedIndex =this.getDropDownListSelectedIndex(ArrayCollection(this.d306_22.dataProvider),vd306.d30622);
+				this.d306_23.text =DateField.dateToString(vd306.d30623,"YYYY-MM-DD");
+				setD306_14();
+				setD306_15();
+				setD306_16();
+				setD301_17();
+				setD306_18();
+				setD306_19();
+			}
+			private function setD306_14():void{
+				if(vd306.d30614 =="1"){
+					this.D306_14_1.selected =true;
+				}else if(vd306.d30614 =="2"){
+					this.D306_14_2.selected =true;
+				}
+			}
+			private function setD306_15():void{
+				if(vd306.d30615 =="1"){
+					this.D306_15_1.selected =true;
+				}else if(vd306.d30615 =="0"){
+					this.D306_15_2.selected =true;
+				}
+			}
+			private function setD306_16():void{
+				if(vd306.d30616 =="1"){
+					this.D306_16_1.selected =true;
+				}else if(vd306.d30616 =="0"){
+					this.D306_16_2.selected =true;
+				}
+			}
+			private function setD301_17():void{
+				if(vd306.d30617 =="1"){
+					this.D306_17_1.selected =true;
+				}else if(vd306.d30617 =="0"){
+					this.D306_17_2.selected =true;
+				}
+			}
+			private function setD306_18():void{
+				if(vd306.d30618 =="1"){
+					this.D306_18_1.selected =true;
+				}else if(vd306.d30618 =="0"){
+					this.D306_18_2.selected =true;
+				}
+			}
+			private function setD306_19():void{
+				if(vd306.d30619 =="1"){
+					this.D306_19_1.selected =true;
+				}else if(vd306.d30619 =="0"){
+					this.D306_19_2.selected =true;
+				}
+			}
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			private function validate1():void
+			{
+				if(StringUtil.trim(this.d306_04.text) == ""){
+					Alert.show("请输入婴儿姓名!","系统提示");
+					return;
+				}
+				if(this.d306_05.selectedItem.data == 0){
+					Alert.show("请选择性别!","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.d306_03.text) == ""){
+					Alert.show("请输入原出生证号!","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.d306_06.text) == ""){
+					Alert.show("请输入母亲姓名!","系统提示");
+					return;
+				}
+				if(this.d306_07.selectedItem.data == 0){
+					Alert.show("请选择母亲证件类型!","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.d306_08.text) == ""){
+					Alert.show("请输入母亲证件号码!","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.d306_09.text) == ""){
+					Alert.show("请输入领证人姓名!","系统提示");
+					return;
+				}
+				if(this.d306_10.selectedItem.data == 0){
+					Alert.show("请选择与新生儿关系!","系统提示");
+					return;
+				}
+				if(this.d306_11.selectedItem.data == 0){
+					Alert.show("请选择领证人证件类型!","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.d306_12.text) == ""){
+					Alert.show("请输入领证人证件号码!","系统提示");
+					return;
+				}
+				if(this.d306_13.selectedItem.data == 0){
+					Alert.show("请选择换发原因","系统提示");
+					return;
+				}
+				if(this.d306_21.selectedItem.data == 0){
+					Alert.show("请选择助产机构","系统提示");
+					return;
+				}
+				if(this.d306_22.selectedItem.data == 0){
+					Alert.show("请选择换发机构","系统提示");
+					return;
+				}
+				if(this.d306_23.text ==""){
+					Alert.show("请选择换发日期","系统提示");
+					return;
+				}
+				saveRecord();
+			}
+			private function saveRecord():void{
+				this.d306.d30603 =this.d306_03.text;
+				this.d306.d30604 =this.d306_04.text;
+				this.d306.d30605 =this.d306_05.selectedItem.data;
+				this.d306.d30606 =this.d306_06.text;	
+				this.d306.d30607 =this.d306_07.selectedItem.data;
+				this.d306.d30608 =this.d306_08.text;
+				this.d306.d30609 =this.d306_09.text;
+				this.d306.d30610 =this.d306_10.selectedItem.data;
+				this.d306.d30611 =this.d306_11.selectedItem.data;
+				this.d306.d30612 =this.d306_12.text;
+				this.d306.d30613 =this.d306_13.selectedItem.data;
+				guide14();
+				guide15();
+				guide16();
+				guide17();
+				guide18();
+				guide19();
+				this.d306.d30620 =this.d306_20.text;
+				this.d306.d30621 =this.d306_21.selectedItem.data;
+				this.d306.d30622 =this.d306_22.selectedItem.data;
+				this.d306.d30623 =DateField.stringToDate(this.d306_23.text,"YYYY-MM-DD");
+				this.d306Service.updateD306(d306);
+			}
+			protected function updateD306Handler(event:ResultEvent):void{
+				var d306Response:Object =event.result;
+				if(!d306Response.state){
+					Alert.show(d306Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show("修改成功！ ","系统提示");
+				this.removeWindow();
+			}
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			private function guide14():void{
+				if(this.D306_14_1.selected){
+					array[1401] ="1";
+				}else if(this.D306_14_2.selected){
+					array[1401] ="2";
+				}else{
+					array[1401] ="";
+				}
+				this.d306.d30614= array[1401];
+			}
+			private function guide15():void{
+				if(this.D306_15_1.selected){
+					array[1501] ="1";
+				}else if(this.D306_15_2.selected){
+					array[1501] ="0";
+				}else{
+					array[1501] ="";
+				}
+				this.d306.d30615= array[1501];
+			}
+			private function guide16():void{
+				if(this.D306_16_1.selected){
+					array[1601] ="1";
+				}else if(this.D306_16_2.selected){
+					array[1601] ="0";
+				}else{
+					array[1601] ="";
+				}
+				this.d306.d30616= array[1601];
+			}
+			private function guide17():void{
+				if(this.D306_17_1.selected){
+					array[1701] ="1";
+				}else if(this.D306_17_2.selected){
+					array[1701] ="0";
+				}else{
+					array[1701] ="";
+				}
+				this.d306.d30617= array[1701];
+			}
+			private function guide18():void{
+				if(this.D306_18_1.selected){
+					array[1801] ="1";
+				}else if(this.D306_18_2.selected){
+					array[1801] ="0";
+				}else{
+					array[1801] ="";
+				}
+				this.d306.d30618= array[1801];
+			}
+			private function guide19():void{
+				if(this.D306_19_1.selected){
+					array[1901] ="1";
+				}else if(this.D306_19_2.selected){
+					array[1901] ="0";
+				}else{
+					array[1901] ="";
+				}
+				this.d306.d30619= array[1901];
+			}
+			/*--------------根据与婴儿关系加载领证人信息-----------------*/
+			private function changeLicen():void
+			{
+				var id:String = this.d306_10.selectedItem.data;
+				if(id == "2")
+				{	
+					this.d306_09.text = this.d306_06.text;
+					this.d306_12.text = this.d306_08.text;
+					this.d306_11.selectedIndex = this.d306_07.selectedIndex;
+				}else
+				{
+					this.d306_09.text = "";
+					this.d306_12.text = "";
+					this.d306_11.selectedIndex =1;
+				}
+			}
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.d306_06.text = array[0];//姓名
+							this.d306_08.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			//与新生儿关系（读卡）
+			private function readCard_A(event:MouseEvent):void{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						this.d306_09.text = array[0];//领证人姓名
+						this.d306_12.text = array[5];//领证人身份证号
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1100">
+				<s:NavigatorContent label="基础信息" width="100%">
+					<mx:Grid paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="婴儿姓名"/>
+								<s:TextInput id="d306_04" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="婴儿性别" paddingLeft="15"/>
+								<s:DropDownList id="d306_05" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="原出生证号" paddingLeft="15"/>
+								<s:TextInput id="d306_03" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="母亲姓名"/>
+								<s:TextInput id="d306_06" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件类别" paddingLeft="15"/>
+								<s:DropDownList id="d306_07" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件号码" paddingLeft="15"/>
+								<s:TextInput id="d306_08" width="140"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Button label="读卡" id="duka1" click="readCard_mother(event)" enabled="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1100">
+				<s:NavigatorContent label="领证人信息" width="100%">
+					<mx:Grid paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="领  证  人"/>
+								<s:TextInput id="d306_09" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="与新生儿关系" paddingLeft="15"/>
+								<s:DropDownList id="d306_10" width="130" change="changeLicen()"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件类别" paddingLeft="15"/>
+								<s:DropDownList id="d306_11" width="140"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件号码" paddingLeft="15"/>
+								<s:TextInput id="d306_12" width="140"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Button label="读卡" id="duka3" click="readCard_A(event)" enabled="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1100">
+				<s:NavigatorContent label="证号信息" width="100%">
+					<mx:Grid paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="换发原因"/>
+								<s:DropDownList id="d306_13" width="130" dataProvider="{d306_13data}"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:Label text="原证正、副页交回情况" paddingLeft="15"/>
+								<s:RadioButton id="D306_14_1" click="guide14()" /><s:Label text="正页"/>
+								<s:RadioButton id="D306_14_2" click="guide14()" /><s:Label text="正页和副页"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1100">
+				<s:NavigatorContent label="领证人提交材料" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="1.新生儿父母的书面申请"/>
+							<s:RadioButton id="D306_15_1" groupName="operation1_15" click="guide15()" /><s:Label text="是"/>
+							<s:RadioButton id="D306_15_2" groupName="operation1_15" click="guide15()"/><s:Label text="否"/>
+							
+							<s:Label paddingLeft="60" text="2.原签发机构提供的住院分娩病例、病例签发记录或出生证存根页复印件"/>
+							<s:RadioButton id="D306_16_1" groupName="operation16" click="guide16()"/><s:Label text="是"/>
+							<s:RadioButton id="D306_16_2" groupName="operation16" click="guide16()"/><s:Label text="否"/>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="3.户口登记机关出具的无法入户的证明材料"/>
+							<s:RadioButton id="D306_17_1" groupName="operation17" click="guide17()"/><s:Label text="是"/>
+							<s:RadioButton id="D306_17_2" groupName="operation17" click="guide17()"/><s:Label text="否"/>
+							
+							<s:Label paddingLeft="60" text="4.新生儿父母有效身份证原件和复印件"/>
+							<s:RadioButton id="D306_18_1" groupName="operation18" click="guide18()"/><s:Label text="是"/>
+							<s:RadioButton id="D306_18_2" groupName="operation18" click="guide18()"/><s:Label text="否"/>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="5.领证人的有效身份证原件和复印件"/>
+							<s:RadioButton id="D306_19_1" groupName="operation19" click="guide19()"/><s:Label text="是"/>
+							<s:RadioButton id="D306_19_2" groupName="operation19" click="guide19()"/><s:Label text="否"/>
+							
+							<s:Label text="6.其他" paddingLeft="60"/>
+							<s:TextInput id="d306_20" width="400"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>  
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1100">
+				<s:NavigatorContent label="签发信息" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid width="100%">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="助产机构"/>
+									<s:DropDownList id="d306_21" width="130"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="换发机构" paddingLeft="15"/>
+									<s:DropDownList id="d306_22" width="130" enabled="false"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="填报日期" paddingLeft="15"/>
+									<mx:DateField yearNavigationEnabled="true" id="d306_23" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+												  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+												  formatString="YYYY-MM-DD"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="75%" height="30">
+				<s:Button label="确定" click="validate1()" id="saveD306"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>
+
+

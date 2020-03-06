@@ -1,0 +1,390 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Sep 3, 2013 5:29:45 PM by Hibernate Tools 3.4.0.CR1 -->
+<hibernate-mapping>
+    <class name="com.xyw.medical.birth.model.VD306" table="V_D306">
+        <id name="d30601" type="long">
+            <column name="D306_01" precision="10" scale="0" />
+            <generator class="sequence">
+            	<param name="sequence">D306_01_seq</param>
+            </generator>
+        </id>
+        <property name="d30602" type="long">
+            <column name="D306_02" length="10">
+            </column>
+        </property>
+        <property name="d30603" type="string">
+            <column name="D306_03" length="20">
+            </column>
+        </property>
+        <property name="d30604" type="string" >
+            <column name="D306_04" length="50">
+            </column>
+        </property>
+        <property name="d30605" type="string">
+            <column name="D306_05" length="1">
+            </column>
+        </property>
+        <property name="d30606" type="string">
+            <column name="D306_06" length="50">
+            </column>
+        </property>
+        <property name="d30607" type="string">
+            <column name="D306_07" length="2">
+            </column>
+        </property>
+        <property name="d30608" type="string">
+            <column name="D306_08" length="50">
+            </column>
+        </property>
+        <property name="d30609" type="string">
+            <column name="D306_09" length="50">
+            </column>
+        </property>
+        <property name="d30610" type="string">
+            <column name="D306_10" length="2">
+            </column>
+        </property>
+        <property name="d30611" type="string">
+            <column name="D306_11" length="2">
+            </column>
+        </property>
+        <property name="d30612" type="string">
+            <column name="D306_12" length="50">
+            </column>
+        </property>
+        <property name="d30613" type="string">
+            <column name="D306_13" length="2">
+            </column>
+        </property>
+        <property name="d30614" type="string">
+            <column name="D306_14" length="2">
+            </column>
+        </property>
+        <property name="d30615" type="string">
+            <column name="D306_15" length="2">
+            </column>
+        </property>
+        <property name="d30616" type="string">
+            <column name="D306_16" length="2">
+            </column>
+        </property>
+        <property name="d30617" type="string">
+            <column name="D306_17" length="2">
+            </column>
+        </property>
+        <property name="d30618" type="string">
+            <column name="D306_18" length="2">
+            </column>
+        </property>
+        <property name="d30619" type="string">
+            <column name="D306_19" length="2">
+            </column>
+        </property>
+        <property name="d30620" type="string">
+            <column name="D306_20" length="200">
+            </column>
+        </property>
+        <property name="d30621" type="string">
+            <column name="D306_21" length="14">
+            </column>
+        </property>
+        <property name="d30622" type="string">
+            <column name="D306_22" length="14">
+            </column>
+        </property>
+        <property name="d30623" type="date">
+            <column name="D306_23" length="7">
+            </column>
+        </property>
+        <property name="d30624" type="string">
+            <column name="D306_24" length="200">
+            </column>
+        </property>
+        <property name="d30625" type="string">
+            <column name="D306_25" length="200">
+            </column>
+        </property>
+        <property name="d30626" type="string">
+            <column name="D306_26" length="200">
+            </column>
+        </property>
+        <property name="d30627" type="string">
+            <column name="D306_27" length="200">
+            </column>
+        </property>
+        <property name="d30628" type="string">
+            <column name="D306_28" length="200">
+            </column>
+        </property>
+        <property name="d30629" type="string">
+            <column name="D306_29" length="200">
+            </column>
+        </property>
+        <property name="d30630" type="string">
+            <column name="D306_30" length="200">
+            </column>
+        </property>
+        <property name="d30631" type="string">
+            <column name="D306_31" length="200">
+            </column>
+        </property>
+        <property name="d30632" type="string">
+            <column name="D306_32" length="200">
+            </column>
+        </property>
+        <property name="d30633" type="string">
+            <column name="D306_33" length="200">
+            </column>
+        </property>
+        <property name="d30634" type="string">
+            <column name="D306_34" length="200">
+            </column>
+        </property>
+        <property name="d30635" type="string">
+            <column name="D306_35" length="200">
+            </column>
+        </property>
+        <property name="d30636" type="string">
+            <column name="D306_36" length="200">
+            </column>
+        </property>
+        <property name="d30637" type="string">
+            <column name="D306_37" length="200">
+            </column>
+        </property>
+        <property name="d30638" type="string">
+            <column name="D306_38" length="200">
+            </column>
+        </property>
+        <property name="d30639" type="string">
+            <column name="D306_39" length="200">
+            </column>
+        </property>
+        <property name="d30640" type="string">
+            <column name="D306_40" length="200">
+            </column>
+        </property>
+        
+        <property name="d30105" type="string">
+            <column name="D301_05" length="200">
+            </column>
+        </property>
+        <property name="d30131" type="string">
+            <column name="D301_31" length="200">
+            </column>
+        </property>
+        <property name="d30623Str" type="string">
+            <column name="D306_23_STR" length="200">
+            </column>
+        </property>
+        <property name="d30605Zh" type="string">
+            <column name="D306_05_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30607Zh" type="string">
+            <column name="D306_07_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30610Zh" type="string">
+            <column name="D306_10_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30611Zh" type="string">
+            <column name="D306_11_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30613Zh" type="string">
+            <column name="D306_13_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30615Zh" type="string">
+            <column name="D306_15_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30616Zh" type="string">
+            <column name="D306_16_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30618Zh" type="string">
+            <column name="D306_18_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30619Zh" type="string">
+            <column name="D306_19_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30621Zh" type="string">
+            <column name="D306_21_ZH" length="200">
+            </column>
+        </property>
+        <property name="d30622Zh" type="string">
+            <column name="D306_22_ZH" length="200">
+            </column>
+        </property>
+        
+        <property name="d30102" type="string">
+			<column name="D301_02" length="50"/>
+		</property>
+		<property name="d30103" type="string">
+			<column name="D301_03" length="1"/>
+		</property>
+		<property name="d30104" type="string">
+			<column name="D301_04" length="19"/>
+		</property>
+		<property name="d30106" type="string">
+			<column name="D301_06" length="100"/>
+		</property>
+		<property name="d30107" type="int">
+			<column name="D301_07" precision="4" scale="0"/>
+		</property>
+		<property name="d30108" type="double">
+			<column name="D301_08" precision="4"/>
+		</property>
+		<property name="d30109" type="string">
+			<column name="D301_09" length="2"/>
+		</property>
+		<property name="d30109Zh" type="string">
+			<column name="D301_09_ZH" length="20"/>
+		</property>
+		<property name="d30110" type="string">
+			<column name="D301_10" length="20"/>
+		</property>
+		<property name="d30111" type="string">
+			<column name="D301_11" length="50"/>
+		</property>
+		<property name="d30112" type="string">
+			<column name="D301_12" length="18"/>
+		</property>
+		<property name="d30113" type="string">
+			<column name="D301_13" length="10"/>
+		</property>
+		<property name="d30114" type="string">
+			<column name="D301_14" length="4"/>
+		</property>
+		<property name="d30115" type="string">
+			<column name="D301_15" length="2"/>
+		</property>
+		<property name="d30116" type="string">
+			<column name="D301_16" length="50"/>
+		</property>
+		<property name="d30117" type="string">
+			<column name="D301_17" length="18"/>
+		</property>
+		<property name="d30118" type="string">
+			<column name="D301_18" length="10"/>
+		</property>
+		<property name="d30119" type="string">
+			<column name="D301_19" length="4"/>
+		</property>
+		<property name="d30120" type="string">
+			<column name="D301_20" length="2"/>
+		</property>
+		<property name="d30121" type="string">
+			<column name="D301_21" length="100"/>
+		</property>
+		<property name="d30122" type="string">
+			<column name="D301_22" length="2"/>
+		</property>
+		<property name="d30122Zh" type="string">
+			<column name="D301_22_ZH" length="20"/>
+		</property>
+		<property name="d30123" type="string">
+			<column name="D301_23" length="100"/>
+		</property>
+		<property name="d30124" type="string">
+			<column name="D301_24" length="14"/>
+		</property>
+		<property name="d30124Zh" type="string">
+			<column name="D301_24_ZH" length="50"/>
+		</property>
+		<property name="d30125" type="string">
+			<column name="D301_25" length="20"/>
+		</property>
+		<property name="d30129" type="double">
+			<column name="D301_29" precision="6"/>
+		</property>
+		<property name="d30132" type="string">
+			<column name="D301_32" length="20"/>
+		</property>
+		<property name="d30133" type="string">
+			<column name="D301_33" length="10"/>
+		</property>
+		<property name="d30134" type="string">
+			<column name="D301_34" length="2"/>
+		</property>
+		<property name="d30135" type="string">
+			<column name="D301_35" length="2"/>
+		</property>
+		<property name="d30136" type="string">
+			<column name="D301_36" length="50"/>
+		</property>
+		<property name="d30137" type="string">
+			<column name="D301_37" length="2"/>
+		</property>
+		<property name="d30137Zh" type="string">
+			<column name="D301_37_ZH" length="30"/>
+		</property>
+		<property name="d30138" type="string">
+			<column name="D301_38" length="2"/>
+		</property>
+		<property name="d30138Zh" type="string">
+			<column name="D301_38_ZH" length="30"/>
+		</property>
+		<property name="d30139" type="string">
+			<column name="D301_39" length="20"/>
+		</property>
+		<property name="d30140" type="string">
+			<column name="D301_40" length="10"/>
+		</property>
+		<property name="d30143" type="string">
+			<column name="D301_43" length="20"/>
+		</property>
+		<property name="d30147" type="string">
+			<column name="D301_47" length="100"/>
+		</property>
+		<property name="d30148" type="string">
+			<column name="D301_48" length="100"/>
+		</property>
+		<property name="d30105Zh" type="string">
+			<column name="D301_05_ZH" length="100"/>
+		</property>
+		<property name="d30131Zh" type="string">
+			<column name="D301_31_ZH" length="100"/>
+		</property>
+	    <property name="d30127" type="string">
+            <column name="D301_27" length="20">
+            </column>
+        </property>
+		    <property name="d30153" type="string">
+            <column name="D301_53" length="2">
+            </column>
+        </property>
+        <property name="d30154" type="string">
+            <column name="D301_54" length="100">
+            </column>
+        </property>
+        <property name="d30155" type="string">
+            <column name="D301_55" length="100">
+            </column>
+        </property>
+        <property name="d30167" type="string">
+            <column name="D301_67" length="100">
+            </column>
+        </property>
+        
+        <property name="d30160" type="string">
+			<column name="D301_60" length="100"/>
+		</property>
+		<property name="d30161" type="string">
+			<column name="D301_61" length="100"/>
+		</property>
+		<property name="d30163" type="string">
+			<column name="D301_63" length="100"/>
+		</property>
+		<property name="d30164" type="string">
+			<column name="D301_64" length="100"/>
+		</property>
+    </class>
+</hibernate-mapping>

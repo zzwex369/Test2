@@ -1,0 +1,1122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   maxWidth="1250" maxHeight="{this.parentApplication.stage.stageHeight-50}"
+			   chromeColor="#6EE0ED" close="removeWindow()" cornerRadius="5"
+			   creationComplete="moduleCreationComplete()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="f502Service" destination="f502Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryF502" result="queryF502Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="f504Service" destination="f504Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveOrF504" result="saveOrF504Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="pictureService" destination="pictureService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryVPicture" result="queryVPictureHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.model.F502;
+			import com.xyw.module.msss.fnbj.model.F502Request;
+			import com.xyw.module.msss.fnbj.model.F504;
+			import com.xyw.module.msss.fnbj.model.F504Request;
+			import com.xyw.module.msss.fnbj.model.VF502;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.ImageWindow;
+			import com.xyw.sys.custom.itemrenderer.CustomCsBgListColumnItemRenderer;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			import com.xyw.uploadPictures.model.PictureRequest;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var count:int=6;
+			public var vf502:Object;
+			public var vf504:Object;
+			[Bindable]
+			public var saveStatus:Boolean=true;// true  保存  false 修改
+			[Bindable]
+			public var status:Number;// 0 质控 1 整改
+			private var selectFile:Object;//选中的图片
+			private var f504:F504;
+			private var saveButtonArr:Array;
+			private const FIELD_PREFIX:String="f504";
+			private var f504Request:F504Request;
+			private var systemUser:SystemUser =null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var la306Id:Array;
+			private var la30602:Array;//0是 1否
+			private var xqId:Array;
+			[Bindable]
+			private var now:String=DateField.dateToString(new Date(),'YYYY-MM-DD')
+			private function removeWindow():void
+			{
+				var parent:Object=this.owner;
+				parent.refresh();
+				PopUpManager.removePopUp(this);
+			}
+			
+			/**
+			 *
+			 */
+			private function addEleArr():void
+			{
+				saveButtonArr=[zk,zg];
+				la306Id=[la306_010,la306_011,la306_013];
+				la30602=["","","","","","","",""];
+				xqId=[z504_011,z504_012,z504_013,z504_014,z504_015,z504_016,z504_017,z504_018];
+			}
+			
+			private function moduleCreationComplete():void
+			{
+				addEleArr();
+				this.systemUser =this.parentApplication.systemUser;
+				this.initializeComboBox();
+			 	if(vf502){
+					f504=new F504();
+					setF504_09Idx(systemUser.institutionCode);
+				}else
+				{	
+					queryF502();
+					loadVf504();
+					setF504FieldVal();
+					setF504_09Idx(vf504.f50409);
+				}					 
+					
+			}
+			
+			/**
+			 *
+			 */
+			private function setF504_09Idx(institutionCode:String):void
+			{
+				if(!F504_09.dataProvider)
+				{
+					callLater(setF504_09Idx,[institutionCode]);
+					return ;
+				}
+				F504_09.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(F504_09.dataProvider),institutionCode);
+			}
+			
+			/**
+			 *
+			 */
+			private function setF504FieldVal():void
+			{
+				var field:String;
+				var fieldSuffix:String;
+				this.f504=new F504();
+				for(var i:int=1;i<17;i++)
+				{
+					fieldSuffix=i<10?"0"+i:i.toString();
+					field=FIELD_PREFIX+fieldSuffix;
+					if(vf504[field])
+						f504[field]=vf504[field];
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function loadVf504():void
+			{
+				F504_08.text=vf504.f50408;
+				la30602=vf504.f50407.toString().split(",");
+				getOrSetRadioButton(xqId,la30602,false);
+				F504_17.text=vf504.f50417;
+				CompMethod.setRadioButtonSelect(la306Id,vf504.f50406);
+				F504_10.text=DateField.dateToString(vf504.f50410,'YYYY-MM-DD');
+				if(status&&!saveStatus)
+				{
+					F504_11.text=vf504.f50411;
+					F504_12.text=vf504.f50412;
+					F504_14.text=DateField.dateToString(vf504.f50414,'YYYY-MM-DD');
+				}
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function queryF502():void
+			{
+				var f502:F502 = new F502();
+				f502.f50201=vf504.f50402;
+				var f502Request:F502Request = new F502Request();
+				f502Request.parameterPageindex = 1;
+				f502Request.parameterPagesize = 1;
+				f502Request.f502=f502;
+				this.f502Service.queryF502(f502Request);
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function queryPic(f50201:String):void
+			{
+				var picRequest:PictureRequest= new PictureRequest();
+				picRequest.pic02=f50201;
+				picRequest.parameterPageindex = 1;
+				picRequest.parameterPagesize = 2;
+				this.pictureService.queryVPicture(picRequest); 
+			}
+			
+			
+			
+			private function queryF502Handler(event:ResultEvent):void
+			{
+				var f502Response:Object = event.result;
+				var rowCount:Number = f502Response.rowCount;
+				if(f502Response.errorMessage == null)
+				{
+					var listVF502:ArrayCollection = f502Response.vf502s;
+					this.vf502=listVF502.getItemAt(0);
+				}
+			}
+			
+			
+			private function queryVPictureHandler(event:ResultEvent):void
+			{
+				var picResponse:Object = event.result ;
+				var rowCount:Number = picResponse.rowCount;
+				if(picResponse.status){
+					var picDataArr:ArrayCollection=new ArrayCollection();
+					var picArr:ArrayCollection= picResponse.vp;
+					for(var i:int=0;i<picArr.length;i++)
+					{
+						var pic:Object=picArr.getItemAt(i);
+						var picObj:Object=new Object();
+						picObj.height=192;
+						picObj.id=pic.pic01;
+						picObj.delStatus=false;
+						picObj.picType=pic.pic10;
+						picObj.urlSuffix=pic.pic03+pic.pic04;
+						picDataArr.addItem(picObj);
+					}
+					picList.dataProvider=picDataArr;
+				}
+			}
+			
+			
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=false):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql = sql;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}	
+			
+			
+			private function initializeComboBox():void
+			{
+				_initializeComboBox("select t.d101_01, t.d101_02 from D101 t where t.d101_01 = '" 
+									+ this.systemUser.institutionCode+ "'"+
+									" or t.d101_11 ='" + this.systemUser.institutionCode +"'"+
+									" or t.d101_01 ='41000000000002'","D101",true);
+				
+				_initializeComboBox("select * from S301_01","S301_01",true);
+				
+				_initializeComboBox("select * from S301_06","S301_06",true);
+				
+				_initializeComboBox("select * from Z502_01","Z502_01");
+								
+				_initializeComboBox("select * from Z502_03","Z502_03");
+				
+				_initializeComboBox("select * from Z502_05","Z502_05");
+				
+			}
+			
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				--count;	
+				if(flag =="D101"){
+					var idx:int =CompMethod.getDropDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					this.F502_25.dataProvider =F504_09.dataProvider=F504_13.dataProvider=comboBoxDataList;
+				}else if(flag == "S301_06")
+				{
+					this.F502_29.dataProvider = comboBoxDataList;
+					this.F502_29.selectedIndex = 1;
+				}else if(flag == "Z502_01")
+				{
+					this.F502_15.dataProvider = comboBoxDataList;
+					this.F502_15.selectedIndex = 1;
+				}else if(flag == "Z502_03")
+				{
+					this.F502_17.dataProvider = comboBoxDataList;
+					this.F502_17.selectedIndex = 1;
+				}else if(flag == "Z502_05")
+				{
+					this.F502_20.dataProvider = comboBoxDataList;
+					this.F502_20.selectedIndex = 1;
+				}
+				if(!count)
+					callLater(putRecord);
+			}
+			
+			private function putRecord():void
+			{
+				if(!this.vf502)
+				{
+					callLater(putRecord);
+					return;
+				}
+				queryPic(vf502.f50201);
+				this.F502_03.text =vf502.f50203;
+				this.F502_04.text =vf502.f50204;
+				//this.F502_05.selectedIndex = Number(vf502.f50205);
+				this.F502_06.text =vf502.f50206.toString();
+				this.F502_07.text =vf502.f50207;
+				this.F502_08.text =vf502.f50208;
+				this.F502_09.text =vf502.f50209;
+				this.F502_10.text =vf502.f50210.toString();
+				this.F502_11.text =vf502.f50211.toString();
+				this.F502_12.text =vf502.f50212.toString();
+				this.F502_13.text =vf502.f50213.toString();
+				this.F502_14.text =vf502.f50214.toString();
+				this.F502_15.selectedIndex = CompMethod.getDropDownListSelectedIndex(ArrayCollection(F502_15.dataProvider),vf502.f50215);
+				if(vf502.f50216==null){
+					vf502.f50216="0,0,0,0,0,"
+				}
+				loadF502_16(vf502.f50216);
+				this.F502_17.selectedIndex = CompMethod.getDropDownListSelectedIndex(ArrayCollection(F502_17.dataProvider),vf502.f50217);
+				this.F502_18.text =vf502.f50218.toString();
+				this.F502_19.text =vf502.f50219.toString();
+				this.F502_20.selectedIndex = CompMethod.getDropDownListSelectedIndex(ArrayCollection(F502_20.dataProvider),vf502.f50220);
+				this.F502_22.text =vf502.f50222;
+				this.F502_23.text =vf502.f50223;
+				this.F502_24.text =vf502.f50224Str;
+				this.F502_27.text =vf502.f50227Str;
+				this.F502_28.text =vf502.f50228;
+				this.F502_29.selectedIndex = CompMethod.getDropDownListSelectedIndex(ArrayCollection(F502_29.dataProvider),vf502.f50229);
+				this.F502_25.selectedIndex =this.F504_13.selectedIndex = CompMethod.getDropDownListSelectedIndex(ArrayCollection(F502_25.dataProvider),vf502.f50225);
+				this.F502_30.text =vf502.f50230;
+				this.F502_33.text =vf502.f50233;
+				this.F502_34.text =vf502.f50234;
+				this.F502_39.text =vf502.f50239;
+				var f50235_:String = vf502.f50235;
+				CompMethod.setRadioButtonSelect([F502_38],vf502.f50238);
+				f50235_=="1"?this.F502_35_01.selected = true:this.F502_35_01.selected = false;
+				f50235_=="2"?this.F502_35_02.selected = true:this.F502_35_02.selected = false;
+				if(f50235_=="2"){
+					this.checkHG.enabled = false;
+					this.F502_16_01.selected = false;
+					this.F502_16_02.selected = false;
+					this.F502_16_03.selected = false;
+					this.F502_16_04.selected = false;
+					this.F502_16_05.selected = false;
+				}
+			}
+			
+			private function loadF502_16(f50216_:String):void{
+				var array:Array = f50216_.split(",");
+				var num:int;
+				for(var i:int=0;i<array.length;i++){
+					num=int(array[i]);
+					if(!num){//将0去除
+						continue;
+					}
+					if(array[i]=="0"){
+						return;
+					}else {
+						if(array[i]!="0"){
+							var obj:Object = this.checkHG.getElementAt(int(array[i])-1);
+							obj.selected = true;
+						}
+					}
+				} 
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function picList_itemClickHandler(event:MouseEvent):void 
+			{
+				if(picList.dataProvider)
+					selectFile=picList.selectedItem;
+				if(event.target is Label)
+				{
+					var label:Label=Label(event.target);
+					if(label.text=="查看原图")
+						smallerimg(null);
+				}
+			}
+			
+			/**
+			 * 预览图片
+			 */
+			private function smallerimg(event:MouseEvent):void
+			{
+				var imgwindow:ImageWindow = new ImageWindow();
+				imgwindow.imageSource=this.selectFile.data;
+				//trace();
+				CompMethod.popUpTitleWindow(imgwindow,this,true);
+				imgwindow.init();
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function verificationLa30602(la30601:String):Array
+			{
+				la30602=getOrSetRadioButton(xqId,la30602);
+				var j:Number=0;
+				var k:Number=0;
+				for(var i in la30602)
+				{
+					if(la30602[i]=="1")
+						++k;
+					else if(la30602[i]=="0")
+						++j;
+				}
+				if(k>0&&la30601=="1")
+				{
+					Alert.show("质控结果至少有一项为否，不能选择通过，请从新选择！","系统提示");
+					return null;
+				}else if(j==xqId.length&&la30601=="0")
+				{
+					Alert.show("质控结果所有选项都为是，不能选择未通过，请从新选择！","系统提示");
+					return null;
+				}
+				return la30602;
+			}
+			
+			
+			/**
+			 * 得到或者设置 值
+			 */
+			private function getOrSetRadioButton(idArr:Array,dataArr:Array,getStatus:Boolean=true):Array
+			{
+				var value:Number;
+				var label:String;
+				for(var i:int=0;i<idArr.length;i++)
+				{	
+					for(var j:int=0;j<idArr[i].numElements;j++)
+					{
+						var radioButton:Object=idArr[i].getElementAt(j);
+						if(radioButton is RadioButton)
+						{
+							if(getStatus)//get
+							{
+								if(radioButton.selected)
+								{
+									value=Number(radioButton.value);
+									label=radioButton.label;
+									dataArr[value]=label=="是"?"0":"1";
+									break;
+								}
+							}else//set
+							{
+								value=Number(radioButton.value);
+								if(!dataArr[value])
+									break;
+								label=dataArr[value]=="0"?"是":"否";
+								radioButton.selected=radioButton.label==label?true:false;
+							}
+						}
+					}
+				}
+				return getStatus?dataArr:null;
+			}
+			
+			private function zk_clickHandler(event:MouseEvent):void
+			{
+				var la30601:String=CompMethod.getRadioButtonValue(la306Id);
+				var resultLa30602:Array=verificationLa30602(la30601);
+				if(!resultLa30602)
+					return;
+				var f50408:String=StringUtil.trim(F504_08.text);
+				if(!f50408)
+				{
+					Alert.show("请输入质控人员信息！","系统提示");
+					return;
+				}
+				if(saveStatus)
+				{
+					f504.f50402=vf502.f50201;
+					f504.f50403=vf502.f50239;
+					f504.f50404=vf502.f50225;
+					f504.f50405=vf502.f50227;
+				}
+				f504.f50406=la30601;
+				f504.f50407=resultLa30602.join(",");
+				f504.f50408=f50408;
+				f504.f50409=F504_09.selectedItem.data;
+				f504.f50410=DateField.stringToDate(F504_10.text,'YYYY-MM-DD');
+				f504.f50415="1";
+				f504.f50416="2";
+				f504.f50417=StringUtil.trim(F504_17.text);
+				saveF504();
+			}
+			
+			
+			private function zg_clickHandler(event:MouseEvent):void
+			{
+				var f50411:String=StringUtil.trim(F504_11.text);
+				if(!f50411)
+				{
+					Alert.show("请输入整改意见！","系统提示");
+					return;
+				}
+				var f50412:String=StringUtil.trim(F504_12.text);
+				if(!f50412)
+				{
+					Alert.show("请输入整改人员信息！","系统提示");
+					return;
+				}
+				f504.f50411=f50411;
+				f504.f50412=f50412;
+				f504.f50413=F504_13.selectedItem.data;
+				f504.f50414=DateField.stringToDate(F504_14.text,'YYYY-MM-DD');
+				f504.f50416="1";
+
+				saveF504();
+			}
+			
+			/**
+			 *
+			 */
+			private function saveF504():void
+			{
+				saveButtonArr[status].enabled=false;
+				var satusFlag:String=status?"整改":"质控";
+			    var saveFlag:String=saveStatus?"保存":"修改";
+				f504Request=new F504Request();
+				f504Request.f504=f504;
+				f504Request.flag=satusFlag+saveFlag;
+				f504Service.saveOrF504(f504Request);
+			}
+			
+			/**
+			 *
+			 */
+			private function saveOrF504Handler(event:ResultEvent):void
+			{
+				var f504Response:Object =event.result;
+				if(!f504Response.state){
+					saveButtonArr[status].enabled=true;
+					Alert.show(f504Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show(f504Response.promptMessage,"系统提示");
+			}
+		]]>
+	</fx:Script>
+	<s:HGroup width="100%" height="100%" gap="0">
+		
+		<s:VGroup id="f502Vgroup" width="100%" height="100%" enabled="false">
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="基本信息">	
+					<mx:Grid horizontalGap="4" paddingBottom="10" paddingLeft="8" verticalGap="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="产妇姓名"/>	
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:TextInput id="F502_03" width="140"/>	
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="证件类型"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:DropDownList id="F502_29" width="140"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="证件号码"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:TextInput id="F502_04" width="163"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="年   龄"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:TextInput id="F502_06" width="140" restrict="0-9"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="联系电话"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:TextInput id="F502_07" width="140" maxChars="12" restrict="0-9"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="第几子"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:TextInput id="F502_39" width="163"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>					
+							
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="超声信息">	
+					<mx:Grid height="100%" horizontalGap="4" paddingBottom="10" paddingLeft="8"
+							 verticalGap="8">
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="超 声 号"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="F502_09" width="130"/>
+							
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="头 臀 径"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:BorderContainer width="130" height="22">
+									<s:TextInput id="F502_10" width="94" borderVisible="false"
+												 restrict="0-9." text="0"/>
+									<s:Label x="102" y="6" paddingLeft="0" styleName="myLabel"
+											 text="mm"/>
+								</s:BorderContainer>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label width="63" paddingLeft="5" styleName="myLabel" text="NT"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:BorderContainer width="130" height="22">
+									<s:TextInput id="F502_13" width="94" borderVisible="false"
+												 restrict="0-9." text="0"/>
+									<s:Label x="102" y="6" paddingLeft="0" styleName="myLabel"
+											 text="mm"/>
+								</s:BorderContainer>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="双  顶  径"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:BorderContainer width="130" height="22">
+									<s:TextInput id="F502_11" width="94" borderVisible="false"
+												 restrict="0-9." text="0"/>
+									<s:Label x="102" y="6" paddingLeft="0" styleName="myLabel"
+											 text="mm"/>
+								</s:BorderContainer>
+							
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="孕     周"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F502_12" width="41" borderVisible="false"
+													 maxChars="2" restrict="0-9" text="40"
+													 textAlign="right"/>
+										<s:Label paddingRight="0" styleName="myLabel" text="周"/>
+										<s:TextInput id="F502_30" width="42" borderVisible="false"
+													 maxChars="1" restrict="0-6" text="0"
+													 textAlign="right"/>
+										<s:Label paddingRight="0" styleName="myLabel" text="天"/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="心率"/>
+							</mx:GridItem>
+							<mx:GridItem>								
+								<s:BorderContainer width="130" height="22">
+									<s:TextInput id="F502_14" width="94" borderVisible="false"
+												 restrict="0-9." text="0"/>
+									<s:Label x="102" y="6" paddingLeft="0" styleName="myLabel"
+											 text="次/分"/>
+								</s:BorderContainer>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="羊水深度"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:BorderContainer width="130" height="22">
+									<s:TextInput id="F502_19" width="94" borderVisible="false"
+												 restrict="0-9." text="0"/>
+									<s:Label x="102" y="6" paddingLeft="0" styleName="myLabel"
+											 text="mm"/>
+								</s:BorderContainer>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="胎盘位置"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList id="F502_17" width="130"/>
+							
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="胎盘厚度"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:BorderContainer width="130" height="22">
+									<s:TextInput id="F502_18" width="94" borderVisible="false"
+												 restrict="0-9." text="0"/>
+									<s:Label x="102" y="6" paddingLeft="0" styleName="myLabel"
+											 text="mm"/>
+								</s:BorderContainer>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="脑部缺陷"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="5">
+								<s:RadioButton id="F502_35_02" label="否"/>
+								<s:RadioButton id="F502_35_01" label="是"/>
+								<s:HGroup id="checkHG" paddingLeft="1">
+									<s:CheckBox id="F502_16_01" label="无脑儿"/>
+									<s:CheckBox id="F502_16_02" label="露脑畸形"/>
+									<s:CheckBox id="F502_16_03" label="严重脑膨出"/>
+									<s:CheckBox id="F502_16_04" label="严重胸腹壁缺损"/>
+									<s:CheckBox id="F502_16_05" label="严重开放性脊柱裂声像表现"/>
+								</s:HGroup>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="颅骨光环"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList id="F502_15" width="130"/>
+								
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="宫颈内口"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:DropDownList id="F502_20" width="130"/>
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="检查结果  "/>
+							</mx:GridItem>
+							<mx:GridItem id="F502_38">
+								<s:RadioButton label="阴性" groupName="F502_38" selected="true"
+											   value="1"/>
+								<s:RadioButton label="阳性" groupName="F502_38" value="2"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="超声所见"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="5">
+								<s:TextInput id="F502_33" width="95%"/>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="提示"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="5">
+								<s:TextInput id="F502_34" width="95%"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="临床诊断"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="5">
+								<s:TextInput id="F502_08" width="95%"/>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="报告信息">	
+					<mx:Grid horizontalGap="4" paddingBottom="3" paddingLeft="8" verticalGap="2">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="报告单位"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:DropDownList id="F502_25" width="140" enabled="false"/>
+							
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="报告医生"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="F502_22" width="140"/>
+							
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="报告时间"/>
+							</mx:GridItem>
+							<mx:GridItem>
+						
+								<component:CustomRangeDateField  id="F502_24" width="140"/>
+
+							
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="录入人员"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="F502_28" width="140"/>
+							
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="录入时间"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								
+								<component:CustomRangeDateField  id="F502_27" width="140"/>
+
+								<s:Label styleName="must myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="审核医生"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:TextInput id="F502_23" width="140"/>
+							
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>  
+		
+		<s:VGroup width="100%" height="100%">
+			<mx:TabNavigator width="100%" height="{f502Vgroup.height}" chromeColor="#ffffff"
+							 creationPolicy="all">
+				<s:NavigatorContent width="100%" height="{f502Vgroup.height}" label="图片信息">	
+			<s:List id="picList" width="203" borderVisible="false"
+					click="picList_itemClickHandler(event)" contentBackgroundColor="#FFFFFF"
+					itemRenderer="{new ClassFactory(CustomCsBgListColumnItemRenderer)}">
+				<s:layout>
+					<s:TileLayout requestedColumnCount="1" requestedRowCount="2"/>
+				</s:layout>
+			</s:List>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup> 
+		
+		<s:VGroup width="100%" height="100%">
+			<s:VGroup width="100%" height="100%" paddingRight="5">
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+					<s:NavigatorContent width="100%" label="质控结果">	
+						<s:VGroup width="100%" height="100%" enabled="{!status}" paddingBottom="5">
+							<s:HGroup>
+								<s:VGroup width="100%" height="100%">
+									<s:Label text="质控结果"/>
+								</s:VGroup>  
+								<s:VGroup width="100%" height="100%">
+									<mx:Grid width="232" horizontalGap="30" verticalGap="4">
+										<mx:GridRow width="100%" height="100%" paddingBottom="5"
+													paddingLeft="5" verticalAlign="middle">
+											<mx:GridItem id="la306_011" styleName="myGrid">
+												<s:RadioButton label="通过" buttonMode="true"
+															   groupName="la306_01" selected="true"
+															   value="1"/>
+											</mx:GridItem>
+											<mx:GridItem id="la306_010" styleName="myGrid">
+												<s:RadioButton label="未通过" buttonMode="true"
+															   groupName="la306_01" value="0"/>
+											</mx:GridItem>
+											
+											<mx:GridItem id="la306_013" styleName="myGrid">
+												<s:RadioButton label="待审核" buttonMode="true"
+															   groupName="la306_01" value="3"/>
+											</mx:GridItem>
+										
+										</mx:GridRow>
+									</mx:Grid>
+									<mx:Grid id="zkGrid" verticalGap="6.5">
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem styleName="myGrid">
+												<s:Label id="z504_011Z" text="留图为正中矢状切面"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_011" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_011" value="0"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_011" 
+															   value="0"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem styleName="myGrid">
+												<s:Label id="z504_012Z" text="胎儿为自然状态"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_012" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_012" value="1"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_012" 
+															   value="1"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem styleName="myGrid">
+												<s:Label id="z504_013Z" text="图像放大充足"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_013" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_013" value="2"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_013"
+															   value="2"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem styleName="myGrid">
+												<s:Label id="z504_014Z" text="测量准确"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_014" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_014" value="3"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_014" 
+															   value="3"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem styleName="myGrid"> 
+												<s:Label id="z504_015Z" text="增益调节适中"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_015" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_015" value="4"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_015" 
+															   value="4"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem styleName="myGrid">
+												<s:Label id="z504_016Z" text="报告描述规范"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_016" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_016" value="5"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_016" 
+															   value="5"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem width="155" styleName="myGrid">
+												<s:Label id="z504_017Z" text="报告审核有资质"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_017" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_017" value="6"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_017" 
+															   value="6"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem width="155" styleName="myGrid">
+												<s:Label id="z504_018Z" text="图片上传无误"/>
+											</mx:GridItem>
+											<mx:GridItem id="z504_018" styleName="myGrid">
+												<s:RadioButton label="是" buttonMode="true"
+															   groupName="z504_018" value="7"
+															   selected="true"/>
+												
+												<s:RadioButton label="否" buttonMode="true"
+															   groupName="z504_018" 
+															   value="7"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow width="100%" paddingLeft="5"
+													verticalAlign="middle">
+											<mx:GridItem width="155" styleName="myGrid" colSpan="2">
+												<s:Label  text="其他"/>
+												<s:TextInput width="100%" id="F504_17"/>
+											</mx:GridItem>
+											
+										</mx:GridRow>
+									</mx:Grid>
+								</s:VGroup>  
+							</s:HGroup>
+							
+						<mx:Grid>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label paddingLeft="5" styleName="myLabel" text="质控人员"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:TextInput id="F504_08" width="90"/>
+									<s:Label enabled="false" paddingLeft="2" styleName="myLabel"
+											 text="质控时间"/>
+								
+									<component:CustomRangeDateField  id="F504_10" width="110" enabled="false" isSelectNow="true" />
+								</mx:GridItem>
+							</mx:GridRow>	
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label   paddingLeft="5" styleName="myLabel" text="质控单位"/>
+						</mx:GridItem>
+						
+						<mx:GridItem>
+							<s:DropDownList id="F504_09" width="183" enabled="false"/>
+							<s:Button label="保存" id="zk" click="zk_clickHandler(event)"/>
+						</mx:GridItem>
+					</mx:GridRow>	
+					
+					</mx:Grid>
+					</s:VGroup>
+						
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+					<s:NavigatorContent width="100%" label="整改结果">	
+						
+						<mx:Grid enabled="{status}"  paddingBottom="5">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label paddingLeft="5" styleName="myLabel" text="整改意见"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextArea id="F504_11" width="257" height="32"/>
+								</mx:GridItem>
+							</mx:GridRow>	
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label paddingLeft="5" styleName="myLabel" text="整改人员"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:TextInput id="F504_12" width="90"/>
+									<s:Label enabled="false" paddingLeft="2" styleName="myLabel"
+											 text="整改时间"/>
+							
+									<component:CustomRangeDateField id="F504_14" width="110" enabled="false" isSelectNow="true" />
+								</mx:GridItem>
+							</mx:GridRow>	
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label paddingLeft="5" styleName="myLabel" text="整改单位"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:DropDownList id="F504_13" width="183" enabled="false"/>
+									<s:Button label="保存" id="zg" click="zg_clickHandler(event)"/>
+								</mx:GridItem>
+							</mx:GridRow>	
+						</mx:Grid>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>  
+			
+		</s:VGroup> 
+		
+	</s:HGroup>  
+	
+</s:TitleWindow>

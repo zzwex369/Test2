@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:gja="com.xyw.module.msss.la.fngjadacx.*"
+		 xmlns:component="com.xyw.sys.custom.component.*"
+		 creationComplete="init()"
+		 width="100%" height="100%" >
+	<fx:Declarations>
+		
+		<s:RemoteObject id="l302Service" destination="l302Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL302" result="saveOrRenewL302Handler(event)"/>
+			<s:method name="renewL302" result="saveOrRenewL302Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="saveSuccess", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace gja "com.xyw.module.msss.la.fngjadacx.*";
+		@namespace component "com.xyw.sys.custom.component.*";
+		s|Label 
+		{
+			fontSize:12
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L302;
+			import com.xyw.module.msss.la.model.L302Request;
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.event.CustomDataEvent;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var systemUser:SystemUser;
+			private var l302:L302;
+			public  var l30202:String;
+			public var l30204:String;
+			public var state:String;
+			public var vl302:VL302;
+			private var i:int=0;
+			private var arr:Array;
+			private function init():void
+			{
+				systemUser=this.parentApplication.systemUser;
+				arr=[L302_74,L302_74_01,L302_74_02,L302_74_03,L302_74_04];
+				if("0"==state)
+					callLater(updatexbxjc);
+			}
+			
+				
+			private function updatexbxjc():void
+			{
+				if("1"==vl302.l30271)
+				{
+					L302_71_01.selected=true;
+					if("1"==vl302.l30273)L302_73_01.selected=true;
+					else if("2"==vl302.l30273)L302_73_02.selected=true;
+					else if("3"==vl302.l30273)L302_73_03.selected=true;
+					else if("4"==vl302.l30273)L302_73_04.selected=true;
+					else if("5"==vl302.l30273)L302_73_05.selected=true;
+					else if("6"==vl302.l30273)L302_73_06.selected=true;
+				}
+				else if("2"==vl302.l30271)
+					L302_71_02.selected=true;
+					
+				else if("9"==vl302.l30271)
+				{
+					L302_71_03.selected=true;
+					L302_72.text=vl302.l30272;
+				}
+				
+				
+				CompMethod.setRadioButtonSelect(arr,vl302.l30274);
+				CompMethod.setCheckBoxAutomationName([L302_168],vl302.l302168);
+				CompMethod.setCheckBoxAutomationName([L302_169],vl302.l302169);
+
+				callLater(institutionCodeDataProvider);
+				
+			}
+			
+			private function institutionCodeDataProvider():void
+			{
+				if(!(check.institutionCode.dataProvider))
+				{
+					callLater(institutionCodeDataProvider);
+					return ;				
+				}
+				check.checker.text=vl302.l30277;
+				check.nowDate.text=vl302.l30278str;
+				check.institutionCode.selectedIndex=CompMethod.getDropDownListSelectedIndex(check.institutionCode.dataProvider,vl302.l30276);
+
+			}
+			
+			private function savexbx():void
+			{
+				l302=new L302();
+				var l302Request:L302Request=new L302Request();
+				
+				if(L302_71_01.selected)
+				{
+					l302.l30271="1";
+					if(L302_73_01.selected)l302.l30273="1";
+					if(L302_73_02.selected)l302.l30273="2";
+					if(L302_73_03.selected)l302.l30273="3";
+					if(L302_73_04.selected)l302.l30273="4";
+					if(L302_73_05.selected)l302.l30273="5";
+					if(L302_73_06.selected)l302.l30273="6";
+				}
+				if(L302_71_02.selected)
+				{
+					l302.l30271="2";
+					
+				}
+				if(L302_71_03.selected)
+				{
+					if(StringUtil.trim(L302_72.text)=="")
+					{
+						Alert.show("请输入宫颈细胞其他取材方式","系统提示");
+						return ;
+					}
+					l302.l30271="9";
+					l302.l30272=StringUtil.trim(L302_72.text);
+				}
+				
+				l302.l30274=CompMethod.getRadioButtonValue(arr);
+				
+				var l302168Arr:Array=CompMethod.getCheckBoxAutomationName([L302_168]);
+				
+				if(l302.l30274=='7'&&!l302168Arr[0])
+				{
+					Alert.show("请选择不典型腺上皮细胞 位置","系统提示");
+					return;
+				}
+				
+				var l302169Arr:Array=CompMethod.getCheckBoxAutomationName([L302_169]);
+				
+				if(l302.l30274=='10'&&!l302169Arr[0])
+				{
+					Alert.show("请选择腺癌 位置 ","系统提示");
+					return;
+				}
+				
+			
+				
+				if(!check.checker.text)
+				{
+					Alert.show("请输入检查人员信息","系统提示");
+					return;
+				}
+				
+				save.enabled=false;
+				
+				l302.l302168=l302168Arr[1];
+				l302.l302169=l302169Arr[1];
+				l302.l30276=check.institutionCode.selectedItem.data;
+				l302.l30277=StringUtil.trim(check.checker.text);
+				l302.l30278=DateField.stringToDate(check.nowDate.text,"YYYY-MM-DD");
+				l302Request.flag="3";
+				if("0"==state)
+				{
+					l302.l30201=vl302.l30201;
+					l302Request.l302=l302;
+					l302Service.renewL302(l302Request);
+				}else
+				{			
+					l302.l30202=l30202;
+					l302Request.l302=l302;
+					l302Service.saveL302(l302Request);
+				}
+			}
+			
+			private function saveOrRenewL302Handler(event:ResultEvent):void
+			{
+				var l302Response:Object=event.result;
+				save.enabled=true;
+				if(l302Response.state)
+				{
+					Alert.show(l302Response.promptMessage,"系统提示");
+					this.dispatchEvent(new Event("saveSuccess"));
+					return ;
+				}
+				Alert.show(l302Response.errorMessage,"系统提示");
+			}
+			
+			/**
+			 *
+			 */ 
+			private function clearSelectAndText(flag:Boolean=true):void
+			{
+				
+				L302_72.text='';
+				if(flag)
+					CompMethod.hasNumEles(L302_73);
+				else 
+					L302_73_01.selected=true;
+			}
+		
+			private function check_creationCompleteHandler(event:FlexEvent):void
+			{
+				if('1'==state)
+					check._initializeComboBox('2');
+			
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller x="-6" y="1" width="100%" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator width="700" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="宫颈细胞学检查">
+					<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label text="宫颈细胞取材方式" width="110"/>
+							<s:HGroup width="324" height="100%" paddingBottom="3" verticalAlign="middle">
+								<s:RadioButton groupName="xbqc" label="1.巴氏涂片" selected="true" width="85" buttonMode="true" id="L302_71_01" click="clearSelectAndText(false)"/>
+								<s:RadioButton groupName="xbqc" label="2. 液基/薄层细胞学检查" width="160" buttonMode="true" id="L302_71_02" click="clearSelectAndText()"/>
+								<s:RadioButton groupName="xbqc" label="3.其他" width="65" buttonMode="true" id="L302_71_03" click="clearSelectAndText()"/>
+							</s:HGroup>
+							<s:Label text="其他" enabled="{L302_71_03.selected}"/><s:TextInput width="130" id="L302_72" enabled="{L302_71_03.selected}"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label text="巴氏分级" width="110"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" enabled="{L302_71_01.selected}" id="L302_73">
+								<s:RadioButton groupName="xbbsfj" label="1.I级" width="85" buttonMode="true" id="L302_73_01" selected="true"/>
+								<s:RadioButton groupName="xbbsfj" label="2.IIA" width="85" buttonMode="true" id="L302_73_02"/>
+								<s:RadioButton groupName="xbbsfj" label="3.IIB" width="85" buttonMode="true" id="L302_73_03"/>
+								<s:RadioButton groupName="xbbsfj" label="4.III级"  width="85" buttonMode="true" id="L302_73_04"/>
+								<s:RadioButton groupName="xbbsfj" label="5.IV级" width="85" buttonMode="true" id="L302_73_05"/>
+								<s:RadioButton groupName="xbbsfj" label="6.V级" width="85" buttonMode="true" id="L302_73_06"/>
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="111" text="TBS分类报告结果"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_74" >
+								<s:RadioButton  width="315" value="1"
+												label="1.未见上皮内病变细胞和恶性细胞"
+												buttonMode="true" groupName="L302_74"
+												selected="true" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+								<s:RadioButton  value="2"
+												label="2.未明确意义的不典型鳞状上皮细胞"
+												buttonMode="true" groupName="L302_74"
+												change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+							</s:HGroup>
+							
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="111" text="TBS分类报告结果"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_74_01" >
+								<s:RadioButton  width="315" value="3"
+												label="3.不典型鳞状上皮细胞-不除外高度鳞状上皮内病变"
+												buttonMode="true" groupName="L302_74"
+												change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+								<s:RadioButton label="4.低度鳞状上皮内病变" value="4"
+											   buttonMode="true" groupName="L302_74"
+											   change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+							</s:HGroup>
+							
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="111" text="TBS分类报告结果"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_74_02" >
+								<s:RadioButton groupName="L302_74" value="5" label="5.高度鳞状上皮内病变"  buttonMode="true"  width="315"
+											   change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+								<s:RadioButton groupName="L302_74" value="6" label="6.鳞状细胞癌"  buttonMode="true" 
+											   change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+							
+							</s:HGroup>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="111" text="TBS分类报告结果"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_74_03" >
+								<s:RadioButton groupName="L302_74" value="7" label="7.不典型腺上皮细胞" buttonMode="true" 
+											   id="L302_74_03_7" change="CompMethod.hasNumEles(L302_169)"/>
+								<s:HGroup  height="100%" width="175"  verticalAlign="baseline" id="L302_168" enabled="{L302_74_03_7.selected}">
+									<s:Label text="("/>
+									<s:CheckBox buttonMode="true" automationName="1" label="宫颈管"/>
+									<s:CheckBox buttonMode="true" automationName="2" label="子宫内膜"/>
+									<s:Label text=")"  />
+
+								</s:HGroup>  
+								
+								<s:RadioButton groupName="L302_74" value="8" 
+											   label="8.不典型宫颈管腺细胞倾向瘤变"  buttonMode="true"
+											   change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+							</s:HGroup>
+							
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="111" text="TBS分类报告结果"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_74_04" >
+								<s:RadioButton groupName="L302_74" value="9" label="9.宫颈癌原位癌"  buttonMode="true"  width="315"
+											   change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+								<s:RadioButton groupName="L302_74" value="10" label="10.腺癌"  buttonMode="true" id="L302_74_04_10"
+											   change="CompMethod.hasNumEles(L302_168)"/>
+								<s:HGroup height="100%"  verticalAlign="baseline" id="L302_169" enabled="{L302_74_04_10.selected}">
+									<s:Label text="("/>
+									<s:CheckBox buttonMode="true" automationName="1" label="宫颈管"/>
+									<s:CheckBox buttonMode="true" automationName="2" label="子宫内膜"/>
+									<s:Label text=")"/>
+									
+								</s:HGroup>  
+							</s:HGroup>
+							
+						</s:HGroup>
+						
+					</s:VGroup>
+				</s:NavigatorContent>
+				
+			</mx:TabNavigator>
+			
+			<gja:gjajcdj width="700" chromeColor="#ffffff" creationPolicy="all" id="check"
+						 creationComplete="check_creationCompleteHandler(event)" />
+
+			<s:HGroup width="700" height="30" contentBackgroundColor="#FF0000" horizontalAlign="center"
+					  paddingBottom="20" paddingLeft="10" paddingTop="10" verticalAlign="middle">
+				<s:Button label="保存" buttonMode="true" id="save" click="savexbx()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:VGroup>

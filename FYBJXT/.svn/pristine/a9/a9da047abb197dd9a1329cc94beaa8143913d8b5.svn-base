@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete="moduleComplete()"
+		  initialize="initializeComboBox()"
+		   gap="0" width="755" 
+		  horizontalAlign="center" paddingLeft="15">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="e301Service" destination="e301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE301" result="queryE301Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="customDataChange", type="com.xyw.sys.event.CustomDataEvent")]
+	</fx:Metadata>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+	
+		s|Label
+		{
+			fontSize:13;
+		} 
+		
+	
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.model.E301;
+			import com.xyw.module.etbj.model.E301Request;
+			import com.xyw.module.etbj.model.VE301;
+			import com.xyw.sys.event.CustomDataEvent;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var count:int=6;
+			public var e30101:Number;
+			public var card:String;
+			public var parentName:String;
+			public var phoneNumber:String;
+			public var e301s:ArrayCollection;
+			public var ve301:Object;
+			public var moveMethod:Function;
+			public var systemUser:SystemUser = null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			
+			
+			private function moduleComplete():void
+			{
+				isQuery();
+				var now:Date =new Date();
+				this.e301_06.selectedDate =now;
+				this.e301_14.selectedDate =now;
+			}
+			
+			
+			private function query(PageIndex:int=1, pageSize:int=5):void
+			{
+				
+					var e301Request:E301Request = new E301Request();
+					e301Request.e30101= e30101;
+					e301Request.f30102 = parentName;
+					e301Request.f30105 = card;
+					e301Request.e30111=phoneNumber;
+					e301Request.parameterPageindex=PageIndex;
+					e301Request.parameterPagesize=pageSize;
+					this.e301Service.queryE301(e301Request);
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function isQuery():void
+			{
+				if(!ve301)
+					query();
+				else 
+				{
+					loadda(ve301);
+					moveParentWindow();
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function moveParentWindow():void
+			{
+				this.removeElement(vgGataGrid);
+				callLater(moveMethod);
+			}
+			
+			private function refresh():void
+			{
+				query(this.daPagerBar.currentPageIndex);
+				
+			}
+			
+			private function pagerFunction(currentPageIndex:int, pageSize:int=5):void
+			{
+				query(currentPageIndex,pageSize);
+				
+				
+			}		
+			
+			private function queryE301Handler(event:ResultEvent):void{
+				var e301Response:Object = event.result;
+				e301s =e301Response.ve301s;
+				var rowCount:Number = e301Response.rowCount;
+				if(rowCount==1)
+					moveParentWindow();
+				else if(rowCount)
+				{
+					this.daDataGrid.dataProvider=e301s;
+					this.daPagerBar.pageSize = 20;
+					this.daPagerBar.dataGrid = this.daDataGrid;  
+					this.daPagerBar.rowCount = rowCount;
+					this.daPagerBar.resultData = e301s;
+					this.daPagerBar.dataBind();
+					this.daPagerBar.pagerFunction = pagerFunction;
+					daDataGrid.selectedIndex=0;
+					if(e301Response.errorMessage !=null){
+						Alert.show(e301Response.errorMessage,"系统提示");
+						return;
+					}
+					this.daPagerBar.enabled = true;
+					//callLater(moveMethod);
+					
+				}else
+					return ;
+				loadda(e301s.getItemAt(0));		
+				
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function dispatchChangeEvent():void
+			{
+				var  dataEvent:CustomDataEvent=new CustomDataEvent(CustomDataEvent.CUSTOM_DATA_CHANGE);
+				dataEvent.data=this.ve301;
+				this.dispatchEvent(dataEvent);
+			}
+			
+			/**
+			 *
+			 */
+			public function removeDataGridElement():void
+			{
+				this.removeElement(vgGataGrid);
+			}
+		
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=true):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql =sql ;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function initializeComboBox():void
+			{
+				_initializeComboBox("select t.d101_01, t.d101_02 from D101 t ","D101");
+				
+				_initializeComboBox("select * from S301_01","S301_01");
+				
+				_initializeComboBox("select * from S301_03","S301_03");
+
+				_initializeComboBox("select * from S301_04","S301_04");
+
+				_initializeComboBox("select * from S301_06","S301_06");
+
+				_initializeComboBox("select * from S601_10","S601_10");
+				
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S301_01")//性别
+				{
+					this.e301_04.dataProvider = comboBoxDataList;
+					this.e301_04.selectedIndex = 0;
+				}else if(flag == "S301_04")//民族
+				{
+					this.e301_08.dataProvider = comboBoxDataList;
+					this.e301_08.selectedIndex = 1;
+				}else if(flag =="S301_06"){  //证件类型
+					var TypeIndex:int =this.getDropDownListSelectedIndex(comboBoxDataList,"1");
+					this.F301_04.dataProvider =comboBoxDataList;
+					this.F301_04.selectedIndex =TypeIndex;
+					this.F301_20.dataProvider =comboBoxDataList;
+					this.F301_20.selectedIndex =TypeIndex;
+				}else if(flag == "S301_03")//国籍
+				{
+					var countryIndex:int = this.getCountrySelectedIndex(comboBoxDataList);
+					this.e301_07.dataProvider = comboBoxDataList;
+					this.e301_07.selectedIndex = countryIndex;
+					this.F301_08.dataProvider =comboBoxDataList;
+					this.F301_08.selectedIndex =countryIndex;
+				}else if(flag == "D101")//单位
+				{
+					this.systemUser = this.parentApplication.systemUser;
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.e301_16.dataProvider = comboBoxDataList;
+					this.e301_16.selectedIndex = index;
+					this.e301_21.dataProvider = comboBoxDataList;
+					this.e301_21.selectedIndex = index;
+					this.e301_16.enabled =false;
+					this.e301_21.enabled =false;
+				}else if(flag == "S601_10")//胎数
+				{
+					this.e301_20.dataProvider = comboBoxDataList;
+					this.e301_20.selectedIndex = 1;
+				}
+				--count;
+				
+			}
+			
+			
+			private function putCard():void{
+				if(count)
+				{
+					callLater(putCard);
+					return ;				
+				}
+				this.e301_26.text =ve301.e30126;
+				var f30104dataProvide:ArrayCollection =ArrayCollection(this.F301_04.dataProvider);
+				var f30104Index:int =this.getDropDownListSelectedIndex(f30104dataProvide,ve301.f30104);
+				
+				var f30120dataProvide:ArrayCollection =ArrayCollection(this.F301_20.dataProvider);
+				var f30120Index:int =this.getDropDownListSelectedIndex(f30104dataProvide,ve301.f30120);
+				
+				this.F301_04.selectedIndex =f30104Index;
+				this.e301_27.text =ve301.e30127;
+				this.F301_06.text = ve301.f30106Str;
+				var f30108dataProvide:ArrayCollection =ArrayCollection(this.F301_08.dataProvider);
+				var f30108Index:int =this.getDropDownListSelectedIndex(f30108dataProvide,ve301.f30108);
+				this.F301_08.selectedIndex =f30108Index;
+				
+				this.e301_03.text =ve301.e30103;
+				var e30104dataProvide:ArrayCollection =ArrayCollection(this.e301_04.dataProvider);
+				var e30104Index:int =this.getDropDownListSelectedIndex(e30104dataProvide,ve301.e30104);
+				this.e301_04.selectedIndex =e30104Index;
+				if(ve301.e30106Str !=null){
+					this.e301_06.text =ve301.e30106Str;
+				}
+				var e30107dataProvide:ArrayCollection =ArrayCollection(this.e301_07.dataProvider);
+				var e30107Index:int =this.getDropDownListSelectedIndex(e30107dataProvide,ve301.e30107);
+				this.e301_07.selectedIndex =e30107Index;
+				var e30108dataProvide:ArrayCollection =ArrayCollection(this.e301_08.dataProvider);
+				var e30108Index:int =this.getDropDownListSelectedIndex(e30108dataProvide,ve301.e30108);
+				this.e301_08.selectedIndex =e30108Index;
+				this.e301_11.text =ve301.e30111;
+				this.e301_13.text =ve301.e30113;
+				if(ve301.e30114Str !=null){
+					this.e301_14.text =ve301.e30114Str;
+				}
+				this.e301_15.text =ve301.e30115;
+				var e30116dataProvide:ArrayCollection =ArrayCollection(this.e301_16.dataProvider);
+				var e30116Index:int =this.getDropDownListSelectedIndex(e30116dataProvide,ve301.e30116);
+				this.e301_16.selectedIndex =e30116Index;
+				this.e301_17.text =ve301.e30117;
+				var temp:String = ve301.e30118;
+				var aa:Array=temp.split(",");
+				this.e301_18_1.text = aa[0];
+				this.e301_18_2.text = aa[1];
+				this.e301_19.text =ve301.e30119.toString();
+				var e30120dataProvide:ArrayCollection =ArrayCollection(this.e301_20.dataProvider);
+				var e30120Index:int =this.getDropDownListSelectedIndex(e30120dataProvide,ve301.e30120);
+				this.e301_20.selectedIndex =e30120Index;
+				var e30121dataProvide:ArrayCollection =ArrayCollection(this.e301_21.dataProvider);
+				var e30121Index:int =this.getDropDownListSelectedIndex(e30121dataProvide,ve301.e30121);
+				this.e301_21.selectedIndex =e30121Index;
+				this.e301_22.text =ve301.e30122.toString();
+				this.e301_23.text =ve301.e30123.toString();
+				this.e301_28.text =ve301.e30128;
+				this.e301_29.text =ve301.e30129;
+				this.e301_30.text =ve301.e30130;
+			}
+			/*----------建档单位-----------------*/
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}	
+				return index;
+			}
+			/*-----------------默认国籍 中国---------------------*/
+			private function getCountrySelectedIndex(arrayCollection:ArrayCollection):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == "CHN") {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			private function loadda(ve301:Object):void
+			{
+				if(this.ve301)
+				{
+					if(this.ve301.e30101==ve301.e30101&&e301_26.text)
+						return ;
+				}
+				this.ve301=ve301;
+				this.dispatchChangeEvent();//老数据报错 会无法执行
+				putCard();
+			}
+			
+		
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				var visible:Boolean=daPagerBar.visible;
+				if(visible)
+					setQueryState(!visible,'显示查询列表',event);
+				else
+					setQueryState(!visible,'隐藏查询列表',event);
+			}
+			
+			/**
+			 *
+			 */
+			private function setQueryState(visible:Boolean,label:String,event:MouseEvent):void
+			{
+				event.target.label=label;
+				daPagerBar.visible=visible;
+				daDataGrid.visible=visible;
+				daDataGrid.includeInLayout=visible;
+			}
+			
+		
+		
+			
+		]]>
+	</fx:Script>
+		<s:VGroup width="750" height="226" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF" id="vgGataGrid">
+			<s:DataGrid id="daDataGrid" width="100%" height="188"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" chromeColor="#ffffff"
+						rowHeight="22" selectionChange="loadda(DataGrid(event.target).selectedItem)">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e30101" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="80" dataField="e30103" headerText="婴儿姓名"/>
+						<s:GridColumn width="80" dataField="e30104Zh" headerText="婴儿性别"/>
+						<s:GridColumn width="100" dataField="e30106Str" headerText="出生日期"/>
+						<s:GridColumn width="80" dataField="e30107Zh" headerText="国籍 "/>
+						<s:GridColumn width="80" dataField="e30108Zh" headerText="民族"/>
+						<s:GridColumn width="80" dataField="e30126" headerText="母亲姓名"/>
+						<s:GridColumn width="140" dataField="e30127" headerText="母亲证件证号"/>
+						<s:GridColumn width="80" dataField="e30128" headerText="父亲姓名"/>
+						<s:GridColumn width="140" dataField="e30129" headerText="父亲证件证号"/>
+						<s:GridColumn width="140" dataField="e30117" headerText="保健卡号"/>
+						<s:GridColumn width="100" dataField="e30112Zh" headerText="现在地址"/>
+						<s:GridColumn width="100" dataField="e30109Zh" headerText="户口地址"/>
+						<s:GridColumn width="100" dataField="e30116Zh" headerText="建档单位"/>
+						<s:GridColumn width="100" dataField="e30114Str" headerText="建档时间"/>
+						<s:GridColumn width="80" dataField="e30111" headerText="联系电话"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<s:HGroup width="100%">
+				<component:PagerBar id="daPagerBar" width="600" enabled="false" isExcel="false"
+									isExcel2="false" isPrinter="false"/>
+				<s:HGroup width="120" height="100%" horizontalAlign="right">
+					
+					<s:Button label="隐藏查询列表" buttonMode="true" click="button1_clickHandler(event)"
+							  color="#E41515"/>
+				</s:HGroup>  
+				
+			</s:HGroup>
+	</s:VGroup>
+	<s:VGroup paddingBottom="10" height="350">
+
+		<mx:TabNavigator width="750" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent width="100%" label="儿童信息">
+				<mx:Grid paddingBottom="10" paddingLeft="8">
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="儿  童   姓  名"/>
+							<s:TextInput id="e301_03" width="130"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="1" text="性　          别"/>
+							<s:DropDownList id="e301_04" width="130"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="1" text="出  生   日  期"/>
+							<mx:DateField id="e301_06" width="130"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="1" text="国　          籍"/>
+							<s:DropDownList id="e301_07" width="130"/>
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="民　       　族"/>
+							<s:DropDownList id="e301_08" width="130"/>
+						</mx:GridItem>
+					
+						<mx:GridItem>  
+							<s:Label styleName="label13" paddingRight="2" text="出   生  证  号"/>
+							<s:TextInput id="e301_13" width="130"/>
+							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="身       高(cm)"/>
+							<s:TextInput id="e301_30" restrict="0-9." text="0"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="体        重(kg)"/>
+							<s:TextInput id="e301_19" restrict="0-9." text="0"/>
+							
+						</mx:GridItem>
+					
+						<mx:GridItem>
+							<s:Label styleName="label13" text="胎              龄"/>
+							<s:TextInput id="e301_18_1" width="60" text="0"/>
+							<s:Label styleName="label13" text="周"/>
+							<s:TextInput id="e301_18_2" width="20" restrict="0-7" text="0"/><s:Label styleName="label13" text="天"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="2" text="胎             数"/>
+							<s:DropDownList id="e301_20" width="130"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="2" text="孕             次"/>
+							<s:TextInput id="e301_22" x="59" width="130" maxChars="2" restrict="0-9"
+										 text="0"/>
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="产              次"/>
+							<s:TextInput id="e301_23" x="56" width="130" maxChars="2" restrict="0-9"
+										 text="0"/>
+						</mx:GridItem>
+						
+						
+						
+					</mx:GridRow>
+					
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="妇  保   卡  号"/>
+							<s:TextInput id="e301_17" width="130" enabled="false"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="出   生  机  构"/>
+							<s:DropDownList id="e301_21" width="130"/>
+							<!---->
+						</mx:GridItem>
+					</mx:GridRow>
+				</mx:Grid>  
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		
+		
+		
+		
+		<mx:TabNavigator width="750" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent width="100%" label="其他信息">
+				<mx:Grid paddingBottom="10" paddingLeft="8">
+					<mx:GridRow>
+						<mx:GridItem width="209">
+							<s:Label styleName="label13" text="母   亲   姓  名"/>	
+							<s:TextInput id="e301_26" width="130" enabled="false"/>	
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="3" text="证   件  类   型"/>
+							<s:DropDownList id="F301_04" width="130" enabled="false"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="证  件  号  码"/>
+							<s:TextInput id="e301_27" width="130" enabled="false"/>
+							
+						</mx:GridItem>	
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem width="209">
+							<s:Label styleName="label13" text="父   亲   姓  名"/>	
+							<s:TextInput id="e301_28" width="130"/>	
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="3" text="证   件  类   型"/>
+							<s:DropDownList id="F301_20" width="130" enabled="false"/>
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="证  件  号  码"/>
+							<s:TextInput id="e301_29" width="130"/>
+						</mx:GridItem>	
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="出   生   日  期"/>
+							<mx:DateField id="F301_06" width="130"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  enabled="false" formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" paddingRight="1" text="国               籍"/>
+							<s:DropDownList id="F301_08" width="130" enabled="false"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>		
+							<s:Label styleName="label13" text="联  系  电  话"/>
+							<s:TextInput id="e301_11" width="130" maxChars="12" restrict="0-9"/>
+							
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="建   档   单  位"/>
+							<s:DropDownList id="e301_16" width="130" labelField="label" selectedIndex="0"/>
+							
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="建      档      人"/>
+							<s:TextInput id="e301_15" width="130"/>
+						</mx:GridItem>
+						<mx:GridItem>
+							<s:Label styleName="label13" text="建  档  日  期"/>
+							<mx:DateField id="e301_14" width="130"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							
+						</mx:GridItem>
+					</mx:GridRow>
+				</mx:Grid>  
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:VGroup>

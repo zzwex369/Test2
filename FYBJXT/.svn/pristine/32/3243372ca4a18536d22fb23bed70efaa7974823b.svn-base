@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:gja="com.xyw.module.msss.la.fngjadacx.*"
+		 backgroundColor="white" chromeColor="#5CACEE"
+		 close="CompMethod.closeWindow(this)"
+		 maxHeight="{this.parentApplication.stage.stageHeight-5}" 
+		 initialize="moduleCreationComplete()"  cornerRadius="5"  horizontalCenter="0">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			public var state:String;
+			public var dataId:String;
+			public var titleName:String;
+			public var vl302:Object;
+			public function moduleCreationComplete():void
+			{
+				
+					this.currentState=dataId;
+					this.title=titleName;
+			}
+			
+		
+			private function enterStateHandler():void
+			{
+				var child:Object=AllHgroup.getElementAt(0);
+				child.state=this.state;
+				child.vl302=this.vl302;
+				child.l30202=this.vl302.l30202;
+			}
+			
+			private function refresh():void
+			{
+				var index:Object =this.owner;
+				index.refresh();
+				CompMethod.closeWindow(this)
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="bs" enterState="enterStateHandler()"/>
+		<s:State name="fk" enterState="enterStateHandler()"/>
+		<s:State name="hpv" enterState="enterStateHandler()"/>
+		<s:State name="gjxbx" enterState="enterStateHandler()"/>
+		<s:State name="csjy" enterState="enterStateHandler()"/>
+		<s:State name="via" enterState="enterStateHandler()"/>
+		<s:State name="ydj" enterState="enterStateHandler()"/>
+		<s:State name="zz" enterState="enterStateHandler()"/>
+		<s:State name="zd" enterState="enterStateHandler()"/>
+		<s:State name="sf" enterState="enterStateHandler()"/>
+	</s:states>
+	<s:HGroup id="AllHgroup">
+		<gja:gjabjbs  width="100%" height="100%" id="bs" includeIn="bs" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjafkjc  width="100%" height="100%" id="fk" includeIn="fk" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjahpv  width="100%" height="100%" id="hpv" includeIn="hpv" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjaxbxjc width="100%" height="100%" id="gjxbx"  includeIn="gjxbx" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjacsjy width="100%" height="100%" id="csjy"  includeIn="csjy" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjavia  width="100%" height="100%" id="via"  includeIn="via" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjaydj width="100%" height="100%" id="ydj"  includeIn="ydj" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjazzbl width="100%" height="100%" id="zz"  includeIn="zz" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjazhzd width="100%" height="100%" id="zd"  includeIn="zd" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+		<gja:gjasfzl width="100%" height="100%" id="sf"  includeIn="sf" chromeColor="#CCCCCC" saveSuccess="refresh()"/>
+	</s:HGroup>
+</s:TitleWindow>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="350" height="130" chromeColor="#429edd"
+			   fontSize="15" title="修改密码"
+			   close="removeModifyPasswordWindow(event)"
+			   creationComplete="modifyPasswordTitlewindowCreationCompleteHandler(event)"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="updatePassword" result="updatePasswordHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.MessageResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			private function modifyPasswordTitlewindowCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.oldPassword.setFocus();
+				this.password.tabIndex = 1;
+				this.oldPassword.tabEnabled = true;
+			}
+			
+			private function removeModifyPasswordWindow(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			private function updatePassword(event:MouseEvent):void
+			{
+				if(this.oldPassword.text == "" || this.oldPassword.text == null) {
+					Alert.show("旧密码不能为空", "系统提示");
+					this.oldPassword.setFocus();
+					return;
+				}
+				
+				if(this.password.text == "" || this.password.text == null) {
+					Alert.show("新密码不能为空", "系统提示");
+					this.password.setFocus();
+					return;
+				}
+				
+				var systemUser:SystemUser = this.parentApplication.systemUser;
+				systemUser.oldPassword = this.oldPassword.text;
+				systemUser.password = this.password.text;
+				this.systemService.updatePassword(systemUser);
+			}
+			
+			private function updatePasswordHandler(event:ResultEvent):void
+			{
+				var messageResponse:MessageResponse = event.result as MessageResponse;
+				if(messageResponse.errorMessage == null) {
+					SystemUser(this.parentApplication.systemUser).oldPassword = this.password.text;
+					PopUpManager.removePopUp(this);
+					Alert.show(messageResponse.promptMessage, "系统提示");
+				} else {
+					Alert.show(messageResponse.errorMessage, "系统提示");
+				}
+			}
+			private function resetPassword(event:MouseEvent):void
+			{
+				this.oldPassword.text = "";
+				this.password.text = "";
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" paddingBottom="20" paddingLeft="20" paddingRight="20" paddingTop="20">
+		<s:HGroup verticalAlign="middle" horizontalAlign="center">
+			<s:Label text="旧密码  " fontSize="15"/><s:TextInput displayAsPassword="true" height="22" id="oldPassword" width="180"/><s:Button label="重置" click="resetPassword(event)"/>
+		</s:HGroup>
+		<s:HGroup verticalAlign="middle" horizontalAlign="center">
+			<s:Label text="新密码  " fontSize="15"/><s:TextInput id="password" height="22" displayAsPassword="true" width="180"/><s:Button label="修改" click="updatePassword(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

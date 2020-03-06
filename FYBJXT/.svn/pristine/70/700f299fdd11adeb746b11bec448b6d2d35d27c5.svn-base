@@ -1,0 +1,168 @@
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+	<session-factory>
+		<property name="dialect">
+			org.hibernate.dialect.OracleDialect
+	</property>
+		<property name="hibernate.show_sql">false</property>
+		<property name="hibernate.format_sql">false</property>
+		<property name="javax.persistence.validation.mode">none</property>
+
+		<mapping resource="com/xyw/sys/model/D101.hbm.xml" />
+		<mapping resource="com/xyw/sys/model/D801.hbm.xml" />
+		<mapping resource="com/xyw/sys/model/D802.hbm.xml" />
+		<mapping resource="com/xyw/sys/model/D403.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D301.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD301.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D302.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D303.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D304.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD304.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D401.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD401.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D501.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD501.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D502.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD502.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D503.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D601.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD601.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D602.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D603.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD603.hbm.xml" />
+		<mapping resource="com/xyw/medical/xzjgwh/model/D201.hbm.xml" />
+		<mapping resource="com/xyw/medical/xzjgwh/model/VD201.hbm.xml" />
+		<mapping resource="com/xyw/medical/yljggl/model/VD101.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D305.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD305.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D402.hbm.xml" />
+		<mapping resource="com/xyw/medical/qfrwh/model/S301_10.hbm.xml" />
+		<mapping resource="com/xyw/medical/qfrwh/model/VS301_10.hbm.xml" />
+		<mapping resource="com/xyw/medical/jsywh/model/S30109.hbm.xml" />
+		<mapping resource="com/xyw/medical/jsywh/model/VS301.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D605.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD605.hbm.xml" />
+		<mapping resource="com/xyw/ws/model/Fp.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D607.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD607.hbm.xml" />
+		<mapping resource="com/xyw/medical/ycfsw/model/D604.hbm.xml" />
+		<mapping resource="com/xyw/medical/ycfsw/model/VD604.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/csqxr/model/D606.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/csqxr/model/VD606.hbm.xml" />
+
+		<mapping resource="com/xyw/medical/birth/model/D306.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD306.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/D307.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD307.hbm.xml" />
+		<mapping resource="com/xyw/medical/birth/model/VD306_.hbm.xml" />
+
+		<mapping resource="com/xyw/medical/fnbj/model/F301.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF301.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE305.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE304.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F302.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF302.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F303.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF303.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F304.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF304.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F305.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF305.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F306.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF306.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F307.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF307.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F308.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF308.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F309.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF309.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F310.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF310.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F401.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/FA401.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VFA401.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L301.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L302.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L303.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L304.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L305.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L306.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L401.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L402.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/L403.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VL301.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VL302.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VL306.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VL401.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VL402.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF401.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E301.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE301.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E302.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE302.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E303.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE303.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E304.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E305.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E501.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E502.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E503.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E504.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE504.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E505.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E506.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE505.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/E601.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE501.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE502.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE503.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE601.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/E701.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/VE701.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/E702.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/VE702.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/E703.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/VE703.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/E704.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/etsl/model/VE704.hbm.xml" />
+
+		<mapping resource="com/xyw/medical/fnbj/model/F501.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF501.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F502.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF502.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F503.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF503.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F504.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF504.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F601.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF601.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F602.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF602.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F603.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF603.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F604.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF604.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F605.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/VF605.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/F606.hbm.xml" />
+		<mapping resource="com/xyw/medical/fnbj/model/Vf606s.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/Sw301.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/Sw302.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/Sw303.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/Sw304.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/VSw301.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/VSw302.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/VSw303.hbm.xml" />
+		<mapping resource="com/xyw/medical/swjc/model/VSw304.hbm.xml" />
+		<mapping resource="com/xyw/medical/etbj/model/VE505AndVE504.hbm.xml" />
+		<mapping resource="com/xyw/medical/loadPicture/model/Pictures.hbm.xml" />
+		<mapping resource="com/xyw/medical/loadPicture/model/VPicture.hbm.xml" />
+		
+		<mapping resource="com/xyw/medical/common/et/yey/model/E705.hbm.xml" />
+		<mapping resource="com/xyw/medical/common/et/yey/model/VE705.hbm.xml" />
+
+	</session-factory>
+</hibernate-configuration>

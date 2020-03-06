@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	
+	<fx:Declarations>
+		<s:RemoteObject id="csqxrService" destination="csqxrService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="pagerD606" result="pagerD606Handler(event)"/>
+			<s:method name="deleteD606" result="deleteD606Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.delivery.model.D606;
+			import com.xyw.module.delivery.model.D606Request;
+			import com.xyw.module.delivery.model.D606Response;
+			import com.xyw.module.delivery.model.VD606;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var vD606:VD606 = null;
+			public var d606Request:D606Request = null;
+			public var systemUser:SystemUser = null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+				
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vD606 = DataGrid(event.target).selectedItem as VD606;
+			}
+			
+			public function query(event:MouseEvent):void
+			{  
+				var d606Request:D606Request = new D606Request();
+				var type:String = this.D606_51.getLastSelectedInstitution();
+				var d606_51_:String = this.D606_51.getLastSelectedInstitutionCode();
+				if(this.systemUser.institutionType == "1")
+				{
+					d606Request.d60651 = this.systemUser.institutionCode;
+				}else{
+					if(type == "8")
+					{
+						d606Request.d60651 = d606_51_;
+					}else if(type == "6")
+					{
+						d606Request.d60651 = d606_51_.substring(0,6);
+					}else if(type == "4")
+					{
+						d606Request.d60651 = d606_51_.substring(0,4);
+					}else if(type == "2")
+					{
+						d606Request.d60651 = d606_51_.substring(0,2);
+					}
+				}
+				d606Request.d60604 = this.D606_04.text;
+				d606Request.d60607 = this.D606_07.text;
+				d606Request.d60618Start = this.timeStart.selectedDate;
+				d606Request.d60618End = this.timeEnd.selectedDate;
+				d606Request.pageIndex = 1;
+				d606Request.pageSize = 20;
+				this.csqxrService.pagerD606(d606Request);
+			}
+			
+			public function pagerD606Handler(event:ResultEvent):void
+			{ 
+				var d606Response:Object = event.result;
+				var vd606s:ArrayCollection = d606Response.vD606s;
+				var rowCount:Number = d606Response.rowCount;
+				this.certificateDataGrid.dataProvider = vd606s;
+				if(d606Response.errorMessage == null)
+				{
+					this.pagerBar.pageSize = 20;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = vd606s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(d606Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				var d606Request:D606Request = new D606Request();
+				d606Request.pageIndex = currentPageIndex;
+				d606Request.pageSize = pageSize;
+				
+				this.csqxrService.pagerD606(d606Request);
+			}
+			public function update(event:MouseEvent):void{
+				if(this.vD606 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:tittle = new tittle();
+					window.vD606 = this.vD606;
+					PopUpManager.addPopUp(window,this);
+					var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+					var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+					window.move(x, y);
+				}
+			}
+			public function deleteD606(event:MouseEvent):void{
+				
+				if(this.vD606 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show("确定要删除所选的行吗？", "系统提示", (Alert.YES|Alert.NO), this, alertCallBack);
+				
+			}
+			public function alertCallBack(event:CloseEvent):void{
+				var d606Request:D606Request = new D606Request();
+				var d606:D606 = new D606();
+				d606.d60601 = this.vD606.d60601;
+				d606Request.d606 = d606;
+				if(event.detail == Alert.YES){
+					this.csqxrService.deleteD606(d606Request);
+				}
+			}
+			public function deleteD606Handler(event:ResultEvent):void{
+				
+				var d606Response:D606Response = event.result as D606Response;
+				if(d606Response.errorMessage == null){
+					this.query(null);
+					Alert.okLabel = "确认";
+					Alert.show(d606Response.promptMessage, "系统提示");
+				}else{
+					Alert.show(d606Response.errorMessage, "系统提示");
+				}
+			}
+			private function printCertificate(event:MouseEvent):void
+			{
+				
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="综合查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="填报单位" id="my"/>
+						<component:InstitutionComboBox id="D606_51"/>
+						<s:Label text="姓名"/><s:TextInput id="D606_04"/>
+						<s:Label text="产妇身份证号"/><s:TextInput id="D606_07" width="150"/>
+					</s:HGroup>
+					<s:HGroup  width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="出生日期"/><mx:DateField yearNavigationEnabled="true" id="timeStart" width="120" dayNames='["日","一","二","三","四","五","六"]'
+															monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+															formatString="YYYY-MM-DD"/>
+						<s:Label text="至"/><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="120" dayNames='["日","一","二","三","四","五","六"]'
+														 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														 formatString="YYYY-MM-DD"/>
+						<s:Button label="查询" click="query(event)"/>
+						<s:Button label="打印" click="printCertificate(event)"/>
+						<s:Button label="修改" click="update(event)"/>
+						<s:Button label="删除" click="deleteD606(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:Scroller y="126" width="100%" height="560" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+			<s:VGroup width="100%" paddingBottom="10">
+				<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="1241" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn dataField="d60601" headerText="主键" visible="false"/>
+							<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+							<s:GridColumn dataField="d60604" headerText="产妇姓名" width="100"/>
+							<s:GridColumn dataField="d60607" headerText="产妇身份证号" width="150"/>
+							<s:GridColumn dataField="d60616" headerText="缺陷儿姓名" width="100"/>
+							<s:GridColumn dataField="d60617Zh" headerText="缺陷儿性别" width="100"/>
+							<s:GridColumn dataField="d60618Zh" headerText="出生日期 " width="100"/>
+							<s:GridColumn dataField="d60625Zh" headerText="畸形确诊时间" width="100"/>
+							<s:GridColumn dataField="d60642" headerText="缺陷名" width="100"/>
+							<s:GridColumn dataField="d60641" headerText="缺陷儿多少例" width="100"/>
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>
+				<component:PagerBar id="pagerBar" enabled="false"/>
+				</s:VGroup>
+			</s:Scroller>
+	</s:VGroup>
+</s:Module>

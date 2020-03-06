@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="800" height="558" creationComplete="moduleComplete()" close="removeWindow()" backgroundColor="white" chromeColor="#5CACEE" title="信息登记" cornerRadius="5" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="e703Service" destination="e703Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveE703" result="saveE703Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|SkinnableTextBase:disabledWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		s|SkinnableTextBase:normalWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		.myLabel
+		{
+			fontSize:12;
+		}
+		
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.etsl.model.E703;
+			import com.xyw.module.etbj.etsl.model.E703Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			public var e703:E703;
+			[Bindable]
+			public var systemUser:SystemUser = null;
+			public var ve702:Object;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var e703Request:E703Request;
+			[Bindable]
+			public var fileNameTypeDropDownList:ArrayCollection=new ArrayCollection([{data: 0, label: '岁'}, {data: 1, label: '月'},{data: 2, label: '周'}]);
+			
+			private function moduleComplete():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				var now:Date =new Date();
+				this.e703_18.selectedDate =now;
+				this.initializeComboBox();
+				putVaule();
+			}
+			public function putVaule():void{
+				this.e703_05.text=ve702.e70106;
+				this.e703_08.text=ve702.e70108;
+				this.e703_09.text=ve702.e70117;
+				this.e703_10.text=ve702.e70119;
+				this.e703_11.text=ve702.e70121;
+				this.e703_12.text=ve702.e70123;
+				this.e703_13.text=ve702.e70120;
+				load703_14();
+			}
+			private function load703_14():void{
+				var str:String="";
+				if("2"==ve702.e70210){
+					str += "眼外观异常,";
+				}
+				if("2"==ve702.e70216){
+					str += "光照反应异常,";
+				}
+				if("2"==ve702.e70218){
+					str += "瞬目反射异常,";
+				}
+				if("2"==ve702.e70220){
+					str += "红球试验异常,";
+				}
+				if("2"==ve702.e70222){
+					str += "眼位检查异常,";
+				}
+				if("2"==ve702.e70224){
+					str += "眼球运动异常,";
+				}
+				if("2"==ve702.e70225){
+					str += "视物行为观察异常,";
+				}
+				str = str.slice(0,str.length-1);
+				e703_14.text=str;
+			}
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t "; //where t.d101_01 ="+this.systemUser.institutionCode+"or t.d101_11 ="+this.systemUser.institutionCode;
+				comboBoxDataRequest.flag = "D101";//单位
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_01";//性别
+				comboBoxDataRequest.sql = "select * from S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='1' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S301_01")//性别
+				{
+					this.e703_06.dataProvider = comboBoxDataList;
+					this.e703_06.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve702.e70107);
+				}else if(flag == "D101")//单位
+				{
+					this.e703_16.dataProvider = comboBoxDataList;
+					this.e703_16.selectedIndex = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+				}else if(flag=="S301_10"){
+					this.e703_17.dataProvider = comboBoxDataList;
+					//		this.e701_32.selectedIndex = 0;
+				}
+			}
+			
+			private function savee703(event:MouseEvent):void
+			{
+				var bool:Boolean = validate1();
+				if(!bool){
+					return;
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show('确认保存？','保存信息',1|2,this,savee703_hanlder);
+			}
+			public function saveE703Handler(event:ResultEvent):void{
+				var response:Object = event.result;
+				if(response.falg){
+					Alert.show("保存成功","系统提示");
+					this.removeWindow();
+				}else{
+					Alert.show("保存出错,请重试","系统提示");
+				}
+			}
+			private function savee703_hanlder(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					quzhi();
+					e703Request = new E703Request();
+					e703Request.e70208=ve702.e70208;
+					e703Request.e703=e703;
+					e703Service.saveE703(e703Request);
+					//clear();
+				}
+			}
+			private function quzhi():void{
+				e703 = new E703();
+				e703.e70302 =ve702.e70101;
+				e703.e70303 =ve702.e70201;
+				e703.e70304 =ve702.e70105;
+				e703.e70305=StringUtil.trim(e703_05.text);
+				e703.e70306=e703_06.selectedItem.data;
+				var num:Number=new Number(StringUtil.trim(e703_07.text));
+				if(e703_07d.selectedItem.data=="0"){
+					num *= 12;
+					e703.e70307=num+"";
+				}else if(e703_07d.selectedItem.data=="1"){
+					e703.e70307=StringUtil.trim(e703_07.text);
+				}else if(e703_07d.selectedItem.data=="2"){
+					num = num/4;
+					e703.e70307=num+"";
+				}
+				e703.e70308=StringUtil.trim(e703_08.text);
+				e703.e70309=StringUtil.trim(e703_09.text);
+				e703.e70310=StringUtil.trim(e703_10.text);
+				e703.e70311=StringUtil.trim(e703_11.text);
+				e703.e70312=StringUtil.trim(e703_12.text);
+				e703.e70313=StringUtil.trim(e703_13.text);
+				e703.e70314=StringUtil.trim(e703_14.text);
+				e703.e70315=StringUtil.trim(e703_15.text);
+				e703.e70316=e703_16.selectedItem.data;
+				e703.e70322=e703_22.selectedItem.data;
+				e703.e70317=StringUtil.trim(e703_17.text);
+			}
+			
+			private function validate1():Boolean
+			{
+				if(StringUtil.trim(e703_05.text)==""){
+					Alert.show("请输入儿童的姓名","系统提示");
+					return false;
+				}
+				var patternMonther:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+				if(StringUtil.trim(this.e703_08.text)!=""&&!patternMonther.test(this.e703_08.text)){
+					Alert.show("身份证号码有误!","系统提示");
+					return false;
+				}
+				if(StringUtil.trim(e703_07.text)==""){
+					Alert.show("请输入儿童的年龄!","系统提示");
+					return false;
+				}
+				var num:Number=new Number(StringUtil.trim(e703_07.text));
+				if(num==0){
+					Alert.show("儿童年龄不能为0!","系统提示");
+					return false;
+				}
+				if(e703_07d.selectedItem.data=="0"&&num>6){
+					Alert.show("儿童年龄不能大于6岁!","系统提示");
+					return false;
+				}else if(e703_07d.selectedItem.data=="1"&&num>12){
+					Alert.show("儿童年龄大于12月,请改为岁数!","系统提示");
+					return false;
+				}else if(e703_07d.selectedItem.data=="2"&&num>4){
+					Alert.show("儿童年龄大于4周,请改为月数!","系统提示");
+					return false;
+				}
+				if(StringUtil.trim(e703_13.text)==""){
+					Alert.show("联系方式不能为空!","系统提示");
+					return false;
+				}
+				var patternPhone:RegExp = /^1(3|4|5|6|7|8|9)\d{9}$/;
+				if(!patternPhone.test(e703_13.text)){
+					Alert.show("联系方式不正确!","系统提示");
+					return false;
+				}
+				if(e703_22.selectedItem==null){
+					Alert.show("请输入诊治机构","系统提示");
+					return false;
+				}
+				if(e703_22.selectedItem.data==0){
+					Alert.show("请输入诊治机构","系统提示");
+					return false;
+				}
+				if(StringUtil.trim(e703_14.text)==""){
+					Alert.show("请输入主要异常信息!","系统提示");
+					return false;
+				}
+				if(StringUtil.trim(e703_15.text)==""){
+					Alert.show("请输入初步诊断信息!","系统提示");
+					return false;
+				}
+				if(StringUtil.trim(e703_17.text)==""||StringUtil.trim(e703_17.text)=="选择")
+				{
+					Alert.show("请输入录入人员信息","系统提示");
+					return false;
+				}
+				
+				return true;
+			}	
+			
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}	
+				return index;
+			}
+			private function removeWindow():void
+			{ 
+				
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator width="780" height="126" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="儿童信息">
+					<mx:Grid x="0" y="2" width="756" height="90" paddingBottom="1" paddingLeft="4">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="儿童姓名" styleName="myLabel"/>
+								<s:TextInput id="e703_05" width="130" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="性　    别" styleName="myLabel"/>
+								<s:DropDownList id="e703_06" width="163" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem width="253">
+								<s:Label width="50" paddingLeft="2" text="身份证号" styleName="myLabel"/>
+								<s:TextInput id="e703_08" width="163"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="母亲姓名" styleName="myLabel"/>
+								<s:TextInput id="e703_09" width="130" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="身份证号" styleName="myLabel"/>
+								<s:TextInput id="e703_10" width="163" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label width="50" paddingLeft="2" text="儿童年龄" styleName="myLabel"/>
+								<s:TextInput id="e703_07" width="97" maxChars="2" restrict="0-9"/>
+								<s:DropDownList id="e703_07d" width="59" dataProvider="{fileNameTypeDropDownList}" selectedIndex="0"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="父亲姓名" styleName="myLabel"/>
+								<s:TextInput id="e703_11" width="130" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="身份证号" styleName="myLabel"/>
+								<s:TextInput id="e703_12" width="163" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem width="241">
+								<s:Label paddingLeft="2" text="联系方式" styleName="myLabel"/>
+								<s:TextInput id="e703_13" width="163"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="转诊信息">
+					<s:HGroup paddingBottom="4" paddingLeft="4">
+						<s:Label paddingLeft="4" paddingTop="4" text="诊治机构" styleName="myLabel"/>
+						<component:institutionCodeComboBox id="e703_22" width="196"/>
+						<s:Label text="*" styleName="must"/>
+					</s:HGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="100%" height="105">
+				<s:NavigatorContent label="主要异常描述" width="100%">
+					<s:TextArea id="e703_14" width="100%" height="71"/>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="100%" height="105">
+				<s:NavigatorContent label="初步诊断描述" width="100%">
+					<s:TextArea id="e703_15" width="100%" height="71"/>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="录入信息">			
+					<s:VGroup paddingBottom="2" paddingLeft="6" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label text="录入单位" styleName="myLabel"/><s:DropDownList width="184" id="e703_16" enabled="false"/>
+							<s:Label text="录入人" styleName="myLabel"/><component:FindSelectedItemComboBox width="130" id="e703_17" editable="true"/>
+							<s:Label text="录入时间" styleName="myLabel"/>
+							<component:CustomRangeDateField  id="e703_18" enabled="false" isSelectNow="true"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup width="100%" height="30" contentBackgroundColor="#FF0000"
+					  horizontalAlign="center" paddingBottom="20" paddingLeft="10" paddingTop="10"
+					  verticalAlign="middle">
+				<s:Button  width="68" label="保存" buttonMode="true" id="save"  click="savee703(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>

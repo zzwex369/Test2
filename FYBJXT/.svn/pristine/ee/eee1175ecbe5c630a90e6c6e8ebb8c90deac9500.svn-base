@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" 
+		  creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="l302Service" destination="l302Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryL302" result="queryL302Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+	
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L302;
+			import com.xyw.module.msss.la.model.L302Request;
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.Container;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import org.hamcrest.collection.array;
+			import org.hamcrest.object.nullValue;
+			
+			import spark.components.supportClasses.GroupBase;
+			import spark.events.GridSelectionEvent;
+			private var l302:L302;
+			[Bindable]
+			private var vl302:Object =null;
+			public var l302Request:L302Request =null; 
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				pagerBar.exportEXCEL=this.exportEXCEL;
+				this.systemUser = this.parentApplication.systemUser;
+			}
+			
+			/**
+			 *
+			 */
+			private function getSuffixSql():String
+			{// instr(t.l302_102,'12')>0
+				
+				var l302102:String=CompMethod.getRadioButtonValue(
+									[
+										Item102_0,Item102_1,Item102_2,Item102_3,
+										Item102_4,Item102_5,Item102_6,
+										Item102_7,Item102_8, Item102_9,
+										Item102_10,Item102_11,Item102_12,
+										Item102_13,Item102_14,Item102_15,
+										Item102_16,Item102_17,Item102_18,
+										Item102_19
+									]);
+				    var suffixSql:String=" and ";
+					var value:String=Number(l302102)>1?(','+l302102):l302102;
+					var symbol:String=Number(l302102)>1?">0":"=1";
+					suffixSql+=Number(l302102)?"instr(t.l302_102,'"+value+",')"+symbol:"l302_102 is not null";
+					return suffixSql;
+				
+				
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():Boolean
+			{
+				var result:Boolean=true;
+				l302=new L302();
+				l302Request = new L302Request();
+				try{
+					if(CompMethod.getTimeSpace(timeStr,timeEnd))
+						result=false;
+					var type:String = L302_118.getLastSelectedInstitution();
+					var l302_118:String = L302_118.getLastSelectedInstitutionCode();				
+					l302.l302118  = type == "8"?l302_118:l302_118.substring(0,Number(type));
+					vl302=null;
+					l302Request.suffixSql=getSuffixSql();
+					l302Request.timeStr=timeStr.selectedDate;
+					l302Request.timeEnd=timeEnd.selectedDate;
+					l302Request.flag="false";
+					l302Request.l302=l302;
+					
+				}catch(e:Error)
+				{
+					result=false;
+					Alert.show("查询异常","系统提示");
+				}
+				
+				return result;
+			}
+			
+			private function query():void
+			{
+				_query(1,20);
+			}
+			
+			private function queryL302Handler(event:ResultEvent):void
+			{
+				var l302Response:Object = event.result;
+				var vl302s:ArrayCollection = l302Response.vl302s;
+				var rowCount:Number = l302Response.rowCount;
+				this.pagerBar.dataGrid = this.certificateDataGrid;
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = vl302s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}	
+				if(!l302Response.state)
+				{
+					Alert.show(l302Response.errorMessage,"系统提示");
+					return;
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				_query(this.pagerBar.currentPageIndex,20);
+			}
+			
+			private function _query(currentPageIndex:int,pageSize:int):void
+			{
+				if(this.initQueryParam())
+				{
+					l302Request.parameterPageindex = currentPageIndex;
+					l302Request.parameterPagesize = pageSize;
+					this.l302Service.queryL302(l302Request);
+				
+				}
+			}
+			
+			public function exportEXCEL():void
+			{
+				CompMethod.exportEXCEL(this.certificateDataGrid,"宫颈癌异常");
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator width="1200" chromeColor="#ffffff" creationPolicy="all" id="tab">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="病史登记机构"/>
+					<component:InstitutionComboBox id="L302_118" width="785"/>
+				</s:HGroup>
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="病史登记日期"/>
+					<component:CustomRangeDateField id="timeStr" isSelectFirst="true"/>
+					<s:Label text="至"/>
+					<component:CustomRangeDateField id="timeEnd" isSelectNow="true"/>
+
+					<s:Button label="查询" click="query()"/>
+					<s:Label color="#FA1414" fontSize="17" text="以最后诊断为准！"/>
+				</s:HGroup>
+				
+				<mx:Grid id="grid">
+					<mx:GridRow>
+						<mx:GridItem verticalAlign="middle">
+							<s:Label text="异常原因" paddingLeft="10"/>
+						</mx:GridItem>
+						<mx:GridItem id="Item102_0">
+							<s:RadioButton groupName="L302_102" value="" label="全部" buttonMode="true" selected="true"/>
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_1">
+							<s:RadioButton groupName="L302_102" value="1" label="低级别鳞状上皮内病变（LSIL）" buttonMode="true" />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_2">
+							<s:RadioButton groupName="L302_102" value="2" label="高级别鳞状上皮内病变（HSIL）" buttonMode="true" />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_3">
+							<s:RadioButton groupName="L302_102" value="3" label="宫颈原位腺癌(AIS)" buttonMode="true"  />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_4">
+							<s:RadioButton groupName="L302_102" value="17" label="宫颈微小浸润鳞癌" buttonMode="true"  />
+						</mx:GridItem>
+						
+					</mx:GridRow>
+					
+					
+					<mx:GridRow>
+						<mx:GridItem  height="12"/>
+						
+						<mx:GridItem id="Item102_5">
+							<s:RadioButton groupName="L302_102" value="18" label="宫颈微小浸润腺癌" buttonMode="true" />
+							
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_6">
+							<s:RadioButton groupName="L302_102" value="19" label="宫颈浸润鳞癌" buttonMode="true"  />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_7">
+							<s:RadioButton groupName="L302_102" value="20" label="宫颈浸润腺癌" buttonMode="true"  />
+							
+							
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_8">
+							<s:RadioButton groupName="L302_102" value="6" label="滴虫性阴道炎" buttonMode="true"  />
+						</mx:GridItem>
+						
+						
+						<mx:GridItem id="Item102_9">
+							<s:RadioButton groupName="L302_102" value="7" label="外阴阴道假丝酵母菌病" buttonMode="true"  />
+						</mx:GridItem>
+
+					</mx:GridRow>
+					
+					
+					<mx:GridRow>
+						<mx:GridItem  height="12"/>
+						
+						
+											
+						<mx:GridItem id="Item102_10">
+							<s:RadioButton groupName="L302_102" value="8" label="细菌性阴道病" buttonMode="true"  />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_11">
+							<s:RadioButton groupName="L302_102" value="9" label="外生殖器尖锐湿疣" buttonMode="true"  />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_12">
+							<s:RadioButton groupName="L302_102" value="10" label="子宫肌瘤" buttonMode="true"  />
+						</mx:GridItem>
+						
+						
+						<mx:GridItem id="Item102_13">
+							<s:RadioButton groupName="L302_102" value="11" label="黏液浓性宫颈炎" buttonMode="true"  />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_14">
+							<s:RadioButton groupName="L302_102" value="12" label="宫颈赘生物" buttonMode="true"  />
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					<mx:GridRow>
+						<mx:GridItem  height="12"/>
+						
+						
+						
+						<mx:GridItem id="Item102_15">
+							<s:RadioButton groupName="L302_102" value="16" label="慢性子宫颈炎" buttonMode="true"  />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_16">
+							<s:RadioButton groupName="L302_102" value="21" label="高危型HPV阳性" buttonMode="true" />
+						</mx:GridItem>
+						
+						
+						<mx:GridItem id="Item102_17">
+							<s:RadioButton groupName="L302_102" value="13" label="其他恶性肿瘤" buttonMode="true" id="L302_102_13"  
+										   />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_18"> 
+							<s:RadioButton groupName="L302_102" value="14" label="其他良性疾病" buttonMode="true" id="L302_102_14" 
+										   />
+						</mx:GridItem>
+						
+						<mx:GridItem id="Item102_19" >
+							<s:RadioButton groupName="L302_102" value="15" label="不详" buttonMode="true"  id="L302_102_15" 
+										   />
+						</mx:GridItem>
+					</mx:GridRow>
+					
+				
+				</mx:Grid>
+				
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="195" width="1200" height="560" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="1200" paddingBottom="10">
+			<s:DataGrid id="certificateDataGrid" width="1200" height="340" borderAlpha="0.3" alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="false" rowHeight="22" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="140" dataField="l30203" headerText="姓名"/>
+						<s:GridColumn width="140" dataField="l30204" headerText="证件号码"/>
+						<s:GridColumn width="200" dataField="l30205" headerText="档案编号"/>
+						<s:GridColumn width="140" dataField="l302120str" headerText="病史登记时间"/>
+						<s:GridColumn width="200" dataField="l302118zh" headerText="病史登记单位"/>
+						<s:GridColumn dataField="l302102zh" headerText="异常原因"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="true" />
+		</s:VGroup>	
+	</s:Scroller>	
+</s:Module>
+

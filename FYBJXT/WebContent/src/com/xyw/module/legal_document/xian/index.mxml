@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  creationComplete="init()" 
+		  width="100%" height="100%"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getHelpArticleB" result="getHelpArticleBHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.AssistRequest;
+			import com.xyw.sys.model.AssistResponse;
+			import com.xyw.sys.model.D807;
+			import com.xyw.sys.model.SessionException;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			private var d807:Object;
+			private var assistRequest:AssistRequest;
+			
+			private function init():void
+			{
+				this.helpDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onhelpDataGridHandler);
+				assistRequest = new AssistRequest();
+				assistRequest.d80704 = "4";
+				assistRequest.parameterPageindex = 1;
+				assistRequest.parameterPagesize = 25;
+				
+				this.systemService.getHelpArticleB(assistRequest);
+			}
+			
+			private function onhelpDataGridHandler(event:GridSelectionEvent):void
+			{
+				this.d807 = DataGrid(event.target).selectedItem;
+				if(this.d807 == null)
+				{
+					Alert.show("请选择要操作的行!","系统提示");
+					return;
+				}
+				
+				
+				var window:DetailTitleWindow = new DetailTitleWindow();
+				window.owner = this;
+				PopUpManager.addPopUp(window, this);
+				var x:Number = (this.width - window.width)/2;
+				var y:Number = (this.width - window.width)/2;
+				window.move(x, y);
+				
+				window.d807 = this.d807;
+			}
+			
+			private function getHelpArticleBHandler(event:ResultEvent):void
+			{
+				var assistResponse:Object = event.result;
+				var rowCount:Number = assistResponse.rowCount;
+				if(assistResponse.errorMessage == null)
+				{
+					var listD807:ArrayCollection = assistResponse.listD807;
+					this.pagerBar.dataGrid = this.helpDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listD807;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(assistResponse.errorMessage, "系统提示");
+				}
+				
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				assistRequest = new AssistRequest();
+				assistRequest.d80704 = "4";
+				assistRequest.parameterPageindex = currentPageIndex;
+				assistRequest.parameterPagesize = pageSize;
+				
+				this.systemService.getHelpArticleB(assistRequest);
+			}
+			
+			public function refresh():void
+			{
+				assistRequest = new AssistRequest();
+				assistRequest.parameterPageindex = this.pagerBar.currentPageIndex;
+				assistRequest.parameterPagesize = 25;
+				
+				this.systemService.getHelpArticleB(assistRequest);
+			}
+			
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:DataGrid id="helpDataGrid" editable="true" rowHeight="22" width="100%" height="510" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn dataField="d80701" headerText="主键" visible="false"/>
+					<s:GridColumn dataField="d80702" headerText="县级出生医学证明政策" editable="false"/>
+					<s:GridColumn dataField="d80703" headerText="文件名" visible="false"/>
+					<s:GridColumn dataField="d80704" headerText="文件类型" visible="false"/>
+					<s:GridColumn dataField="d80705" headerText="发布日期" visible="false"/>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+		<component:PagerBar id="pagerBar" enabled="false"/>
+	</s:VGroup>
+</s:Module>

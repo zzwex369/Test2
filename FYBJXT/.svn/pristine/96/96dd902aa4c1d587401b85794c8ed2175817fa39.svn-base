@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			public var systemUser:SystemUser = null;
+			
+			protected function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				var dateFormatter:DateFormatter = new DateFormatter();
+				dateFormatter.formatString = "YYYY";
+				var nowData:String= dateFormatter.format(new Date());
+				this.year.value = Number(nowData);
+
+				this.systemUser = this.parentApplication.systemUser;
+			}
+			
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:ComboBoxData = arrayCollection.getItemAt(i) as ComboBoxData;
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			private function query():void
+			{
+				var year:String = String(this.year.value);
+				var institution:String = this.institutionComboBox.getLastSelectedInstitutionCode();
+				var institutionType:String = this.institutionComboBox.getLastSelectedInstitution();
+				//var areaCode:String = this.area.getAreaCode();
+//				var url:String = this.parentApplication.contextRoot + "/CencusServlet?year="+year+"&institution="+institution +"&institutionType="+institutionType;
+				var url:String = this.parentApplication.contextRoot + "/CsyxzmglsyqkndtjbServlet?year="+year+"&institution="+institution +"&institutionType="+institutionType;
+				navigateToURL(new URLRequest(url), null);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="医学证明使用情况年度统计" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid width="100%">
+						<mx:GridRow verticalAlign="middle">
+							<mx:GridItem verticalAlign="middle">
+								<s:Label text="年份"/>
+								<s:NumericStepper minimum="0" maximum="1000000" id="year" width="70" value="2013"/>
+							</mx:GridItem>
+							<mx:GridItem verticalAlign="middle">
+								<s:Label text="统计单位"/>
+								<component:InstitutionComboBox id="institutionComboBox"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<!--mx:GridRow>
+							<mx:GridItem verticalAlign="middle" colSpan="2">
+								<s:Label text="所属地区"/>
+								<component:AreaComboBox id="area" width="100%" paddingBottom="0" paddingTop="5" horizontalAlign="left"/>
+							</mx:GridItem>
+						</mx:GridRow-->
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Button label="查询" id="loadBirth" click="query()"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

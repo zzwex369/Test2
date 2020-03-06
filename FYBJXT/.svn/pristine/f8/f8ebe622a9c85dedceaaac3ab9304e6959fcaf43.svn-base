@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%" backgroundColor="#FFFFFF"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete = "creationCompleteHandle(event)">
+	
+	<fx:Declarations>
+		<s:RemoteObject id="e705Service" destination="e705Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryE705" result="queryE705Handler(event)"/>
+			<s:method name="deleteE705" result="deleteE705Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]"; 
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		} 
+		s|Label
+		{
+			fontSize:13;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.E705;
+			import com.xyw.module.xtwh.model.E705Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import com.xyw.sys.custom.component.PagerBar;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			[Bindable]
+			private var ve705:Object;
+			private var systemUser:SystemUser =null;
+			private var e705Request:E705Request;
+			private function creationCompleteHandle(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.dataGridInfo.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelectionChange);
+			}
+			
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.ve705 = DataGrid(event.target).selectedItem;
+			}
+			
+			private function initQueryParam(pageIndex:int,pageSize:int):void
+			{
+				var e705:E705=new E705();
+				e705.e70511=E705_11.getAreaCode();
+				e705Request=new E705Request();
+				e705Request.e705 = e705;
+				e705Request.parameterPageindex = pageIndex;
+				e705Request.parameterPagesize = pageSize;
+				if(CompMethod.getTimeSpace(timeStart,timeEnd))
+					return;
+				
+				e705Request.timeStr = DateField.stringToDate(this.timeStart.text,"YYYY-MM-DD");
+				e705Request.timeEnd = DateField.stringToDate(this.timeEnd.text,"YYYY-MM-DD");
+
+			}
+			
+			private function queryE705():void
+			{
+				query(1,20);
+			}
+			
+			private function query(pageIndex:int,pageSize:int):void
+			{
+				initQueryParam(pageIndex,pageSize);
+				this.e705Service.queryE705(e705Request);
+			}
+			
+			private function queryE705Handler(event:ResultEvent):void
+			{  
+				var e705Response:Object= event.result;
+				var rowCount:Number = e705Response.rowCount;
+				var ve705s:ArrayCollection = e705Response.ve705s;
+				if(e705Response.errorMessage == null) {
+					this.pagerBar.dataGrid = this.dataGridInfo;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = ve705s;
+					this.pagerBar.pagerFunction = pagerFunction;
+					this.pagerBar.dataBind();
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(e705Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function pagerFunction(currentPageIndex:int,pageSize:int):void
+			{
+				query(currentPageIndex,pageSize);
+			}
+			
+			
+			public function refrashPage():void
+			{	
+				query(this.pagerBar.currentPageIndex,20);
+			}
+			
+			private function add(event:MouseEvent):void
+			{
+				
+				var window:yeyTittle=new yeyTittle();
+				
+				if(event.target!=addButton)
+				{
+					window.modify=true;
+					window.ve705=ve705
+				}
+				
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			
+			
+			private function remove():void
+			{
+				if(!this.ve705){
+					Alert.show("请选择要操作的行！", "系统提示");
+					return;
+				}
+				e705Request=new E705Request();
+				e705Request.e70501=ve705.e70501;
+				e705Request.e70504=ve705.e70504;
+				this.e705Service.deleteE705(e705Request);
+				
+			}
+			
+			private function deleteE705Handler(event:ResultEvent):void
+			{
+				var e705Response:Object = event.result;
+				if(e705Response.errorMessage == null){
+					this.refrashPage();
+					Alert.show(e705Response.promptMessage, "系统提示");
+				}else{
+					Alert.show(e705Response.errorMessage, "系统提示");
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:VGroup width="100%"  paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:TabNavigator width="100%" paddingTop="0" creationPolicy="all" chromeColor="#ffffff">
+			<s:NavigatorContent label="幼儿园维护" >
+				<s:VGroup width="100%">
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5" verticalAlign="middle">
+						<s:Label text="所在地区" />
+						<component:AreaComboBoxVillageAuto id="E705_11" width="844" buttonMode="true" table="D201_MS" 
+														   areaCode="{this.parentApplication.systemUser.areaCode}"/>
+					</s:HGroup>
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5" verticalAlign="middle" >
+						<s:Label text="录入时间"/>
+						<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" />
+						
+						<s:Label text="至"/>
+						<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+					</s:HGroup>  
+					
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5">
+						<s:Button label="查询" id="queryButton" click="queryE705()" icon="{CustomIcon.QUERY}"/>
+						<s:Button label="添加" id="addButton" click="add(event)" icon="{CustomIcon.ADD}"/>
+						<s:Button label="修改" id="modifyButton"  enabled="{this.ve705!=null}" click="add(event)" icon="{CustomIcon.MODYFY}"/>
+						<s:Button label="删除" id="removeButton" enabled="{this.ve705!=null}" click="CompMethod.delConfirm(remove)" icon="{CustomIcon.DEL}" />
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:VGroup width="100%" height="382">
+			<s:DataGrid id="dataGridInfo" width="100%" height="350" 
+						borderAlpha="0.3" alternatingRowColors="[#FFFFFF,#EEEEEE]" rowHeight="23" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="45" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="e70504" headerText="幼儿园编码"/>
+						<s:GridColumn dataField="e70503" headerText="幼儿园名称"/>
+						<s:GridColumn dataField="e70505zh" headerText="幼儿园地址" />
+						<s:GridColumn dataField="e70506" headerText="幼儿园详细地址"/>
+						<s:GridColumn dataField="e70510" headerText="保健老师"/>
+						<s:GridColumn dataField="e70508" headerText="负责人"/>
+						<s:GridColumn dataField="e70509" headerText="电话"/>
+						<s:GridColumn dataField="e70507" headerText="登记日期" labelFunction="CompMethod.setStrDate"/>
+						<s:GridColumn dataField="e70512" headerText="录入人员"/>
+						<s:GridColumn dataField="e70513" headerText="录入时间" labelFunction="CompMethod.setStrDate"/>
+						<s:GridColumn dataField="e70511zh" headerText="录入单位"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+		</s:VGroup>
+	</s:VGroup>		
+</s:Module>

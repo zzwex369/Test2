@@ -1,0 +1,554 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Sep 29, 2013 11:09:34 AM by Hibernate Tools 3.4.0.CR1 -->
+<hibernate-mapping>
+    <class name="com.xyw.medical.birth.model.VD601" table="V_D601">
+          	 <comment>&#179;&#246;&#201;&#250;&#214;&#164;&#181;&#199;&#188;&#199;</comment>
+        <id name="d60101" type="long">
+            <column name="D601_01" precision="10" scale="0" />
+            <generator class="sequence">
+            	<param name="sequence">D601_01_seq</param>
+            </generator>
+        </id>
+        <property name="d60102" type="string">
+            <column name="D601_02" length="14">
+            </column>
+        </property>
+        <property name="d60103_" type="timestamp">
+            <column name="D601_03" length="7">
+                <comment>&#208;&#212;&#177;&#240;</comment>
+            </column>
+        </property>
+        <property name="d60104" type="long" >
+            <column name="D601_04" length="10">
+            </column>
+        </property>
+        <property name="d60105" type="string">
+            <column name="D601_05" length="20">
+            </column>
+        </property>
+        <property name="d60106" type="string">
+            <column name="D601_06" length="2">
+            </column>
+        </property>
+        <property name="d60107" type="string">
+            <column name="D601_07" length="10">
+            </column>
+        </property>
+        <property name="d60108" type="string">
+            <column name="D601_08" length="2">
+            </column>
+        </property>
+        <property name="d60109" type="string">
+            <column name="D601_09" length="2">
+            </column>
+        </property>
+        <property name="d60110" type="string">
+            <column name="D601_10" length="100">
+            </column>
+        </property>
+        <property name="d60111" type="string">
+            <column name="D601_11" length="1">
+            </column>
+        </property>
+        <property name="d60112_" type="date">
+            <column name="D601_12" length="7">
+            </column>
+        </property>
+        <property name="d60113_" type="date">
+            <column name="D601_13" length="7">
+            </column>
+        </property>
+        <property name="d60114" type="long">
+            <column name="D601_14" length="2">
+            </column>
+        </property>
+        <property name="d60115" type="string">
+            <column name="D601_15" length="2">
+            </column>
+        </property>
+        <property name="d60116" type="string">
+            <column name="D601_16" length="1">
+            </column>
+        </property>
+        <property name="d60117" type="string">
+            <column name="D601_17" length="1">
+            </column>
+        </property>
+        <property name="d60118" type="string">
+            <column name="D601_18" length="2">
+            </column>
+        </property>
+        <property name="d60119" type="long">
+            <column name="D601_19" length="2">
+            </column>
+        </property>
+        <property name="d60120" type="long">
+            <column name="D601_20" length="2">
+            </column>
+        </property>
+        <property name="d60121" type="long">
+            <column name="D601_21" length="2">
+            </column>
+        </property>
+        <property name="d60122" type="string">
+            <column name="D601_22" length="2">
+            </column>
+        </property>
+        <property name="d60123" type="string">
+            <column name="D601_23" length="2">
+            </column>
+        </property>
+<!--         <property name="d60124_" type="date"> -->
+<!--             <column name="D601_24" length="7"> -->
+<!--             </column> -->
+<!--         </property> -->
+        <property name="d60125" type="string">
+            <column name="D601_25" length="2">
+            </column>
+        </property>
+        <property name="d60126" type="string">
+            <column name="D601_26" length="2">
+            </column>
+        </property>
+        <property name="d60127" type="string">
+            <column name="D601_27" length="40">
+            </column>
+        </property>
+        <property name="d60128" type="string">
+            <column name="D601_28" length="20">
+            </column>
+        </property>
+        <property name="d60129" type="string">
+            <column name="D601_29" length="20">
+            </column>
+        </property>
+        <property name="d60130" type="string">
+            <column name="D601_30" length="20">
+            </column>
+        </property>
+        <property name="d60131" type="string">
+            <column name="D601_31" length="20">
+            </column>
+        </property>
+        <property name="d60132" type="string">
+            <column name="D601_32" length="2">
+            </column>
+        </property>
+        <property name="d60133" type="string">
+            <column name="D601_33" length="2">
+            </column>
+        </property>
+        <property name="d60134" type="string">
+            <column name="D601_34" length="10">
+            </column>
+        </property>
+        <property name="d60135" type="long">
+            <column name="D601_35" length="5">
+            </column>
+        </property>
+        <property name="d60136" type="long">
+            <column name="D601_36" length="5">
+            </column>
+        </property>
+        <property name="d60137" type="long">
+            <column name="D601_37" length="5">
+            </column>
+        </property>
+        <property name="d60138" type="string">
+            <column name="D601_38" length="10">
+            </column>
+        </property>
+        <property name="d60139" type="long">
+            <column name="D601_39" length="4">
+            </column>
+        </property>
+        <property name="d60140" type="string">
+            <column name="D601_40" length="1">
+            </column>
+        </property>
+        <property name="d60141" type="long">
+            <column name="D601_41" length="1">
+            </column>
+        </property>
+        <property name="d60142" type="long">
+            <column name="D601_42" length="1">
+            </column>
+        </property>
+        <property name="d60143" type="double">
+            <column name="D601_43" precision="6">
+            </column>
+        </property>
+        <property name="d60144" type="double">
+            <column name="D601_44" precision="4">
+            </column>
+        </property>
+        <property name="d60145" type="string">
+            <column name="D601_45" length="1">
+            </column>
+        </property>
+        <property name="d60146" type="string">
+            <column name="D601_46" length="1">
+            </column>
+        </property>
+        <property name="d60147" type="string">
+            <column name="D601_47" length="1">
+            </column>
+        </property>
+        <property name="d60148" type="string">
+            <column name="D601_48" length="1">
+            </column>
+        </property>
+        <property name="d60149" type="string">
+            <column name="D601_49" length="1">
+            </column>
+        </property>
+        <property name="d60150" type="string">
+            <column name="D601_50" length="1">
+            </column>
+        </property>
+        <property name="d60151" type="string">
+            <column name="D601_51" length="2">
+            </column>
+        </property>
+        <property name="d60152" type="string">
+            <column name="D601_52" length="1">
+            </column>
+        </property>
+        <property name="d60153" type="string">
+            <column name="D601_53" length="30">
+            </column>
+        </property>
+        <property name="d60154" type="string">
+            <column name="D601_54" length="30">
+            </column>
+        </property>
+        <property name="d60155" type="string">
+            <column name="D601_55" length="20">
+            </column>
+        </property>
+        <property name="d60156" type="string">
+            <column name="D601_56" length="20">
+            </column>
+        </property>
+        <property name="d60157" type="string">
+            <column name="D601_57" length="14">
+            </column>
+        </property>
+        <property name="d60158" type="string">
+            <column name="D601_58" length="20">
+            </column>
+        </property>
+        <property name="d60159" type="string">
+            <column name="D601_59" length="20">
+            </column>
+        </property>
+        <property name="d60160_" type="date">
+            <column name="D601_60" length="7">
+            </column>
+        </property>
+        <property name="d60161" type="string">
+            <column name="D601_61" length="200">
+            </column>
+        </property>
+        <property name="d60162" type="string">
+            <column name="D601_62" length="200">
+            </column>
+        </property>
+        <property name="d60163" type="string">
+            <column name="D601_63" length="200">
+            </column>
+        </property>
+        <property name="d60164" type="string">
+            <column name="D601_64" length="20">
+            </column>
+        </property>
+        <property name="d60165" type="string">
+            <column name="D601_65" length="18">
+            </column>
+        </property>
+        <property name="d60166" type="string">
+            <column name="D601_66" length="100">
+            </column>
+        </property>
+        <property name="d60167" type="string">
+            <column name="D601_67" length="100">
+            </column>
+        </property>
+        <property name="d60168" type="string">
+            <column name="D601_68" length="2">
+            </column>
+        </property>
+        <property name="d60169" type="string">
+            <column name="D601_69" length="20">
+            </column>
+        </property>
+        <property name="d60170" type="string">
+            <column name="D601_70" length="2">
+            </column>
+        </property>
+        <property name="d60171" type="string">
+            <column name="D601_71" length="2">
+            </column>
+        </property>
+        <property name="d60172" type="string">
+            <column name="D601_72" length="20">
+            </column>
+        </property>
+        <property name="d60173" type="string">
+            <column name="D601_73" length="10">
+            </column>
+        </property>
+        <property name="d60174" type="string">
+            <column name="D601_74" length="2">
+            </column>
+        </property>
+        <property name="d60175" type="string">
+            <column name="D601_75" length="18">
+            </column>
+        </property>
+        <property name="d60176" type="string">
+            <column name="D601_76" length="100">
+            </column>
+        </property>
+        <property name="d60177" type="string">
+            <column name="D601_77" length="4">
+            </column>
+        </property>
+        <property name="d60178" type="string">
+            <column name="D601_78" length="2">
+            </column>
+        </property>
+        <property name="d60179" type="string">
+            <column name="D601_79" length="2">
+            </column>
+        </property>
+        <property name="d60180" type="string">
+            <column name="D601_80" length="2">
+            </column>
+        </property>
+         <property name="d60181" type="string">
+            <column name="D601_81" length="2">
+            </column>
+        </property>
+        <property name="d60182" type="string">
+            <column name="D601_82" length="2">
+            </column>
+        </property>
+        <property name="d60183" type="string">
+            <column name="D601_83" length="2">
+            </column>
+        </property>
+        <property name="d60184" type="string">
+            <column name="D601_84" length="2">
+            </column>
+        </property>
+        <property name="d60185" type="string">
+        	<column name="D601_85" length="4"/>
+        </property>
+        <property name="d60186" type="string">
+        	<column name="D601_86" length="2"/>
+        </property>
+        <property name="d60187" type="string">
+        	<column name="D601_87" length="2"/>
+        </property>
+        <property name="d60188" type="string">
+        	<column name="D601_88" length="20"/>
+        </property>
+        <property name="d60189" type="string">
+        	<column name="D601_89" length="100"/>
+        </property>
+        <property name="d60190" type="string">
+        	<column name="D601_90" length="100"/>
+        </property>
+        <property name="d60191" type="string">
+        	<column name="D601_91" length="100"/>
+        </property>
+        <property name="d60192" type="string">
+        	<column name="D601_92" length="100"/>
+        </property>
+        <property name="d60193" type="string">
+        	<column name="D601_93" length="100"/>
+        </property>
+        <property name="d60194" type="string">
+        	<column name="D601_94" length="100"/>
+        </property>
+        <property name="d60195" type="string">
+        	<column name="D601_95" length="100"/>
+        </property>
+        <property name="d60196" type="string">
+        	<column name="D601_96" length="100"/>
+        </property>
+        <property name="d60197" type="string">
+        	<column name="D601_97" length="100"/>
+        </property>
+        <property name="d60198" type="string">
+        	<column name="D601_98" length="100"/>
+        </property>
+        <property name="d60199" type="string">
+        	<column name="D601_99" length="100"/>
+        </property>
+        <property name="d601103" type="string">
+        	<column name="D601_103" length="2"/>
+        </property>
+        
+ 		<property name="d60102ZH" type="string">
+            <column name="D601_02_ZH" length="50" />
+        </property>
+        <property name="d60106ZH" type="string">
+            <column name="D601_06_ZH" length="20" />
+        </property>
+        <property name="d60108ZH" type="string">
+            <column name="D601_08_ZH" length="20" />
+        </property>
+        <property name="d60109ZH" type="string">
+            <column name="D601_09_ZH" length="20" />
+        </property>
+        <property name="d60111ZH" type="string">
+            <column name="D601_11_ZH" length="20" />
+        </property>
+        <property name="d60117ZH" type="string">
+            <column name="D601_17_ZH" length="20" />
+        </property>
+        <property name="d60118ZH" type="string">
+            <column name="D601_18_ZH" length="20" />
+        </property>
+        <property name="d60123ZH" type="string">
+            <column name="D601_23_ZH" length="20" />
+        </property>
+        <property name="d60125ZH" type="string">
+            <column name="D601_25_ZH" length="20" />
+        </property>
+        <property name="d60126ZH" type="string">
+            <column name="D601_26_ZH" length="20" />
+        </property>
+        <property name="d60132ZH" type="string">
+            <column name="D601_32_ZH" length="20" />
+        </property>
+        <property name="d60133ZH" type="string">
+            <column name="D601_33_ZH" length="20" />
+        </property>
+        <property name="d60134ZH" type="string">
+            <column name="D601_34_ZH" length="20" />
+        </property>
+        <property name="d60138ZH" type="string">
+            <column name="D601_38_ZH" length="20" />
+        </property>
+        <property name="d60140ZH" type="string">
+            <column name="D601_40_ZH" length="20" />
+        </property>
+        <property name="d60145ZH" type="string">
+            <column name="D601_45_ZH" length="20" />
+        </property>
+        <property name="d60146ZH" type="string">
+            <column name="D601_46_ZH" length="20" />
+        </property>
+        <property name="d60147ZH" type="string">
+            <column name="D601_47_ZH" length="20" />
+        </property>
+        <property name="d60148ZH" type="string">
+            <column name="D601_48_ZH" length="20" />
+        </property>
+        <property name="d60149ZH" type="string">
+            <column name="D601_49_ZH" length="20" />
+        </property>
+        <property name="d60151ZH" type="string">
+            <column name="D601_51_ZH" length="20" />
+        </property>
+        <property name="d60152ZH" type="string">
+            <column name="D601_52_ZH" length="20" />
+        </property>
+        <property name="d60157ZH" type="string">
+            <column name="D601_57_ZH" length="50" />
+        </property>
+        <property name="d60168ZH" type="string">
+            <column name="D601_68_ZH" length="20" />
+        </property>
+        <property name="d60170ZH" type="string">
+            <column name="D601_70_ZH" length="20" />
+        </property>
+        <property name="d60171ZH" type="string">
+            <column name="D601_71_ZH" length="20" />
+        </property>
+        <property name="d60174ZH" type="string">
+            <column name="D601_74_ZH" length="20" />
+        </property>
+        <property name="d60177ZH" type="string">
+            <column name="D601_77_ZH" length="40" />
+        </property>
+        <property name="d60178ZH" type="string">
+            <column name="D601_78_ZH" length="20" />
+        </property>
+        <property name="d60179ZH" type="string">
+            <column name="D601_79_ZH" length="20" />
+        </property>
+        <property name="d60180ZH" type="string">
+            <column name="D601_80_ZH" length="20" />
+        </property>
+        <property name="d60181ZH" type="string">
+            <column name="D601_81_ZH" length="20" />
+        </property>
+        <property name="d60182ZH" type="string">
+            <column name="D601_82_ZH" length="20" />
+        </property>
+        <property name="d60183ZH" type="string">
+            <column name="D601_83_ZH" length="20" />
+        </property>
+        <property name="d60184ZH" type="string">
+            <column name="D601_84_ZH" length="20" />
+        </property>
+        <property name="d60185ZH" type="string">
+            <column name="D601_85_ZH" length="40" />
+        </property>
+        <property name="d60186ZH" type="string">
+            <column name="D601_86_ZH" length="30" />
+        </property>
+        <property name="d60187ZH" type="string">
+            <column name="D601_87_ZH" length="30" />
+        </property>
+        <property name="d60166ZH" type="string">
+            <column name="D601_66_ZH" length="50" />
+        </property>
+        <property name="d60192ZH" type="string">
+            <column name="D601_92_ZH" length="50" />
+        </property>
+        <property name="d60193ZH" type="string">
+            <column name="D601_93_ZH" length="50" />
+        </property>
+        <property name="d60194ZH" type="string">
+            <column name="D601_94_ZH" length="50" />
+        </property>
+        <property name="d60195ZH" type="string">
+            <column name="D601_95_ZH" length="50" />
+        </property>
+        <property name="d60196ZH" type="string">
+            <column name="D601_96_ZH" length="50" />
+        </property>
+        <property name="d60197ZH" type="string">
+            <column name="D601_97_ZH" length="50" />
+        </property>
+        <property name="d60198ZH" type="string">
+            <column name="D601_98_ZH" length="50" />
+        </property>
+        <property name="d601103ZH" type="string">
+            <column name="D601_103_ZH" length="50" />
+        </property>
+        
+         <property name="d60103" type="string">
+            <column name="D601_03_Str" length="50" />
+        </property>
+         <property name="d60112" type="string">
+            <column name="D601_12_Str" length="50" />
+        </property>
+         <property name="d60113" type="string">
+            <column name="D601_13_Str" length="50" />
+        </property>
+         <property name="d60124" type="string">
+            <column name="D601_24_Str" length="50" />
+        </property>
+        <property name="d60160" type="string">
+            <column name="D601_60_Str" length="50" />
+        </property>
+    </class>
+</hibernate-mapping>

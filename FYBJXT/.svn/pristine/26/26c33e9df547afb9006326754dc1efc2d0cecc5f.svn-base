@@ -1,0 +1,740 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   maxWidth="{this.parentApplication.stage.stageWidth-20}"
+			   maxHeight="{this.parentApplication.stage.stageHeight-50}" backgroundColor="white"
+			   chromeColor="#5CACEE" close="closeHandler()" cornerRadius="5"
+			   creationComplete="creationCompleteHandler(event)" horizontalCenter="0" title="产诊结果">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="f605Service" destination="f605Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="renewF605" result="renewF605Handler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridRow
+		{
+			height:18px;
+		}
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must 
+		{
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		
+		.pf8
+		{
+			paddingLeft:8px;
+		}
+		.textInput{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomTextInputSkin");
+		}  
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.model.F605;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flashx.textLayout.operations.CopyOperation;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			[Bindable]
+			public var vf605:Object;
+			public var modify:Boolean=false;
+			private var f605:F605;
+			private var systemUser:SystemUser ;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private function closeHandler():void
+			{
+				var index:Object=this.owner;
+				index.refresh();
+				PopUpManager.removePopUp(this);
+				
+			}
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=false):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.sql = sql;
+				comboBoxDataRequest.flag = flag;
+				comboBoxDataRequest.showPrompt = showPrompt;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				this.title+=!modify?'登记':'修改';
+				this.systemUser = this.parentApplication.systemUser;				
+				initializeComboBox();
+			}
+
+			private function initializeComboBox():void
+			{
+				
+				_initializeComboBox("select t.d101_01, t.d101_02 from D101 t " +
+					"where t.d101_01 = '" + this.systemUser.institutionCode +
+					"' or t.d101_11 ='" + this.systemUser.institutionCode +"'","D101");
+				if(!modify)
+				{
+					_initializeComboBox("select t.s_01,t.s_02 from S301_10 t where t.S_05='0' " +
+						"and t.S_04 ='"+this.systemUser.userCode+"'","S301_10_0");
+					
+					_initializeComboBox("select t.s_01,t.s_02 from S301_10 t where t.S_05='2' " +
+						"and t.S_04 ='"+this.systemUser.userCode+"'","S301_10_2");
+					
+					_initializeComboBox("select t.s_01,t.s_02 from S301_10 t where t.S_05='7' " +
+						"and t.S_04 ='"+this.systemUser.userCode+"'","S301_10_7");
+				}
+				
+			
+			}
+			
+			
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(flag =="D101"){
+					F605_74.dataProvider = comboBoxDataList;
+					F605_74.selectedIndex=CompMethod.getDropDownListSelectedIndex(F605_74.dataProvider,systemUser.institutionCode);
+					putVF605();
+				}else if(flag =="S301_10_0"){
+					F605_72.dataProvider=comboBoxDataList;
+					F605_72.selectedIndex=0;
+					
+				}else if(flag =="S301_10_2"){
+					F605_70.dataProvider=comboBoxDataList;
+					F605_70.selectedIndex=0;
+					
+				}else if(flag =="S301_10_7"){
+					F605_71.dataProvider=comboBoxDataList;
+					F605_71.selectedIndex=0;
+					
+				}
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function putVF605():void
+			{
+				CompMethod.setRadioButtonSelect(F605_32,vf605.f60532);
+				F605_33.text=DateField.dateToString(vf605.f60533,'YYYY-MM-DD');
+				F605_08.text=DateField.dateToString(vf605.f60508,'YYYY-MM-DD');
+				if(modify)
+				{
+					F605_44.text=vf605.f60544;
+					F605_51.text=vf605.f60551;
+					F605_59.text=vf605.f60559;
+					F605_61.text=vf605.f60561;
+					F605_63.text=vf605.f60563;
+					F605_65.text=vf605.f60565;
+					F605_67.text=vf605.f60567;
+					F605_69.text=vf605.f60569;
+					F605_70.text=vf605.f60570;
+					F605_71.text=vf605.f60571;
+					F605_72.text=vf605.f60572;
+					CompMethod.setRadioButtonSelect(F605_46,vf605.f60546);
+
+					CompMethod.setRadioButtonSelect(F605_51,vf605.f60551);
+					CompMethod.setRadioButtonSelect(F605_52,vf605.f60552);
+					CompMethod.setRadioButtonSelect(F605_53,vf605.f60553);
+					CompMethod.setRadioButtonSelect(F605_54,vf605.f60554);
+					CompMethod.setRadioButtonSelect(F605_55,vf605.f60555);
+					CompMethod.setRadioButtonSelect(F605_56,vf605.f60556);
+					CompMethod.setRadioButtonSelect(F605_57,vf605.f60557);
+					CompMethod.setRadioButtonSelect(F605_58,vf605.f60558);
+					CompMethod.setRadioButtonSelect(F605_60,vf605.f60560);
+					CompMethod.setRadioButtonSelect(F605_62,vf605.f60562);
+					CompMethod.setRadioButtonSelect(F605_64,vf605.f60564);
+					CompMethod.setRadioButtonSelect(F605_66,vf605.f60566);
+					CompMethod.setRadioButtonSelect(F605_68,vf605.f60568);
+					F605_45.text=DateField.dateToString(vf605.f60545,'YYYY-MM-DD');
+
+					F605_73.text=DateField.dateToString(vf605.f60573,'YYYY-MM-DD');
+					F605_74.selectedIndex=CompMethod.getDropDownListSelectedIndex(F605_74.dataProvider,vf605.f60574);
+					CompMethod.setCheckBoxAutomationName([F605_50_1,F605_50_2,F605_50_3,F605_50_4,F605_50_9],vf605.f60550);
+					CompMethod.setCheckBoxAutomationName([F605_48_1,F605_48_2,F605_48_3,F605_48_4,F605_48_5,F605_48_6,
+						F605_48_7,F605_48_8],vf605.f60548)
+						
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function validate():void
+			{
+			
+				var checkResult:Array=['',''];
+				if(!F605_44.text)
+				{
+					Alert.show("请输入送检医师","系统提示");
+					return;
+				}
+				if(!F605_45.text)
+				{
+					Alert.show("请选择标本接受日期","系统提示");
+					return;
+				}
+				
+				if(F605_46_2.selected)
+				{
+					var f60548Arr:Array=CompMethod.getCheckBoxAutomationName([F605_48_1,
+										F605_48_2,F605_48_3,F605_48_4,F605_48_5,F605_48_6,
+										F605_48_7,F605_48_8]);
+					var f60550Arr:Array=CompMethod.getCheckBoxAutomationName([F605_50_1,
+										F605_50_2,F605_50_3,F605_50_4,F605_50_9]);
+					if(!f60548Arr[0]&&!f60550Arr[0])
+					{
+						Alert.show("请选择染色体核型分析异常","系统提示");
+						return;
+					}
+					checkResult[0]=f60548Arr[1];
+					checkResult[1]=f60550Arr[1];
+
+				}
+				if(F605_49.enabled&&!F605_49.text)
+				{
+					Alert.show("请输入染色体核型数目其他异常","系统提示");
+					return;
+				}
+				
+				if(F605_51.enabled&&!F605_51.text)
+				{
+					Alert.show("请输入染色体核型结构其他异常","系统提示");
+					return;
+				}
+				if(F605_59.enabled&&!F605_59.text)
+				{
+					Alert.show("请输入FISH异常","系统提示");
+					return;
+				}
+				if(F605_61.enabled&&!F605_61.text)
+				{
+					Alert.show("请输入染色体微阵列检测异常","系统提示");
+					return;
+				}
+				if(F605_63.enabled&&!F605_63.text)
+				{
+					Alert.show("请输入CNV-seq异常","系统提示");
+					return;
+				}
+				if(F605_65.enabled&&!F605_65.text)
+				{
+					Alert.show("请输入全外显子组检测异常","系统提示");
+					return;
+				}
+				if(F605_67.enabled&&!F605_67.text)
+				{
+					Alert.show("请输入全基因组检测异常","系统提示");
+					return;
+				}
+				if(!F605_69.text)
+				{
+					Alert.show("请输入电话","系统提示");
+					return;
+				}
+				if(!F605_70.text)
+				{
+					Alert.show("请输入检测医生","系统提示");
+					return;
+				}
+				if(!F605_71.text)
+				{
+					Alert.show("请输入审核医生","系统提示");
+					return;
+				}
+				if(!F605_72.text)
+				{
+					Alert.show("请输入签发医生","系统提示");
+					return;
+				}
+				saveButton.enabled=false;
+				saveF605(checkResult);
+			}
+			
+			/**
+			 *
+			 */
+			private function saveF605(checkResult:Array):void
+			{
+				
+				getF605();
+				f605.f60548=checkResult[0];
+				f605.f60550=checkResult[1];
+
+				f605.f60544=StringUtil.trim(F605_44.text);
+				f605.f60551=StringUtil.trim(F605_51.text);
+				f605.f60559=StringUtil.trim(F605_59.text);
+				f605.f60561=StringUtil.trim(F605_61.text);
+				f605.f60563=StringUtil.trim(F605_63.text);
+				f605.f60565=StringUtil.trim(F605_65.text);
+				f605.f60567=StringUtil.trim(F605_67.text);
+				f605.f60569=StringUtil.trim(F605_69.text);
+				f605.f60570=StringUtil.trim(F605_70.text);
+				f605.f60571=StringUtil.trim(F605_71.text);
+				f605.f60572=StringUtil.trim(F605_72.text);
+				
+				f605.f60546=CompMethod.getRadioButtonValue(F605_46);
+				f605.f60552=CompMethod.getRadioButtonValue(F605_52);
+				f605.f60553=CompMethod.getRadioButtonValue(F605_53);
+				f605.f60554=CompMethod.getRadioButtonValue(F605_54);
+				f605.f60555=CompMethod.getRadioButtonValue(F605_55);
+				f605.f60556=CompMethod.getRadioButtonValue(F605_56);
+				f605.f60557=CompMethod.getRadioButtonValue(F605_57);
+				f605.f60558=CompMethod.getRadioButtonValue(F605_58);
+				f605.f60560=CompMethod.getRadioButtonValue(F605_60);
+				f605.f60562=CompMethod.getRadioButtonValue(F605_62);
+				f605.f60564=CompMethod.getRadioButtonValue(F605_64);
+				f605.f60566=CompMethod.getRadioButtonValue(F605_66);
+				f605.f60568=CompMethod.getRadioButtonValue(F605_68);
+				f605.f60545=DateField.stringToDate(F605_45.text,'YYYY-MM-DD');
+				f605.f60573=DateField.stringToDate(F605_73.text,'YYYY-MM-DD');
+				f605.f60574=F605_74.selectedItem.data;
+				f605Service.renewF605(f605);
+			}
+			
+			private function F605_50_09_changeHandler(event:Event,id:TextInput):void
+			{
+				if(!event.target.selected)
+					id.text='';
+			}
+			
+			/**
+			 *
+			 */
+			private function getF605():F605
+			{
+				f605=new F605();
+				var field:String=null;
+				var fieldSuffix:String=null;
+				for(var i:int=1;i<44;i++)
+				{
+					fieldSuffix=i<10?'0'+i:i.toString();
+					field='f605'+fieldSuffix;
+					f605[field]=vf605[field];
+				}
+				return f605;
+			}
+			
+			
+			private function renewF605Handler(event:ResultEvent):void
+			{
+				var f605Response:Object=event.result;
+				if(f605Response.state)
+				{
+					Alert.show(modify?"修改成功":"保存成功！","系统提示",1,this,
+						function():void
+						{
+							closeHandler();
+						});
+					return ;
+				}
+				saveButton.enabled=true;
+				Alert.show(f605Response.errorMessage,"系统提示");
+			}
+		]]>
+	</fx:Script>
+	
+	
+	<s:VGroup width="100%" height="100%" chromeColor="#ffffff">
+		<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto"
+					verticalScrollPolicy="auto" id="sc">
+			<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+				<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+					<s:NavigatorContent width="100%" label="样本基本信息" >	
+						<mx:Grid  paddingLeft="8" paddingBottom="2">
+							<mx:GridRow>
+								
+								<mx:GridItem>
+									<s:Label text="产妇姓名"/>	
+									<s:TextInput id="F605_05" width="130" enabled="false" text="{vf605.f60505}"/>	
+								</mx:GridItem>
+							
+								<mx:GridItem>
+									<s:Label text="证件号码" paddingLeft="15"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="F605_07" width="140"  enabled="false" text="{vf605.f60507}"/>	
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label text="出生日期" paddingLeft="15"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<component:CustomRangeDateField  id="F605_08"  enabled="false"/>	
+								</mx:GridItem>
+								
+								
+								<mx:GridItem >
+									<s:Label text="联系电话" paddingLeft="15"/>
+									<s:TextInput id="F605_09" width="130" restrict="0-9"  enabled="false" text="{vf605.f60509}"	/>
+								</mx:GridItem>
+								
+								
+								<mx:GridItem>
+									
+									<s:HGroup  gap="15" id="F605_32" verticalAlign="baseline" enabled="false">
+										<s:Label text="样本来源"/>	
+										<s:RadioButton groupName="F605_32" buttonMode="true" value="1" label="羊水" selected="true"/>
+										<s:RadioButton groupName="F605_32" buttonMode="true" value="2" label="绒毛"/>
+										<s:RadioButton groupName="F605_32" buttonMode="true" value="3" label="脐带血"/>
+									</s:HGroup>  
+									
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label text="采集日期"  paddingLeft="15"/>	
+									<component:CustomRangeDateField  id="F605_33" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								
+								<mx:GridItem>
+									<s:Label text="送检医师"/>	
+									<s:TextInput id="F605_44" width="130" />	
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label text="标本接受日期" paddingLeft="15"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<component:CustomRangeDateField  id="F605_45" isSelectNow="{!modify}"/>
+								</mx:GridItem>
+								
+								
+							
+							</mx:GridRow>
+						</mx:Grid>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				
+				<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+					<s:NavigatorContent width="100%" label="检测项目及结果" >	
+						<s:VGroup width="100%" height="100%" gap="1">
+						
+							<mx:Grid width="100%" height="98" paddingBottom="2" paddingLeft="8">
+								<mx:GridRow>
+									<mx:GridItem>
+										<s:HGroup  gap="15" id="F605_46" verticalAlign="baseline">
+											<s:Label text="染色体核型分析"/>	
+											<s:RadioButton groupName="F605_46" buttonMode="true" value="1" label="正常" selected="true"
+														   change="CompMethod.hasNumEles([F605_46Row_1,F605_46Row_2])"/>
+											<s:RadioButton groupName="F605_46" buttonMode="true" value="2" label="异常" id="F605_46_2"/>
+										</s:HGroup>  
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow  id="F605_46Row_1" enabled="{F605_46_2.selected}">
+									<mx:GridItem/>
+									<mx:GridItem>
+										<s:Label text="染色体核型数目异常"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_1">
+										<s:CheckBox automationName="1" label="21三体综合征" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_2">
+										<s:CheckBox automationName="2" label="18三体综合征" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_3">
+										<s:CheckBox automationName="3" label="13三体综合征" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_4">
+										<s:CheckBox automationName="4" label="特纳综合征" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_5">
+										<s:CheckBox automationName="5" label="克氏综合征" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_6">
+										<s:CheckBox automationName="6" label="超雌综合征" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_7">
+										<s:CheckBox automationName="7" label="超雄综合征" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_48_8">
+										<s:CheckBox automationName="9" label="其他数目异常" buttonMode="true" id="F605_48_09"
+													change="F605_50_09_changeHandler(event,F605_49)"/>
+										<s:TextInput width="200" id="F605_49" enabled="{F605_48_09.selected}"/>
+									</mx:GridItem>
+									
+								</mx:GridRow>
+								
+								<mx:GridRow  id="F605_46Row_2" enabled="{F605_46_2.selected}">
+									<mx:GridItem/>
+									<mx:GridItem>
+										<s:Label text="染色体核型结构异常"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_50_1">
+										<s:CheckBox automationName="1" label="易位" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem  id="F605_50_2">
+										<s:CheckBox automationName="2" label="倒位" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem  id="F605_50_3">
+										<s:CheckBox automationName="3" label="缺失" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem  id="F605_50_4">
+										<s:CheckBox automationName="4" label="重复" buttonMode="true"/>
+									</mx:GridItem>
+									
+									<mx:GridItem colSpan="5"  id="F605_50_9">
+										<s:CheckBox automationName="9" label="其他结构异常" buttonMode="true" id="F605_50_09"
+													change="F605_50_09_changeHandler(event,F605_51)"/>
+										<s:TextInput width="200" id="F605_51" enabled="{F605_50_09.selected}"/>
+									</mx:GridItem>
+									
+								</mx:GridRow>
+							</mx:Grid>
+							
+							
+							<mx:Grid width="100%" height="91" paddingBottom="2" paddingLeft="8">
+								<mx:GridRow>
+									<mx:GridItem width="198">
+										<s:Label text="单基因遗传病检测"/>	
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow >
+									<mx:GridItem/>
+									<mx:GridItem>
+										<s:Label text="杜氏肌营养不良"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem  id="F605_52">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_52" selected="true"/>
+										<s:RadioButton value="2" label="携带者" buttonMode="true" groupName="F605_52"/>
+										<s:RadioButton value="1" label="患者" buttonMode="true" groupName="F605_52"/>
+									</mx:GridItem>
+									
+									<mx:GridItem>
+										<s:Label text="血友病A"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_53">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_53" selected="true"/>
+										<s:RadioButton value="2" label="携带者" buttonMode="true" groupName="F605_53"/>
+										<s:RadioButton value="1" label="患者" buttonMode="true" groupName="F605_53"/>
+									</mx:GridItem>
+									
+									<mx:GridItem>
+										<s:Label text="血友病B"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_54">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_54" selected="true"/>
+										<s:RadioButton value="2" label="携带者" buttonMode="true" groupName="F605_54"/>
+										<s:RadioButton value="1" label="患者" buttonMode="true" groupName="F605_54"/>
+									</mx:GridItem>
+									
+									<mx:GridItem>
+										<s:Label text="脊髓性肌萎缩症"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_55">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_55" selected="true"/>
+										<s:RadioButton value="2" label="携带者" buttonMode="true" groupName="F605_55"/>
+										<s:RadioButton value="1" label="患者" buttonMode="true" groupName="F605_55"/>
+									</mx:GridItem>
+									
+									
+								</mx:GridRow>
+								
+								<mx:GridRow >
+									<mx:GridItem/>
+									<mx:GridItem>
+										<s:Label text="苯丙酮尿症"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_56">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_56" selected="true"/>
+										<s:RadioButton value="2" label="携带者" buttonMode="true" groupName="F605_56"/>
+										<s:RadioButton value="1" label="患者" buttonMode="true" groupName="F605_56"/>
+									</mx:GridItem>
+									
+									<mx:GridItem>
+										<s:Label text="甲基丙二酸血症"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_57">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_57" selected="true"/>
+										<s:RadioButton value="2" label="携带者" buttonMode="true" groupName="F605_57"/>
+										<s:RadioButton value="1" label="患者" buttonMode="true" groupName="F605_57"/>
+									</mx:GridItem>
+									
+								</mx:GridRow>
+							</mx:Grid>
+							
+							<mx:Grid height="54" paddingBottom="2" paddingLeft="8">
+								<mx:GridRow >
+									
+									<mx:GridItem>
+										<s:Label text="FISH"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_58">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_58" selected="true" change="F605_59.text=''"/>
+										<s:RadioButton value="2" label="异常" buttonMode="true" groupName="F605_58" id="F605_58_2"/>
+										<s:TextInput width="200" id="F605_59" enabled="{F605_58_2.selected}"/>
+									</mx:GridItem>
+									
+									<mx:GridItem>
+										<s:Label text="染色体微阵列检测"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_60">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_60" selected="true" change="F605_61.text=''"/>
+										<s:RadioButton value="2" label="异常" buttonMode="true" groupName="F605_60" id="F605_60_2"/>
+										<s:TextInput width="200" id="F605_61" enabled="{F605_60_2.selected}"/>
+									</mx:GridItem>
+									
+									<mx:GridItem>
+										<s:Label text="CNV-seq"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_62">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_62" selected="true" change="F605_63.text=''"/>
+										<s:RadioButton value="2" label="异常" buttonMode="true" groupName="F605_62" id="F605_62_2"/>
+										<s:TextInput width="200" id="F605_63" enabled="{F605_62_2.selected}"/>
+									</mx:GridItem>
+								
+								</mx:GridRow>
+								
+								<mx:GridRow >
+									<mx:GridItem>
+										<s:Label text="全外显子组检测"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_64">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_64" selected="true" change="F605_65.text=''"/>
+										<s:RadioButton value="2" label="异常" buttonMode="true" groupName="F605_64" id="F605_64_2"/>
+										<s:TextInput width="200" id="F605_65" enabled="{F605_64_2.selected}"/>
+									</mx:GridItem>
+									<mx:GridItem>
+										<s:Label text="全基因组检测"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_66">
+										<s:RadioButton value="3" label="正常" buttonMode="true" groupName="F605_66" selected="true" change="F605_67.text=''"/>
+										<s:RadioButton value="2" label="异常" buttonMode="true" groupName="F605_66" id="F605_66_2"/>
+										<s:TextInput width="200" id="F605_67" enabled="{F605_66_2.selected}"/>
+									</mx:GridItem>
+									
+									<mx:GridItem>
+										<s:Label text="DNA备提"/>	
+									</mx:GridItem>
+									
+									<mx:GridItem id="F605_68">
+										<s:RadioButton value="1" label="是" buttonMode="true" groupName="F605_68" selected="true"/>
+										<s:RadioButton value="2" label="否" buttonMode="true" groupName="F605_68"/>
+									</mx:GridItem>
+									
+									
+									
+								</mx:GridRow>
+							</mx:Grid>
+						</s:VGroup> 
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				
+				
+				
+				
+				
+				<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+					<s:NavigatorContent width="100%" label="报告信息">	
+						<mx:Grid paddingLeft="8" paddingBottom="10">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="电话"/>	
+									<s:TextInput id="F605_69" width="130" />	
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="检测医师"/>
+									<component:FindSelectedItemComboBox editable="true" id="F605_70" width="140" height="22"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label text="审核医师" paddingLeft="15"/>
+									<component:FindSelectedItemComboBox editable="true" id="F605_71" width="140" height="22"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label text="签发医师" paddingLeft="15"/>
+									<component:FindSelectedItemComboBox editable="true" id="F605_72" width="140" height="22"/>																	</mx:GridItem>
+							
+								<mx:GridItem>
+									<s:Label text="报告单位"/>
+									<s:DropDownList id="F605_74" width="140" enabled="false"/>
+								</mx:GridItem>
+							
+								
+								<mx:GridItem>
+									<s:Label text="报告日期" paddingLeft="15"/>
+									<component:CustomRangeDateField  id="F605_73"  isSelectNow="{!modify}" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				<s:HGroup paddingBottom="10" verticalAlign="middle" width="1243" horizontalAlign="center">
+					<s:Button label="保存" id="saveButton" click="validate()"/>
+				</s:HGroup>
+			</s:VGroup>  
+			
+		</s:Scroller>
+	</s:VGroup>
+</s:TitleWindow>

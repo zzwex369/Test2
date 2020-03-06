@@ -1,0 +1,1119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="100%" height="100%"
+			   minWidth="800" minHeight="600"
+			   xmlns:mdi="http://code.google.com/p/flexlib/"
+			   preloader="com.xyw.sys.custom.progressbar.PreloaderProgressBar"
+			   initialize="loadkey(event)"
+			   creationComplete="applicationCreationComplete(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="login" result="loginHandler(event)" fault="faultHandler(event)"/>
+			<s:method name="exitSystem" result="exitSystemHandler(event)" fault="faultHandler(event)"/>
+			<s:method name="getServiceDate" result="getServiceDateHandler(event)"/>
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+<!--			<s:method name="verifySoftKey" result="verifySoftKeyHandler(event)" />
+-->
+			
+		</s:RemoteObject>
+	</fx:Declarations> 
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace mdi "http://code.google.com/p/flexlib/";
+		@namespace tab "flexlib.controls.tabBarClasses.*";
+		
+		mx|Alert{
+			/*borderColor: red;*/
+			borderVisible:false;
+			backgroundColor: yellow;
+			dropShadowVisible: true;
+			chromeColor: yellow;
+			titleStyleName: alertTitle;
+			messageStyleName: alertMessage;
+			buttonStyleName: alertButton;
+		}
+		.alertTitle{
+			fontSize: 15;
+			fontWeight: bold;
+			color: black;
+		}
+		.alertMessage {
+			fontWeight: normal;
+			color: black;
+		}
+		.alertButton {
+			color: black;
+		}
+		
+		s|Application
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomApplicationSkin");
+		}
+		
+		mx|ProgressBar
+		{
+			fontSize:10;
+			trackHeight:15;
+			paddingRight:20;
+		}
+		
+		tab|SuperTab{ 
+			tabCloseButtonStyleName:SuperTabButtonStyle;  
+		}
+		
+		.SuperTabButtonStyle{
+			icon:Embed(source="com/xyw/sys/image/close.png");
+			downSkin:Embed(source="com/xyw/sys/image/close.png");
+			overSkin:Embed(source="com/xyw/sys/image/close.png");
+			upSkin:Embed(source="com/xyw/sys/image/close.png");
+		}
+		
+		mdi|SuperTabNavigator{
+			tabStyleName:myTab;
+			firstTabStyleName:myTab;
+			lastTabStyleName:myTab;
+		}
+		s|Button{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		.myTab{
+			contentBackgroundColor:#FF0000;
+			fontFamily:宋体;
+			fontSize:13;
+			fontWeight:bold;
+			up-skin:ClassReference("com.xyw.sys.custom.skin.SuperTabNavigator");
+			down-skin:ClassReference("com.xyw.sys.custom.skin.SuperTabNavigator");
+			over-skin:ClassReference("com.xyw.sys.custom.skin.SuperTabNavigator");
+			disabled-skin:ClassReference("com.xyw.sys.custom.skin.SuperTabNavigator");
+			selected-up-skin:ClassReference("com.xyw.sys.custom.skin.SelectedSuperTabNavigator");
+			selected-down-skin:ClassReference("com.xyw.sys.custom.skin.SelectedSuperTabNavigator");
+			selected-over-skin:ClassReference("com.xyw.sys.custom.skin.SelectedSuperTabNavigator");
+			selected-disabled-skin:ClassReference("com.xyw.sys.custom.skin.SelectedSuperTabNavigator");
+		}
+		mx|DividedBox
+		{
+			/*fontWeight:bold*/
+			fontWeight:normal;
+		}
+		
+		mx|Tree
+		{
+			disclosureOpenIcon:ClassReference(null);
+			disclosureClosedIcon:ClassReference(null);
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.desktop.ModifyPasswordTitleWindow;
+			import com.xyw.module.notice.systemNotice.ggTitle;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.progressbar.SystemProgressBar;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.LoginRequest;
+			import com.xyw.sys.model.LoginResponse;
+			import com.xyw.sys.model.MessageResponse;
+			import com.xyw.sys.model.SKLoginRequest;
+			import com.xyw.sys.model.ServiceDateRequest;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			import flash.sampler.NewObjectSample;
+			import flash.utils.setTimeout;
+			
+			import flexlib.controls.tabBarClasses.SuperTab;
+			import flexlib.events.SuperTabEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.VBox;
+			import mx.controls.Alert;
+			import mx.controls.Button;
+			import mx.controls.DateField;
+			import mx.controls.Image;
+			import mx.controls.LinkButton;
+			import mx.controls.Menu;
+			import mx.core.INavigatorContent;
+			import mx.effects.Fade;
+			import mx.events.ChildExistenceChangedEvent;
+			import mx.events.CloseEvent;
+			import mx.events.DividerEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ListEvent;
+			import mx.events.MenuEvent;
+			import mx.events.ModuleEvent;
+			import mx.events.Request;
+			import mx.managers.FocusManager;
+			import mx.managers.PopUpManager;
+			import mx.modules.IModuleInfo;
+			import mx.modules.ModuleManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.components.NavigatorContent;
+			import spark.layouts.VerticalLayout;
+			import spark.modules.Module;
+			
+			[Embed(source="images/dl_over.gif")]
+			private const linkButtonOverIcon:Class;
+			
+			[Embed(source="images/dl.gif")]
+			private const linkButtonNormalIcon:Class;
+			
+			[Embed(source="images/cz_over.gif")]
+			private const resetButtonOverIcon:Class;
+			
+			[Embed(source="images/cz.gif")]
+			private const resetButtonNormalIcon:Class;
+			
+			[Bindable]
+			public var contextRoot:String = "/fybjxt";//csyxzm 正式   fybjxt 本地
+			
+			[Bindable]
+			public var contentLabel:String = "桌面";
+			
+			[Bindable]
+			public var contentPath:String = null;
+			
+			[Bindable]
+			public var loginRequest:LoginRequest = null;
+			
+			[Bindable]
+			public var permissionList:ArrayCollection;
+			
+			[Bindable]
+			public var serviceNow:Date;//登录 当天时间
+			
+			[Bindable]
+			public var iModuleInfo:IModuleInfo = null;
+			private var module:Module;
+			private var systemProgressBar:SystemProgressBar;
+			[Bindable]
+			public var systemUser:SystemUser;
+			[Bindable]
+			public var obj:Object;
+			[Bindable]
+			public var paramPermission:Object;// modulePermission 模块权限  参数表权限 用来保存各种参数表权限 建议key 值为表名  
+			[Bindable]
+			public var comboBoxDataList:Object;//字典表数据 默认登录加载   全部机构  本级机构和上级机构 
+			[Bindable]
+			private var idx:int=0;//当前进入的模块下标
+			private var permissionArr:Array;//数组权限
+			private var pwd_nameArr:Array=new Array(8);//记录登录账号密码
+			private var isGraphics:Boolean=false;
+			private var softKeyArr:Array=new Array(2);//保存两组 加密狗数据（用于断开 从新连上验证是否同一个加密狗，若是 ，免登录 ，若否 从新登录）  0 old 1 new  (0异常信息 1用户名 2 密码  3  用户身份信息 4 keyID 5 加密结果 6权限 7随机数)
+			private var oldConnet:Boolean=false;//当前加密狗是否连接电脑
+			
+			[Bindable]
+			private var loginTitArr:ArrayCollection=new ArrayCollection([
+				'images/tit01.png',
+				'images/tit02.png',
+				'images/tit03.png',
+				'images/tit04.png',
+				'images/tit05.png',
+				'images/titSl.png',
+				'',
+				'images/tit07.png'
+			]);//登录成功后  菜单列表 上方图片
+			[Bindable]
+			private var colorArr:ArrayCollection=new ArrayCollection(
+				['CD9B9B','8B4789','FF8000','cbe5ea','228B22','228B22','','8B4789']
+			);//登录成功后  颜色风格
+			
+			private var modifyPasswordTitleWindow:ModifyPasswordTitleWindow = null;
+			
+			Alert.okLabel = "确认";
+			Alert.yesLabel = "是";
+			Alert.noLabel = "否";
+			Alert.cancelLabel = "取消";
+			
+			/**
+			 *
+			 */
+			private function verifySoftKeyHandler(event:ResultEvent):void
+			{
+				
+			}
+			
+			/**
+			 *
+			 */
+			public function getKey(resultArr:Object):void
+			{
+				
+				try
+				{
+					var arr:Array=resultArr.toString().split(',');// 0 是否连接 1 错误信息 2 keyId 3.用户身份信息  4 用户名 5 密码  6.加密结果 7权限 8随机时间
+					var connet:Boolean=arr.shift()=="true"?true:false;
+					if(oldConnet)//之前连接状态
+					{
+						softKeyArr[0]=softKeyArr[1];//保存复制
+						//弹出倒计时弹出框
+					}
+					else{//之前断开状态
+						//两种状态  连接成功  失败
+						if(connet)//成功 ，发送请求给后台
+						{
+							if(!softKeyArr[0]&&!softKeyArr[1])//两个为空 则是第一次插入 去后台访问
+							{
+								var req:SKLoginRequest=new SKLoginRequest();
+								req.sKID=arr[1];
+								req.name=arr[3];
+								req.pwd=arr[4];
+								req.clientResult=arr[5];
+								req.permission=arr[6];
+								req.ranTime=arr[7];
+							}	
+						}	
+						else{
+							Alert.show("加密狗为连接电脑，请检查，错误提示"+arr[0],"系统提示");
+						}
+					}
+					oldConnet=connet;
+					softKeyArr[1]=arr;
+					
+					
+					
+				} 
+				catch(error:Error) 
+				{
+					Alert.show(error.message,"系统提示244");
+					return;
+				}
+				
+			}
+			
+			/**
+			 * 绑定加密狗
+			 */
+			private function loadkey(event:FlexEvent):void
+			{
+				try
+				{
+					//ExternalInterface.addCallback("getKey",getKey);
+					//ExternalInterface.call("parent.loadKey");
+				} 
+				catch(error:Error) 
+				{
+					Alert.show(error.message,"系统提示267");
+				}
+			}
+			
+			private function applicationCreationComplete(event:FlexEvent):void
+			{
+				paramPermission=new Object();
+				permissionArr=['1','2','3','4','5','6','','7'];//9权限不能使用 ，若增加请选择其他数字   9为通用权限
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function isCreateComboBoxDataList():void
+			{
+				if(!comboBoxDataList)
+				{
+					this.comboBoxDataList=new Object();
+					_initializeComboBox("select data,d101_02 from(select d101_01,d101_02," +
+						"d101_01||','||d101_11 as data from d101) t order by t.d101_01","D101");
+					
+				}
+				
+				_initializeComboBox("select c101_06,c101_01 from c101 where c101_02='"+
+						paramPermission.modulePermission+"'","C101_04",false);
+			}
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=true):void
+			{
+				
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql = sql;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+			}
+			
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag == "D101")
+				{
+					//添加上级机构
+					for(var i:int=0;i<comboBoxDataList.length;i++)
+					{
+						var item:Object=comboBoxDataList.getItemAt(i);
+						var data:String=item.data;
+						var dataArr:Array=data.split(',');
+						item.data=dataArr[0];
+						item.parent=dataArr[1];
+						comboBoxDataList.setItemAt(item,i);
+						
+					}
+					
+					this.comboBoxDataList.wholeInstitutionCode=comboBoxDataList;
+				}else if(flag == "C101_04")
+					this.paramPermission.rcPermission=comboBoxDataList.getItemAt(0).data;
+				
+			}
+			
+			/**
+			 *重置 按钮 设置焦点
+			 */
+			private function resetButtonFocus(input:TextInput,pwd:TextInput=null):void
+			{
+				loginButton.enabled = true;
+				resetButton.enabled = true;
+				var _pwd:TextInput=pwd?pwd:input;
+				_pwd.enabled=true;
+				this.focusManager.setFocus(input);
+			}
+			
+			/**
+			 *
+			 */
+			private function setEnabled(enabled:Boolean=false):void
+			{
+				loginButton.enabled = enabled;
+				resetButton.enabled = enabled;
+				password.enabled = enabled;
+				
+			}
+			
+			/**
+			 *  登录验证
+			 */
+			private function validateForm():void
+			{
+				var name:String = StringUtil.trim(this.username.text);
+				var pwd:String = this.password.text;
+				if (!name||!name.length) {
+					Alert.show("用户名不能为空", "系统提示", 1, this, 
+						function ():void{
+							resetButtonFocus(username,password);
+						});
+					return;
+				} else if(!pwd||!pwd.length) {
+					Alert.show("密码不能为空", "系统提示", 1, this, function ():void{
+						resetButtonFocus(password);
+					});
+					return;
+				}				
+				setEnabled();
+				this.loginRequest = new LoginRequest();
+				this.loginRequest.username = name;
+				this.loginRequest.password = pwd;
+				this.showSystemProgressBar();
+				this.loginRequest.quanxian =paramPermission.modulePermission=permissionArr[idx];
+				this.doLogin(loginRequest);
+			}
+			
+			/**
+			 * 准备登录那个 就清空那个 而不是清空所有
+			 * 
+			 */
+			private function doLogin(loginRequest:LoginRequest):void
+			{
+				username.setFocus();
+				mdiCanvas.windowManager.removeAll();
+				superTabNavigator.removeAllChildren();
+				tree.addEventListener(ListEvent.ITEM_CLICK, treeItemClickHandler);
+				this.systemService.login(loginRequest);
+			}
+			
+			
+			/**
+			 * 清空用户名密码
+			 */
+			private function clearUser():void
+			{
+				username.text=password.text="";
+			}
+			
+			/* 	protected function openxjk():void//event:FlexEvent
+			{
+			//openkey是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+			var str:String = ExternalInterface.call("parent.openkey");
+			if(str){
+			var window:xjkwindow = new xjkwindow();
+			window.owner = this;
+			PopUpManager.addPopUp(window,this);
+			var x:Number = (this.parentApplication.mdiCanvas.width - window.width)/2;
+			var y:Number = (this.parentApplication.mdiCanvas.height - window.height)/2;
+			window.move(x,y);
+			}else{
+			Alert.show("加密狗控件未安装");
+			} 
+			} */
+			
+			/**
+			 *默认返回Date 日期  类型
+			 */
+			private function getServiceDate():void
+			{
+				
+				var dateRequest:ServiceDateRequest=new ServiceDateRequest();
+				dateRequest.dateType='1';
+				this.systemService.getServiceDate(dateRequest);
+				
+			}
+			
+			/**
+			 * 
+			 */
+			private function getServiceDateHandler(event:ResultEvent):void 
+			{
+				var serviceDateResponse:Object=event.result;
+				serviceNow=serviceDateResponse.date as Date;
+				updateTime();
+			}
+			
+			/**
+			 *到凌晨自动更新时间
+			 */
+			private function updateTime():void
+			{
+				var nextDate:Date=new Date((serviceNow.time)+24*3600*1000);
+				var nextDateTime:Number=new Date(nextDate.fullYear,nextDate.month,nextDate.date).time;
+				var nextDateDiff:Number=nextDateTime-serviceNow.time;
+				setTimeout(getServiceDate,nextDateDiff);
+			}
+			
+			/**
+			 * 记录账号密码
+			 */
+			private function saveNamePwd():void
+			{
+				var arr:Array=new Array();
+				arr.push(systemUser.username);
+				arr.push(systemUser.oldPassword);
+				pwd_nameArr[idx]=arr;
+				
+			}
+			
+			private function loginHandler(event:ResultEvent):void
+			{
+				var loginResponse:LoginResponse = event.result as LoginResponse;
+				var errorMessage:String = loginResponse.errorMessage;
+				var promptMessage:String = loginResponse.promptMessage;
+				if(errorMessage != null) {
+					setEnabled(true);
+					Alert.show(errorMessage, "系统提示");
+					this.removeSystemProgressBar();
+					return;
+				} else {
+					getServiceDate();
+					isCreateComboBoxDataList();
+					this.removeSystemProgressBar();
+					if(promptMessage != null) {
+						Alert.show(promptMessage, "系统提示");
+					}
+					this.systemUser = loginResponse.systemUser;
+					saveNamePwd();
+					this.contentLabel = "桌面";
+					this.loadModule("com/xyw/module/desktop/index.swf");
+					var xmlMenuString:String = this.systemUser.xmlMenu;
+					var xmlMenu:XML = new XML(xmlMenuString);
+					loginPanel.visible = false;
+					mdiCanvas.visible = true;
+					tree.showRoot = false;
+					tree.dataProvider = xmlMenu;
+					superTabNavigator.addEventListener(KeyboardEvent.KEY_DOWN,_keyDownHandler);
+					var list:ArrayCollection= this.systemUser.buttonPermission as ArrayCollection;
+					permissionList=new ArrayCollection();
+					for( var i:int=0; i < list.length; i++ ){
+						permissionList.addItem(list.getItemAt(i));	
+					}
+					if(systemUser.gonggao=="2")
+						alertTitle();
+				}
+			}
+			
+			
+			/**
+			 *弹出更新公告提示框
+			 */
+			private function alertTitle():void
+			{
+				var window:ggTitle =new ggTitle();
+				window.owner=this;
+				window.userCode=systemUser.userCode;
+				window.quanxian=systemUser.quanxian;
+				window.alterNotice=systemUser.alterNotice;
+				window.gonggao=systemUser.gonggao;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			
+			
+			private function treeItemClickHandler(event:ListEvent):void
+			{
+				var item:Object = Tree(event.target).selectedItem;
+				var parentItem:Object = Tree(event.target).getParentItem(item);
+				this.contentLabel = Tree(event.target).selectedItem.@label;
+				this.contentPath = Tree(event.target).selectedItem.@path;
+				loadJsp(this.contentPath);
+				if(contentPath.indexOf(".swf") != -1) {
+					
+					for(var i:uint = 0; i < superTabNavigator.numChildren; i++) {
+						var vbox:Object = superTabNavigator.getChildAt(i);
+						var vboxLabel:String = vbox.label;
+						if(vboxLabel == this.contentLabel) {
+							superTabNavigator.selectedIndex = i;
+							progressBar.visible = false;
+							break;
+						} 
+					}
+					
+					loadRandomDateModule(vboxLabel);
+					
+				} else {
+					if(tree.isItemOpen(item)) {
+						tree.expandChildrenOf(item, false);
+					} else {
+						tree.openItems = [];
+						tree.expandItem(parentItem,true);
+						tree.expandItem(item, true);
+					}
+				}
+			}
+			
+			
+			/**
+			 * 加载最新版本
+			 */
+			private function loadRandomDateModule(vboxLabel:String):void
+			{
+				var time:Number=systemUser.sysModify.time;
+				if(vboxLabel != this.contentLabel)
+					this.loadModule(this.contentPath+"?random="+time);
+			}
+			
+			/**
+			 * 加载jsp页面
+			 **/
+			private function loadJsp(contentPath:String):void
+			{
+				if(contentPath.indexOf(".jsp") != -1) 
+				{
+					var urlRequest:URLRequest = new URLRequest(this.contextRoot + contentPath);
+					navigateToURL(urlRequest,"_blank");
+				}
+			}
+			
+			
+			public function loadModule(moduleURL:String):void
+			{
+				this.iModuleInfo = ModuleManager.getModule(moduleURL);
+				this.iModuleInfo.addEventListener(ModuleEvent.PROGRESS, loadingModuleHandler);
+				this.iModuleInfo.addEventListener(ModuleEvent.READY, loadModuleReadyHandler);
+				this.iModuleInfo.addEventListener(ModuleEvent.ERROR, loadModuleErrorHandler);
+				this.iModuleInfo.load();
+			}
+			
+			private function loadingModuleHandler(event:ModuleEvent):void
+			{
+				if(systemUser){
+					progressBar.visible = true;
+					progressBar.setProgress((event.bytesLoaded/event.bytesTotal)*100,100);
+				}
+				
+			}
+			
+			private function loadModuleReadyHandler(event:ModuleEvent):void{
+				var vBox:VBox = new VBox();
+				vBox.percentWidth=100;
+				vBox.percentHeight=100;
+				vBox.setStyle("paddingLeft", 10);
+				vBox.setStyle("paddingRight", 10);
+				vBox.label=this.contentLabel;
+				vBox.automationName=this.contentPath;
+				if(systemUser)
+					superTabNavigator.addChild(vBox);
+				
+				this.module = event.module.factory.create() as Module;
+				vBox.addChild(this.module);
+				if(systemUser)
+					setClosePolicyForTab(superTabNavigator,progressBar);
+			}
+			
+			/**
+			 *切换设置焦点
+			 */
+			private function superTabNavigator_changeHandler(event:IndexChangedEvent):void
+			{
+				var vBox:Object=superTabNavigator.getChildAt(event.newIndex);
+				var module:Object=vBox.getChildAt(0);
+				callLater(setModuleFocus,[module])
+			}
+			
+			private function setModuleFocus(module:Object):void
+			{
+				module.setFocus();
+			}
+			
+			/**
+			 *module监听
+			 */
+			public function _keyDownHandler(event:KeyboardEvent):void
+			{
+				if(superTabNavigator.numChildren>1)
+				{
+					if(event.keyCode==Keyboard.ENTER)
+						focusManager.getNextFocusManagerComponent().setFocus();
+					else if(event.keyCode==Keyboard.ESCAPE)
+					{
+						var index:int=superTabNavigator.numChildren;
+						var selectIndex:int=superTabNavigator.selectedIndex;
+						var vBox:Object=superTabNavigator.getChildAt(superTabNavigator.selectedIndex);
+						superTabNavigator.removeChildAt(superTabNavigator.selectedIndex);
+						index=--index;
+						if(index)
+						{	
+							superTabNavigator.selectedIndex =selectIndex==(index)?( superTabNavigator.numChildren - 1):selectIndex;
+							vBox= superTabNavigator.getChildAt(superTabNavigator.selectedIndex);
+							vBox.getChildAt(0).setFocus();
+						}
+					}else if(event.keyCode==Keyboard.DELETE)
+					{
+						
+						Alert.show("是否要关闭全部窗口？","系统提示",3,this,closeAllHandler);
+						return;
+					}
+				}	
+			}
+			
+			/**
+			 *
+			 */
+			private function closeAllHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+					setTimeout(doCloseAllHandler,600,superTabNavigator.numChildren-1);
+				
+			}
+			
+			private function doCloseAllHandler():void
+			{
+				if(superTabNavigator.numChildren==1)
+					return ;
+				superTabNavigator.removeChildAt(arguments[0])
+				setTimeout(doCloseAllHandler,600,arguments[0]-1);
+			}
+			
+			private function loadModuleErrorHandler(event:ModuleEvent):void{
+				progressBar.visible = false;
+				Alert.show("没有权限访问","系统提示");
+			}
+			
+			private function showSystemProgressBar():void{
+				this.systemProgressBar = new SystemProgressBar();
+				PopUpManager.addPopUp(systemProgressBar,this,false);
+				PopUpManager.centerPopUp(systemProgressBar);
+				var x:Number = this.systemProgressBar.x;
+				var y:Number = this.systemProgressBar.y - 100;
+				this.systemProgressBar.move(x, y);
+			}
+			
+			private function removeSystemProgressBar():void{
+				PopUpManager.removePopUp(this.systemProgressBar);
+			}
+			
+			private function onMouseOver(event:MouseEvent):void
+			{
+				resetButtonStyle(event,[linkButtonOverIcon,resetButtonOverIcon]);
+			}
+			private function onMouseOut(event:MouseEvent):void
+			{
+				resetButtonStyle(event,[linkButtonNormalIcon,resetButtonNormalIcon]);
+			}
+			
+			/**
+			 *
+			 */
+			private function resetButtonStyle(event:MouseEvent,iconArr:Array):void
+			{
+				var id:String = LinkButton(event.target).id;
+				if(id == "loginButton") {
+					this.loginButton.setStyle("icon", iconArr[0]);
+				} else {
+					this.resetButton.setStyle("icon", iconArr[1]);
+				}
+			}
+			
+			private function modifyPassword(event:MouseEvent):void
+			{
+				modifyPasswordTitleWindow = new ModifyPasswordTitleWindow();
+				CompMethod.popUpTitleWindow(modifyPasswordTitleWindow,this,true);
+			}
+			
+			private function exitSystem(event:MouseEvent):void
+			{
+				this.systemService.exitSystem();
+			}
+			
+			private function exitSystemHandler(event:ResultEvent):void
+			{
+				var messageResponse:MessageResponse = event.result as MessageResponse;
+				if(!messageResponse.errorMessage) {
+					setEnabled(true);
+					mdiCanvas.visible = false;
+					loginPanel.visible = true;
+					this.paramPermission.datePermission=null;
+					superTabNavigator.removeAllChildren();
+					mdiCanvas.windowManager.removeAll();
+					username.text = this.systemUser.username;
+					password.text = this.systemUser.oldPassword;
+				} else {
+					Alert.show(messageResponse.errorMessage, "系统提示");
+				}
+			}
+			
+			private function onlinkButtonMouseOutHandler(event:MouseEvent):void
+			{
+				this.linkButton.setStyle("color", "black");
+			}
+			private function mouseTab(event:MouseEvent):void
+			{
+				this.superTabNavigator.setStyle("color", "black");
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("网络繁忙，请稍后再试！", "系统提示");
+				}
+			}
+			
+			/**
+			 *登录 或退出操作
+			 * loginPanelvisible true 进入账号密码输入界面 
+			 * 					 false 退出到多模块界面
+			 */
+			private function operation(_idx:int=-1):void
+			{
+				var loginPanelvisible:Boolean=_idx!=-1?true:false;
+				if(loginPanelvisible)
+				{
+					this.idx=_idx-2;
+					getNamePwd();
+					moveLoginVG();
+					setStatesIdx(_idx);
+					doGraphicsHandler();
+				}else
+				{
+					exitLogin();
+					superTabNavigator.removeEventListener(KeyboardEvent.KEY_UP,_keyDownHandler);
+				}
+				loginPanel.visible = loginPanelvisible;
+				this.loginfirst.visible = !loginPanelvisible;
+				this.one_login.visible = !loginPanelvisible;
+			}
+			
+			
+			/**
+			 * 改变页面状态
+			 */
+			private function setStatesIdx(idx:int):void
+			{
+				this.currentState=this.states[idx].name;
+			}
+			
+			/**
+			 * 根据高度变化 登录坐标位置
+			 */
+			private function moveLoginVG():void
+			{
+				
+				var x:Number = (this.width) / 100;
+				var y:Number = (this.height ) / 100;
+				y*=(this.height<=890?27.5:36)
+				loginVG.move(x*60.8, y);	
+
+			}
+			
+			/**
+			 *
+			 */
+			private function exitLogin():void
+			{
+				setStatesIdx((idx==4||idx==5)?1:0);
+			}
+			
+			/**
+			 *得到账号密码
+			 */
+			private function getNamePwd():void
+			{
+				username.text=password.text='';
+				if(pwd_nameArr[idx])
+				{
+					username.text=pwd_nameArr[idx][0];
+					password.text=pwd_nameArr[idx][1];
+				}
+			}
+			
+			
+			/**
+			 *重绘登录界面
+			 */
+			private function doGraphicsHandler():void 
+			{ 
+				if(!isGraphics)
+				{
+					
+					isGraphics=true;
+					resetButton.graphics.beginFill(0x1E90FF); 
+					resetButton.graphics.drawRect(0,0,resetButton.width,resetButton.height); 
+					resetButton.graphics.endFill(); 
+					back.graphics.beginFill(0xFFFFFF); 
+					back.graphics.drawRect(0,0,back.width,back.height); 
+					back.graphics.endFill(); 
+					loginButton.graphics.beginFill(0xEEC900); 
+					loginButton.graphics.drawRect(0,0,loginButton.width,loginButton.height); 
+					loginButton.graphics.endFill(); 
+				}
+			} 
+			
+			/**
+			 *登录成功加载页面
+			 */
+			private function setClosePolicyForTab(superTabNavigator:Object,progressBar:ProgressBar):void
+			{
+				progressBar.visible = false;
+				superTabNavigator.setClosePolicyForTab(0, SuperTab.CLOSE_NEVER); 
+				superTabNavigator.selectedIndex = superTabNavigator.numChildren - 1;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal" stateGroups="home"/><!--首页 7模块-->
+		<s:State name="etbj" stateGroups="home"/><!--儿童 2模块-->
+		<s:State name="one" stateGroups="same"/><!--婚前-->
+		<s:State name="two" stateGroups="same"/><!--孕产-->
+		<s:State name="three" stateGroups="same"/><!--分娩-->
+		<s:State name="four" /><!--出生-->
+		<s:State name="five" stateGroups="same"/><!--儿童-->
+		<s:State name="six" stateGroups="same"/><!--视力-->
+		<s:State name="seven" stateGroups="same"/><!--青春-->
+		<s:State name="eight" stateGroups="same"/><!--民生-->
+	</s:states>
+	<s:Group horizontalCenter="0" verticalCenter="0" width="100%" height="100%" visible="true" id="one_login" >
+		<s:Rect width="100%" height="100%">
+			<s:fill>
+				<s:BitmapFill source="@Embed('images/index_bg.jpg')"/>
+			</s:fill>
+		</s:Rect>
+		
+		<s:VGroup id="loginfirst" visible="true" gap="0" horizontalCenter="0" verticalCenter="0">
+			<s:VGroup>
+				<s:HGroup width="100%" height="20%">
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup height="150" width="100%" horizontalAlign="center">
+				<s:Image source="@Embed('images/logo02.png')" width="873" height="70" />
+				
+			</s:VGroup>
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" height="60%" visible="true" includeIn="normal">
+					<s:Image source="@Embed('images/warp01.png')" width="155" height="369" click="operation(2)"/>
+					<s:Image source="@Embed('images/warp02.png')" width="155" height="369" click="operation(3)"/>
+					<s:Image source="@Embed('images/warp03.png')" width="155" height="369" click="operation(4)"/>
+					<s:Image source="@Embed('images/warp04.png')" width="155" height="369" click="operation(5)"/>
+					<s:Image source="@Embed('images/warp05.png')" width="155" height="369" click="setStatesIdx(1)"/>
+					<s:Image source="@Embed('images/warp06.png')" width="155" height="369"/>
+					<s:Image source="@Embed('images/warp07.png')" width="155" height="369" click="operation(9)"/>
+				</s:HGroup>
+				
+				<s:HGroup width="100%" height="60%" visible="true" includeIn="etbj" horizontalAlign="center">
+					
+					<s:Image source="@Embed('images/exit.png')" width="155" height="369" click="setStatesIdx(0)"/>
+					<s:Image source="@Embed('images/warpEtbj.png')" width="155" height="369" click="operation(6)"/>
+					<s:Image source="@Embed('images/warpSlbj.png')" width="155" height="369" click="operation(7)"/>
+					
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup width="100%" height="60">
+				<s:Label width="100%" height="45"/>
+				<s:Label width="100%" height="15" color="white" textAlign="center" text="Copyright © 2016 郑州威尔信科技有限公司    All Rights Reserved" fontSize="15" />
+			</s:VGroup>
+		</s:VGroup>
+	</s:Group>
+	<!--'images/login_bg01.png'-->
+	<s:Group height="100%" width="100%" id="loginPanel" visible="false" horizontalCenter="0" verticalCenter="0" >
+		<s:Rect width="100%" height="100%" id="login_bgRect">
+			<s:fill>
+				
+				<s:BitmapFill source.one="@Embed('images/login_bg01.png')" 
+							  source.two="@Embed('images/login_bg02.png')"
+							  source.three="@Embed('images/login_bg03.png')" 
+							  source.four="@Embed('images/login_bg04.png')"
+							  source.five="@Embed('images/login_bg05.png')"
+							  source.six="@Embed('images/login_bgSl.png')"
+							  source.eight="@Embed('images/login_bg07.png')"/>
+			</s:fill>
+		</s:Rect>
+		<s:VGroup width="100%" height="40" visible="true">
+			<s:HGroup width="100%" height="40">
+				<s:VGroup width="80%" height="40">
+					
+				</s:VGroup>
+				<s:VGroup width="20%" height="40">
+					<mx:LinkButton id="back" click="operation()" width="100%" height="40" label="返    回" color="gray" fontSize="20" fontFamily="微软雅黑"/>
+				</s:VGroup>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup x="900" y="270" width="325" height="363" id="loginVG">
+			<s:Group height="100%" width="100%" >
+				<s:Rect width="100%" height="100%">
+					<s:fill>
+						<s:BitmapFill source="@Embed('images/b_logo.png')"/>
+					</s:fill>
+				</s:Rect>
+				<s:RectangularDropShadow blurX="20" blurY="20"
+										 
+										 alpha="0.32" distance="11"
+										 
+										 blRadius="5" brRadius="5"
+										 
+										 angle="90" color="#000000" left="0" top="0" right="0"
+										 
+										 bottom="0"/>
+				<s:VGroup width="100%" height="100%">
+					<s:HGroup width="60%"  height="20%">
+						<s:VGroup width="100%" height="100%">
+							<s:HGroup  width="100%" height="40%" visible="false">
+							</s:HGroup>
+							<s:HGroup  width="100%" height="40%">
+								<s:Label text="  用户登录" color="#00bbff" fontSize="25" fontFamily="微软雅黑"/>
+							</s:HGroup>
+							<s:HGroup  width="100%" height="20%" visible="false">
+							</s:HGroup>
+						</s:VGroup>
+					</s:HGroup>
+					<s:HGroup verticalAlign="middle" height="10%">
+						<s:Label text="      用户名" color="#4D4D4D" fontSize="16" fontFamily="微软雅黑"/>
+					</s:HGroup>
+					<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="center" height="10%">
+						<s:TextInput id="username" fontWeight="bold" tabIndex="0" height="30" width="80%" tabEnabled="true"/>
+					</s:HGroup>
+					<s:HGroup verticalAlign="middle" height="10%">
+						<s:Label text="      密  码" color="#4D4D4D" fontSize="16" fontFamily="微软雅黑"/>
+					</s:HGroup>
+					<s:HGroup verticalAlign="middle" width="100%" horizontalAlign="center" height="10%">
+						<s:TextInput id="password" fontWeight="bold" tabIndex="1" displayAsPassword="true" height="30" width="80%" enter="validateForm()"/>
+					</s:HGroup>
+					<s:HGroup verticalAlign="middle" width="100%" height="40%">
+						<s:VGroup  width="8.5%" height="100%" visible="false">
+						</s:VGroup>
+						<s:VGroup  width="40%">
+							<mx:LinkButton id="loginButton" click="validateForm()" width="100%" height="45" label="登  录" color="white" fontSize="20" fontFamily="微软雅黑"/>
+						</s:VGroup>
+						<s:VGroup  width="3%" height="100%" visible="false">
+						</s:VGroup>
+						<s:VGroup  width="40%">
+							<mx:LinkButton id="resetButton" click="clearUser()" width="100%" height="45" label="重  置" color="white"  fontSize="20" fontFamily="微软雅黑"/>
+						</s:VGroup>
+						<s:VGroup  width="8.5%" height="100%" visible="false">
+						</s:VGroup>
+					</s:HGroup>
+				</s:VGroup>
+			</s:Group>
+		</s:VGroup>
+	</s:Group>
+	
+	<!--首页登录后台-->
+	<mdi:MDICanvas visible="false" id="mdiCanvas" backgroundColor.same="{parseInt(colorArr.getItemAt(idx).toString(),16)}" backgroundColor.four="#2088c7" horizontalScrollPolicy="off" verticalScrollPolicy="off" width="100%" height="100%">
+		<s:VGroup width="100%" height="100%" gap="0">
+			<s:Group width="100%" height="70">
+				
+				<s:Rect width="100%" height="100%">
+					<s:fill>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry color="{parseInt(colorArr.getItemAt(idx).toString(),16)}"/>
+							<s:GradientEntry color.same="#EEE0E5" 
+											 color.four="#429edd"/>
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+				<s:HGroup height="100%" width="100%">
+					<s:HGroup height="100%" width="75%">
+						<s:Image source="{loginTitArr.getItemAt(idx)}" height="100%"/>
+					</s:HGroup>
+					<mx:HBox height="100%" width="25%" verticalAlign="middle" horizontalAlign="left">
+						<s:Label text="所属单位 : " color="#FFFFFF" fontSize="16"/><s:Label fontSize="16" text="{this.systemUser.institution}"/>
+						<mx:LinkButton mouseOut="onlinkButtonMouseOutHandler(event)" label="查看更新公告" click="alertTitle()"/>
+						<mx:LinkButton id="linkButton" label="修改密码" color="black" mouseOut="onlinkButtonMouseOutHandler(event)" click="modifyPassword(event)"/>
+						<mx:LinkButton mouseOut="onlinkButtonMouseOutHandler(event)" label="安全退出" click="exitSystem(event)"/>
+					</mx:HBox>
+				</s:HGroup>
+			</s:Group>
+			<s:Group width="100%" height="8">
+				<s:Rect width="100%" height="100%">
+					<s:fill>
+						<s:SolidColor color.same="{parseInt(colorArr.getItemAt(idx).toString(),16)}" color.four="#2088c7"/>
+					</s:fill>
+				</s:Rect>
+			</s:Group>
+			<s:HGroup width="100%" height="100%" gap="0">
+				<s:Group width="8" height="100%">
+					<s:Rect width="100%" height="100%">
+						<s:fill>
+							<s:SolidColor color.same="{parseInt(colorArr.getItemAt(idx).toString(),16)}" color.four="#2088c7"/>
+						</s:fill>
+					</s:Rect>
+				</s:Group>
+				<mx:HDividedBox width="100%" height="100%" paddingTop="-3">
+					<mx:Tree id="tree" labelField="@label" chromeColor.same="{parseInt(colorArr.getItemAt(idx).toString(),16)}" chromeColor.four="#2088c7"  fontSize="14"  rowHeight="25" borderVisible="false" width="10%" height="100%" borderAlpha="0"/>
+					<mdi:SuperTabNavigator id="superTabNavigator"  change="superTabNavigator_changeHandler(event)"  tabHeight="25" dragEnabled="false" tabEnabled="true" width="85%" height="100%" borderAlpha="0">
+						
+					</mdi:SuperTabNavigator>
+				</mx:HDividedBox>
+				<s:Group width="5" height="100%">
+					<s:Rect width="100%" height="100%">
+						<s:fill>
+							<s:SolidColor color.same="{parseInt(colorArr.getItemAt(idx).toString(),16)}" color.four="#2088c7"/>
+						</s:fill>
+					</s:Rect>
+				</s:Group>
+			</s:HGroup>
+			<s:Group contentBackgroundColor.same="{parseInt(colorArr.getItemAt(idx).toString(),16)}"
+					 contentBackgroundColor.four="#2088c7"
+					 width="100%" height="25">
+				<s:Rect width="100%" height="100%" top="0" left="0" right="0" bottom="0">
+					<s:fill>
+						<s:SolidColor color.same="{parseInt(colorArr.getItemAt(idx).toString(),16)}" color.four="#2088c7"/>
+					</s:fill>
+				</s:Rect>
+				<s:HGroup width="100%" height="25" verticalAlign="middle" horizontalAlign="right">
+					<!--<s:Label text="郑州新益旺电子科技有限公司" width="70%" height="100%" textAlign="right" verticalAlign="middle"/>-->
+					<mx:ProgressBar id="progressBar" visible="true" width="20%" height="15"
+									chromeColor="yellow" label="加  载  中 ..."
+									direction="right" labelPlacement="center"/>
+				</s:HGroup>
+			</s:Group>
+		</s:VGroup>
+	</mdi:MDICanvas>
+	
+	
+	
+	
+</s:Application>

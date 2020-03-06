@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.xyw.sys.model.D801" table="D801">
+        <comment>用户表</comment>
+        <id name="d80101" type="java.lang.String">
+            <column name="D801_01" length="20" />
+            <generator class="assigned" />
+        </id>
+        <property name="d80102" type="java.lang.String">
+            <column name="D801_02" length="20">
+                <comment>用户名</comment>
+            </column>
+        </property>
+        <property name="d80103" type="java.lang.String">
+            <column name="D801_03" length="20">
+                <comment>密码</comment>
+            </column>
+        </property>
+        <property name="d80104" type="java.lang.String">
+            <column name="D801_04" length="20">
+                <comment>真实姓名</comment>
+            </column>
+        </property>
+        <property name="d80105" type="java.lang.String">
+            <column name="D801_05" length="1">
+                <comment>性别</comment>
+            </column>
+        </property>
+        <property name="d80106" type="java.lang.String">
+            <column name="D801_06" length="18">
+                <comment>身份证号</comment>
+            </column>
+        </property>
+        <property name="d80107" type="java.lang.String">
+            <column name="D801_07" length="14">
+                <comment>所属单位</comment>
+            </column>
+        </property>
+        <property name="d80108" type="java.lang.String">
+            <column name="D801_08" length="12">
+                <comment>所属县区</comment>
+            </column>
+        </property>
+        <property name="d80109" type="java.lang.String">
+            <column name="D801_09" length="1">
+                <comment>用户状态 0.正常 1.欠费停用 2.密码过期 3.注销4.系统维护</comment>
+            </column>
+        </property>
+        <property name="d80110" type="java.lang.String">
+            <column name="D801_10" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80111" type="java.lang.String">
+            <column name="D801_11" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80112" type="java.lang.String">
+            <column name="D801_12" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80113" type="java.lang.String">
+            <column name="D801_13" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80114" type="java.lang.String">
+            <column name="D801_14" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80115" type="java.util.Date">
+            <column name="D801_15" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80116" type="java.lang.String">
+            <column name="D801_16" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80117" type="java.lang.String">
+            <column name="D801_17" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80118" type="java.lang.String">
+            <column name="D801_18" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80119" type="java.lang.String">
+            <column name="D801_19" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80120" type="java.lang.String">
+            <column name="D801_20" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80121" type="java.util.Date">
+            <column name="D801_21" length="7">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80122" type="java.lang.String">
+            <column name="D801_22" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80123" type="java.lang.String">
+            <column name="D801_23" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80124" type="java.lang.String">
+            <column name="D801_24" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80125" type="java.lang.String">
+            <column name="D801_25" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80126" type="java.lang.String">
+            <column name="D801_26" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80127" type="java.lang.String">
+            <column name="D801_27" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80128" type="java.lang.String">
+            <column name="D801_28" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80129" type="java.lang.String">
+            <column name="D801_29" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+        <property name="d80130" type="java.lang.String">
+            <column name="D801_30" length="100">
+                <comment>备注</comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

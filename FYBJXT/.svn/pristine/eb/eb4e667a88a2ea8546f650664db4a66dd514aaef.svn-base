@@ -1,0 +1,1784 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*" 
+			   title="高 危 妊 娠 产 前 评 分 标 准" backgroundColor="#FFFFFF" close="removeWindow()"
+			   width="1045" height="680">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		mx|Grid
+		{
+			borderStyle:solid;
+			horizontalGap:-1;
+			verticalGap:-1;
+			paddingLeft:-1;
+			paddingTop:-1;
+			paddingRight:-1;
+			paddingBottom:-1;
+			
+		}
+		mx|GridRow
+		{
+			paddingTop:-1;
+			paddingBottom:-1;
+			paddingRight:-1;
+			paddingLeft:-1;
+		}
+		
+		.Label2
+		{
+			fontSize:15;
+			paddingLeft:5
+		}
+		.pt13
+		{
+			paddingTop:13;
+		}
+		.pl50
+		{
+			paddingLeft:50;
+		}
+		.pl10
+		{
+			paddingLeft:10;
+		}
+		.pl65
+		{
+			paddingLeft:65;
+		}
+		.pr5
+		{
+			paddingRight:5;
+		}
+		.pb13
+		{
+			paddingBottom:13;	
+		}
+		.pt16
+		{
+			paddingTop:16;
+		}
+		.gridItem2
+		{
+			verticalAlign:middle;
+			horizontalAlign:left;
+			
+		}
+		.ls4
+		{
+			letterSpacing:4;
+		}
+		.bss
+		{
+			borderStyle:solid;
+			borderVisible:true;
+			borderColor:black;
+		}
+		.bvf
+		{
+			borderVisible:false;
+		}
+		.fwb
+		{
+			fontWeight:bold;
+		}
+		.fz16
+		{
+			fontSize:16;
+		}
+		.fz18
+		{
+			fontSize:18;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.containers.Form;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.printing.FlexPrintJob;
+			import mx.printing.FlexPrintJobScaleType;
+			
+			public var array:Array = new Array();
+			public var array1:Array = new Array();
+			
+			public function enClick():void{
+				if(this.dg1__.selected){
+					array[0] = Number(this.dg1_.text);
+					array1[0] = this.dg1.text;
+				}else{
+					array[0] = 0;
+					array1[0] = "";
+				}
+				
+				if(this.dg2__.selected){
+					array[1] = Number(this.dg2_.text);
+					array1[1] = this.dg2.text;
+				}else{
+					array[1] = 0;
+					array1[1] = "";
+				}
+				
+				if(this.dg3__.selected){
+					array[2] = Number(this.dg3_.text);
+					array1[2] = this.dg3.text;
+				}else{
+					array[2] = 0;
+					array1[2] = "";
+				}
+				
+				if(this.dg4__.selected){
+					array[3] = Number(this.dg4_.text);
+					array1[3] = this.dg4.text;
+				}else{
+					array[3] = 0;
+					array1[3] = "";
+				}
+				
+				if(this.dg5__.selected){
+					array[4] = Number(this.dg5_.text);
+					array1[4] = this.dg5.text;
+				}else{
+					array[4] = 0;
+					array1[4] = "";
+				}
+				
+				if(this.dg6__.selected){
+					array[5] = Number(this.dg6_.text);
+					array1[5] = this.dg6.text;
+				}else{
+					array[5] = 0;
+					array1[5] = "";
+				}
+				
+				if(this.dg7__.selected){
+					array[6] = Number(this.dg7_.text);
+					array1[6] = this.dg7.text;
+				}else{
+					array[6] = 0;
+					array1[6] = "";
+				}
+				
+				if(this.dg8__.selected){
+					array[7] = Number(this.dg8_.text);
+					array1[7] = this.dg8.text;
+				}else{
+					array[7] = 0;
+					array1[7] = "";
+				}
+				
+				if(this.dg9__.selected){
+					array[8] = Number(this.dg9_.text);
+					array1[8] = this.dg9.text;
+				}else{
+					array[8] = 0;
+					array1[8] = "";
+				}
+				
+				if(this.dg10__.selected){
+					array[9] = Number(this.dg10_.text);
+					array1[9] = this.dg10.text;
+				}else{
+					array[9] = 0;
+					array1[9] = "";
+				}
+				
+				if(this.dg11__.selected){
+					array[10] = Number(this.dg11_.text);
+					array1[10] = this.dg11.text;
+				}else{
+					array[10] = 0;
+					array1[10] = "";
+				}
+				
+				if(this.dg12__.selected){
+					array[11] = Number(this.dg12_.text);
+					array1[11] = this.dg12.text;
+				}else{
+					array[11] = 0;
+					array1[11] = "";
+				}
+				
+				if(this.dg12__.selected){
+					array[11] = Number(this.dg12_.text);
+					array1[11] = this.dg12.text;
+				}else{
+					array[11] = 0;
+					array1[11] = "";
+				}
+				
+				if(this.dg13__.selected){
+					array[12] = Number(this.dg13_.text);
+					array1[12] = this.dg13.text;
+				}else{
+					array[12] = 0;
+					array1[12] = "";
+				}
+				
+				if(this.dg14__.selected){
+					array[13] = Number(this.dg14_.text);
+					array1[13] = this.dg14.text;
+				}else{
+					array[13] = 0;
+					array1[13] = "";
+				}
+				
+				if(this.dg15__.selected){
+					array[14] = Number(this.dg15_.text);
+					array1[14] = this.dg15.text;
+				}else{
+					array[14] = 0;
+					array1[14] = "";
+				}
+				
+				if(this.dg16__.selected){
+					array[15] = Number(this.dg16_.text);
+					array1[15] = this.dg16.text;
+				}else{
+					array[15] = 0;
+					array1[15] = "";
+				}
+				
+				if(this.dg17__.selected){
+					array[16] = Number(this.dg17_.text);
+					array1[16] = this.dg17.text;
+				}else{
+					array[16] = 0;
+					array1[16] = "";
+				}
+				
+				if(this.dg18__.selected){
+					array[17] = Number(this.dg18_.text);
+					array1[17] = this.dg18.text;
+				}else{
+					array[17] = 0;
+					array1[17] = "";
+				}
+				
+				if(this.dg19__.selected){
+					array[18] = Number(this.dg19_.text);
+					array1[18] = this.dg19.text;
+				}else{
+					array[18] = 0;
+					array1[18] = "";
+				}
+				
+				if(this.dg20__.selected){
+					array[19] = Number(this.dg20_.text);
+					array1[19] = this.dg20.text;
+				}else{
+					array[19] = 0;
+					array1[19] = "";
+				}
+				
+				if(this.dg21__.selected){
+					array[20] = Number(this.dg21_.text);
+					array1[20] = this.dg21.text;
+				}else{
+					array[20] = 0;
+					array1[20] = "";
+				}
+				
+				if(this.dg22__.selected){
+					array[21] = Number(this.dg22_.text);
+					array1[21] = this.dg22.text;
+				}else{
+					array[21] = 0;
+					array1[21] = "";
+				}
+				
+				if(this.dg23__.selected){
+					array[22] = Number(this.dg23_.text);
+					array1[22] = this.dg23.text;
+				}else{
+					array[22] = 0;
+					array1[22] = "";
+				}
+				
+				if(this.dg24__.selected){
+					array[23] = Number(this.dg24_.text);
+					array1[23] = this.dg24.text;
+				}else{
+					array[23] = 0;
+					array1[23] = "";
+				}
+				
+				if(this.dg25__.selected){
+					array[24] = Number(this.dg25_.text);
+					array1[24] = this.dg25.text;
+				}else{
+					array[24] = 0;
+					array1[24] = "";
+				}
+				
+				if(this.dg26__.selected){
+					array[25] = Number(this.dg26_.text);
+					array1[25] = this.dg26.text;
+				}else{
+					array[25] = 0;
+					array1[25] = "";
+				}
+				
+				if(this.dg27__.selected){
+					array[26] = Number(this.dg27_.text);
+					array1[26] = this.dg27.text;
+				}else{
+					array[26] = 0;
+					array1[26] = "";
+				}
+				
+				if(this.dg28__.selected){
+					array[27] = Number(this.dg28_.text);
+					array1[27] = this.dg28.text;
+				}else{
+					array[27] = 0;
+					array1[27] = "";
+				}
+				
+				if(this.dg29__.selected){
+					array[28] = Number(this.dg29_.text);
+					array1[28] = this.dg29.text;
+				}else{
+					array[28] = 0;
+					array1[28] = "";
+				}
+				
+				if(this.dg30__.selected){
+					array[29] = Number(this.dg30_.text);
+					array1[29] = this.dg30.text;
+				}else{
+					array[29] = 0;
+					array1[29] = "";
+				}
+				
+				if(this.dg31__.selected){
+					array[30] = Number(this.dg31_.text);
+					array1[30] = this.dg31.text;
+				}else{
+					array[30] = 0;
+					array1[30] = "";
+				}
+				
+				if(this.dg32__.selected){
+					array[31] = Number(this.dg32_.text);
+					array1[31] = this.dg32.text;
+				}else{
+					array[31] = 0;
+					array1[31] = "";
+				}
+				
+				if(this.dg33__.selected){
+					array[32] = Number(this.dg33_.text);
+					array1[32] = this.dg33.text;
+				}else{
+					array[32] = 0;
+					array1[32] = "";
+				}
+				
+				if(this.dg34__.selected){
+					array[33] = Number(this.dg34_.text);
+					array1[33] = this.dg34.text;
+				}else{
+					array[33] = 0;
+					array1[33] = "";
+				}
+				
+				if(this.dg35__.selected){
+					array[34] = Number(this.dg35_.text);
+					array1[34] = this.dg35.text;
+				}else{
+					array[34] = 0;
+					array1[34] = "";
+				}
+				
+				if(this.dg36__.selected){
+					array[35] = Number(this.dg36_.text);
+					array1[35] = this.dg36.text;
+				}else{
+					array[35] = 0;
+					array1[35] = "";
+				}
+				
+				if(this.dg37__.selected){
+					array[36] = Number(this.dg37_.text);
+					array1[36] = this.dg37.text;
+				}else{
+					array[36] = 0;
+					array1[36] = "";
+				}
+				
+				if(this.dg38__.selected){
+					array[37] = Number(this.dg38_.text);
+					array1[37] = this.dg38.text;
+				}else{
+					array[37] = 0;
+					array1[37] = "";
+				}
+				
+				if(this.dg39__.selected){
+					array[38] = Number(this.dg39_.text);
+					array1[38] = this.dg39.text;
+				}else{
+					array[38] = 0;
+					array1[38] = "";
+				}
+				
+				if(this.dg40__.selected){
+					array[39] = Number(this.dg40_.text);
+					array1[39] = this.dg40.text;
+				}else{
+					array[39] = 0;
+					array1[39] = "";
+				}
+				
+				if(this.dg41__.selected){
+					array[40] = Number(this.dg41_.text);
+					array1[40] = this.dg41.text;
+				}else{
+					array[40] = 0;
+					array1[40] = "";
+				}
+				
+				if(this.dg42__.selected){
+					array[41] = Number(this.dg42_.text);
+					array1[41] = this.dg42.text;
+				}else{
+					array[41] = 0;
+					array1[41] = "";
+				}
+				
+				if(this.dg43__.selected){
+					array[42] = Number(this.dg43_.text);
+					array1[42] = this.dg43.text;
+				}else{
+					array[42] = 0;
+					array1[42] = "";
+				}
+				
+				if(this.dg44__.selected){
+					array[43] = Number(this.dg44_.text);
+					array1[43] = this.dg44.text;
+				}else{
+					array[43] = 0;
+					array1[43] = "";
+				}
+				
+				if(this.dg45__.selected){
+					array[44] = Number(this.dg45_.text);
+					array1[44] = this.dg45.text;
+				}else{
+					array[44] = 0;
+					array1[44] = "";
+				}
+				
+				if(this.dg46__.selected){
+					array[45] = Number(this.dg46_.text);
+					array1[45] = this.dg46.text;
+				}else{
+					array[45] = 0;
+					array1[45] = "";
+				}
+				
+				if(this.dg47__.selected){
+					array[46] = Number(this.dg47_.text);
+					array1[46] = this.dg47.text;
+				}else{
+					array[46] = 0;
+					array1[46] = "";
+				}
+				
+				if(this.dg48__.selected){
+					array[47] = Number(this.dg48_.text);
+					array1[47] = this.dg48.text;
+				}else{
+					array[47] = 0;
+					array1[47] = "";
+				}
+				
+				if(this.dg49__.selected){
+					array[48] = Number(this.dg49_.text);
+					array1[48] = this.dg49.text;
+				}else{
+					array[48] = 0;
+					array1[48] = "";
+				}
+				
+				if(this.dg50__.selected){
+					array[49] = Number(this.dg50_.text);
+					array1[49] = this.dg50.text;
+				}else{
+					array[49] = 0;
+					array1[49] = "";
+				}
+				
+				if(this.dg51__.selected){
+					array[50] = Number(this.dg51_.text);
+					array1[50] = this.dg51.text;
+				}else{
+					array[50] = 0;
+					array1[50] = "";
+				}
+				
+				if(this.dg52__.selected){
+					array[51] = Number(this.dg52_.text);
+					array1[51] = this.dg52.text;
+				}else{
+					array[51] = 0;
+					array1[51] = "";
+				}
+				
+				if(this.dg53__.selected){
+					array[52] = Number(this.dg53_.text);
+					array1[52] = this.dg53.text;
+				}else{
+					array[52] = 0;
+					array1[52] = "";
+				}
+				
+				if(this.dg54__.selected){
+					array[53] = Number(this.dg54_.text);
+					array1[53] = this.dg54.text;
+				}else{
+					array[53] = 0;
+					array1[53] = "";
+				}
+				
+				if(this.dg55__.selected){
+					array[54] = Number(this.dg55_.text);
+					array1[54] = this.dg55.text;
+				}else{
+					array[54] = 0;
+					array1[54] = "";
+				}
+				
+				if(this.dg56__.selected){
+					array[55] = Number(this.dg56_.text);
+					array1[55] = this.dg56.text;
+				}else{
+					array[55] = 0;
+					array1[55] = "";
+				}
+				
+				if(this.dg57__.selected){
+					array[56] = Number(this.dg57_.text);
+					array1[56] = this.dg57.text;
+				}else{
+					array[56] = 0;
+					array1[56] = "";
+				}
+				
+				if(this.dg58__.selected){
+					array[57] = Number(this.dg58_.text);
+					array1[57] = this.dg58.text;
+				}else{
+					array[57] = 0;
+					array1[57] = "";
+				}
+				
+				if(this.dg59__.selected){
+					array[58] = Number(this.dg59_.text);
+					array1[58] = this.dg59.text;
+				}else{
+					array[58] = 0;
+					array1[58] = "";
+				}
+				
+				if(this.dg60__.selected){
+					array[59] = Number(this.dg60_.text);
+					array1[59] = this.dg60.text;
+				}else{
+					array[59] = 0;
+					array1[59] = "";
+				}
+				
+				if(this.dg61__.selected){
+					array[60] = Number(this.dg61_.text);
+					array1[60] = this.dg61.text;
+				}else{
+					array[60] = 0;
+					array1[60] = "";
+				}
+				
+				if(this.dg62__.selected){
+					array[61] = Number(this.dg62_.text);
+					array1[61] = this.dg62.text;
+				}else{
+					array[61] = 0;
+					array1[61] = "";
+				}
+				
+				if(this.dg63__.selected){
+					array[62] = Number(this.dg63_.text);
+					array1[62] = this.dg63.text;
+				}else{
+					array[62] = 0;
+					array1[62] = "";
+				}
+				
+				if(this.dg64__.selected){
+					array[63] = Number(this.dg64_.text);
+					array1[63] = this.dg64.text;
+				}else{
+					array[63] = 0;
+					array1[63] = "";
+				}
+				
+				if(this.dg65__.selected){
+					array[64] = Number(this.dg65_.text);
+					array1[64] = this.dg65.text;
+				}else{
+					array[64] = 0;
+					array1[64] = "";
+				}
+				this.totalScore.text = array[0]+array[1]+array[2]+array[3]+array[4]+array[5]+array[6]+array[7]+array[8]
+					+array[9]+array[10]+array[11]+array[12]+array[13]+array[14]+array[15]+array[16]+array[17]+array[18]
+					+array[19]+array[20]+array[21]+array[22]+array[23]+array[24]+array[25]+array[26]+array[27]+array[28]
+					+array[29]+array[30]+array[31]+array[32]+array[33]+array[34]+array[35]+array[36]+array[37]+array[38]
+					+array[39]+array[40]+array[41]+array[42]+array[43]+array[44]+array[45]+array[46]+array[47]+array[48]
+					+array[49]+array[50]+array[51]+array[52]+array[53]+array[54]+array[55]+array[56]+array[57]+array[58]
+					+array[59]+array[60]+array[61]+array[62]+array[63]+array[64];
+				
+				this.reseason.text = array1[0]+array1[1]+array1[2]+array1[3]+array1[4]+array1[5]+array1[6]+array1[7]+array1[8]
+					+array1[9]+array1[10]+array1[11]+array1[12]+array1[13]+array1[14]+array1[15]+array1[16]+array1[17]+array1[18]
+					+array1[19]+array1[20]+array1[21]+array1[22]+array1[23]+array1[24]+array1[25]+array1[26]+array1[27]+array1[28]
+					+array1[29]+array1[30]+array1[31]+array1[32]+array1[33]+array1[34]+array1[35]+array1[36]+array1[37]+array1[38]
+					+array1[39]+array1[40]+array1[41]+array1[42]+array1[43]+array1[44]+array1[45]+array1[46]+array1[47]+array1[48]
+					+array1[49]+array1[50]+array1[51]+array1[52]+array1[53]+array1[54]+array1[55]+array1[56]+array1[57]+array1[58]
+					+array1[59]+array1[60]+array1[61]+array1[62]+array1[63]+array1[64];				
+				
+			}
+			
+			public function sendData():void{
+				var a:index = this.owner as index;
+				a.score = Number(this.totalScore.text);
+				a.reseason = this.reseason.text;
+				a.getData();
+				this.removeWindow();				
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" styleName="pb13">
+		<s:VGroup width="100%" height="100%" gap="0" contentBackgroundColor="#FFFFFF">
+			<s:HGroup paddingBottom="5" paddingLeft="15" paddingTop="10"  paddingRight="5" width="1025" height="100%" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF">
+				<mx:Grid width="1024" height="600" id="data" verticalGap="0" horizontalGap="0" borderStyle="solid">
+					<mx:GridRow width="1000" height="30"  >
+						<mx:GridItem width="968" height="100%" verticalAlign="middle" colSpan="9" horizontalAlign="center" >
+							<s:Label text="高 危 妊 娠 产 前 评 分 标 准" styleName="fz18 fwb"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem width="209" height="100%" styleName="gridItem2" colSpan="2">
+							<s:Label text="异常情况" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="评分" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>
+							</s:BorderContainer>-->
+							<s:Label text="选择" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2" colSpan="2">
+							<s:Label text="异常情况" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="评分" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem >
+							<s:Label text="一" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="年龄﹤18岁或≥35岁；" styleName="Label2" id="dg1"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg1_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg1__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>						
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg1__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="骶耻外径＜18厘米；" styleName="Label2" id="dg34"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg34_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg34__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>						
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" bottom="white" borderColor="white">
+							<s:Label text="般" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="身高≤1.45米；" styleName="Label2" id="dg2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg2_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox width="17" click="enClick()" id="dg2__"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>						
+							</s:BorderContainer>-->
+							<mx:CheckBox width="17" click="enClick()" id="dg2__"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white" textAlign="left"> 
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="坐骨结节间径≤7；" styleName="Label2" id="dg35"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg35_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg35__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择" />							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" bottom="white" borderColor="white">
+							<s:Label text="情" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="体重＜40公斤或＞80公斤；" styleName="Label2" id="dg3"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg3_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg3__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>						
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg3__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="畸形骨盆；" styleName="Label2" id="dg36"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg36_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg36__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="况" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="胸廓脊柱畸形；" styleName="Label2" id="dg4"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg4_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox width="17" click="enClick()" id="dg4__"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox width="17" click="enClick()" id="dg4__"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="臀位、横位（30周后）；" styleName="Label2" id="dg37"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg37_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg37__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="子宫发育异常；" styleName="Label2" id="dg5"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg5_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg5__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>			
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg5__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="先兆流产＜34周；" styleName="Label2" id="dg38"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg38_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg38__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="自然流产≥2次；" styleName="Label2" id="dg6"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg6_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2" >
+							<!--<s:BorderContainer width="117" height="100%" styleName="gridItem2" >
+							<mx:CheckBox id="dg6__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>			
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg6__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>		
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="先兆流产34-36周；" styleName="Label2" id="dg39"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg39_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg39__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="人工流产≥2次；" styleName="Label2" id="dg7"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg7_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="116" height="100%">
+							<mx:CheckBox id="dg7__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg7__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="盆腔肿瘤；" styleName="Label2" id="dg40"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg40_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg40__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="早产史≥2次；" styleName="Label2" id="dg8"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg8_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="116" height="100%">
+							<mx:CheckBox id="dg8__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg8__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="羊水过多或过少；" styleName="Label2" id="dg41"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg41_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg41__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="异" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="早期新生儿死亡史1次；" styleName="Label2" id="dg9"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg9_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="116" height="100%">
+							<mx:CheckBox id="dg9__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg9__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="妊娠期高血压  轻微子痫前期；" styleName="Label2" id="dg42"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg42_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg42__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="常" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="死胎、死产史≥2次；" styleName="Label2" id="dg10"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg10_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg10__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg10__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="本" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="重度子痫前期；" styleName="Label2" id="dg43"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg43_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg43__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="产" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="先天异常儿史1次；" styleName="Label2" id="dg11"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg11_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg11__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg11__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="次" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="子痫；" styleName="Label2" id="dg44"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="20" styleName="Label2" id="dg44_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg44__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="史" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="先天异常儿史≥2次；" styleName="Label2" id="dg12"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg12_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg12__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg12__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="妊" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="妊娠晚期阴道流血；" styleName="Label2" id="dg45"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg45_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg45__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="难产史；" styleName="Label2" id="dg13"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg13_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2" >
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg13__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg13__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="娠" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="胎心持续≥160次/分；" styleName="Label2" id="dg46"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg46_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg46__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="巨大儿分娩史；" styleName="Label2" id="dg14"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg14_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg14__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg14__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="异" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="胎心＜120次/分但＞100次/分；" styleName="Label2" id="dg47"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg47_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg47__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="产后出血史；" styleName="Label2" id="dg15"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg15_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2" >
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg15__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg15__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="常" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="胎心＜100次/分；" styleName="Label2" id="dg48"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg48_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg48__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="剖宫产史；" styleName="Label2" id="dg16"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg16_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg16__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg16__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="情" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="胎动＜20次/12小时；" styleName="Label2" id="dg49"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg49_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg49__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="贫血（血红蛋白＜110g/L）；" styleName="Label2" id="dg17"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg17_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2" >
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg17__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择" />	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg17__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择" />
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="况" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="胎动＜10次/12小时；" styleName="Label2" id="dg50"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg50_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg50__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="贫血（血红蛋白＜60g/L）；" styleName="Label2" id="dg18"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg18_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2" >
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg18__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg18__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="多胎；" styleName="Label2" id="dg51"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg51_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg51__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="严" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="活动性肺结核；" styleName="Label2" id="dg19"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg19_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2" >
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg19__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择" />	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg19__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择" />
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="试管婴儿；" styleName="Label2" id="dg52"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg52_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg52__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="重" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="心脏病心功能Ⅰ-Ⅱ级；" styleName="Label2" id="dg20"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg20_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg20__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择" />	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg20__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择" />
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="胎膜早破；" styleName="Label2" id="dg53"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg53_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg53__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="内" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="心脏病心功能Ⅲ-Ⅳ级；" styleName="Label2" id="dg21"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="20" styleName="Label2" id="dg21_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg21__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg21__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="估计巨大儿或IUGR；" styleName="Label2" id="dg54"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg54_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg54__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="科" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="糖尿病；" styleName="Label2" id="dg22"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg22_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg22__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg22__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="妊娠41至41+6周；" styleName="Label2" id="dg55"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg55_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg55__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="合" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="乙肝病毒携带者；" styleName="Label2" id="dg23"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg23_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg23__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg23__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="妊娠≥42周；" styleName="Label2" id="dg56"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg56_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg56__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="并" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="活动性病毒性肝炎；" styleName="Label2" id="dg24"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg24_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg24__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择" />	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg24__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择" />
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="母儿ABO血型不合；" styleName="Label2" id="dg57"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg57_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg57__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="症" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="肺心病；" styleName="Label2" id="dg25"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg25_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg25__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg25__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="母儿Rh血型不合；" styleName="Label2" id="dg58"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="20" styleName="Label2" id="dg58_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg58__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="甲状腺功能亢进或低下；" styleName="Label2" id="dg26"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg26_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg26__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择" />	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg26__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择" />
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="致" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="孕妇及一级亲属有遗传病史；" styleName="Label2" id="dg59"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg59_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg59__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="高血压；" styleName="Label2" id="dg27"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg27_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg27__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg27__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="畸" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="妊娠早期接触可疑致畸药物；" styleName="Label2" id="dg60"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg60_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg60__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="慢性肾炎；" styleName="Label2" id="dg28"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="15" styleName="Label2" id="dg28_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg28__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg28__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="因" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="237" height="100%" styleName="gridItem2">
+							<s:Label text="早期接触物理化学因素病毒感染；" styleName="Label2" id="dg61"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg61_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg61__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="妊" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="淋病" styleName="Label2" id="dg29"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg29_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg29__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg29__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="素" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="家庭贫困；" styleName="Label2" id="dg62"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg62_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg62__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择" />							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="娠" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="梅毒；" styleName="Label2" id="dg30"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg30_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg30__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg30__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="社" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="孕妇或丈夫为文盲或半文盲；" styleName="Label2" id="dg63"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg63_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg63__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="合" styleName="Label2"/>						
+							
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="艾滋病；" styleName="Label2" id="dg31"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg31_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg31__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg31__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="会" styleName="Label2"/>
+							
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="丈夫长期不在家；" styleName="Label2" id="dg64"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg64_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg64__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="并" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="尖锐湿疹；" styleName="Label2" id="dg32"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg32_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg32__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg32__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="因" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+							<s:Label text="居住地到卫生院需要一小时以上；" styleName="Label2" id="dg65"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="5" styleName="Label2" id="dg65_"/>						
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">
+							<mx:CheckBox id="dg65__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>							
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30" >
+						<mx:GridItem  width="32" borderColor="white">
+							<s:Label text="病" styleName="Label2"/>						
+						</mx:GridItem>
+						<mx:GridItem width="209" height="100%" styleName="gridItem2">
+							<s:Label text="沙眼衣原体感染；" styleName="Label2" id="dg33"/>						
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+							<s:Label text="10" styleName="Label2" id="dg33_"/>
+						</mx:GridItem>
+						<mx:GridItem  width="117" height="100%" styleName="gridItem2">
+							<!--<s:BorderContainer width="117" height="100%">
+							<mx:CheckBox id="dg33__" width="17" click="enClick()"/>
+							<s:Label x="25" y="2" fontSize="15" text="选择"/>	
+							</s:BorderContainer>-->
+							<mx:CheckBox id="dg33__" width="17" click="enClick()"/>
+							<s:Label fontSize="15" text="选择"/>	
+						</mx:GridItem>
+						<mx:GridItem width="38" height="100%" styleName="gridItem2" borderColor="white">
+							<s:Label text="素" styleName="Label2"/>
+						</mx:GridItem>
+						<mx:GridItem width="234" height="100%" styleName="gridItem2">
+						</mx:GridItem>
+						<mx:GridItem width="98" height="100%" styleName="gridItem2">
+						</mx:GridItem>
+						<mx:GridItem width="138" height="100%" styleName="gridItem2">						
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30"  borderColor="white">
+						<mx:GridItem   colSpan="8" >
+							<s:Label text="注:1、同时占上表两项以上者，其分数累加。分级，轻：5分；中：10分；重≥20分。" styleName="Label2"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30"  borderColor="white">
+						<mx:GridItem   colSpan="8" >
+							<s:Label text="2、表中妊娠早期接触可疑致畸药物（代号60），要在高危妊娠产前评分时作为异常因素考虑。" styleName="Label2"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow width="100%" height="30"  borderColor="white">
+						<mx:GridItem   colSpan="8" >
+							<s:Label text="合计积分"  styleName="Label2"/>
+							<s:TextInput id="totalScore" styleName="Label2" text="0"/>
+							<s:Label text="合计积分"  styleName="Label2" visible="false"/>
+							<s:TextInput id="reseason" styleName="Label2" text="无" visible="false"/>
+						</mx:GridItem>
+					</mx:GridRow>
+				</mx:Grid>
+			</s:HGroup>
+			<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="1025" height="30">
+				<s:Button label="确定" click="sendData()"/>
+				<s:Button label="关闭" click="removeWindow();"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>

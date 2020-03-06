@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:aop="http://www.springframework.org/schema/aop"
+     xmlns:tx="http://www.springframework.org/schema/tx"
+     xsi:schemaLocation="
+     http://www.springframework.org/schema/beans 
+     http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+     http://www.springframework.org/schema/tx 
+     http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+     http://www.springframework.org/schema/context
+     http://www.springframework.org/schema/context/spring-context-3.0.xsd
+     http://www.springframework.org/schema/aop
+     http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
+   
+   <context:annotation-config/><!--声明可以通过注解的方式，实现bean的初始化。-->
+   <context:component-scan base-package="com.xyw.*"/><!-- 配置容器资源扫描的包 -->
+   <tx:annotation-driven transaction-manager="transactionManager"/>
+
+<!--   <bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">-->
+<!--   	 <property name="jndiName" value="ny_csyxzm"/> -->
+<!--   	 <property name="resourceRef" value="true"/>-->
+<!--   	 <property name="jndiEnvironment">-->
+<!--   	 	<props>-->
+<!--   	 		<prop key="java.naming.provider.url">t3://127.0.0.1:7002</prop>-->
+<!--   	 		<prop key="java.naming.factory.initial">weblogic.jndi.WLInitialContextFactory</prop>-->
+<!--   	 	</props>-->
+<!--   	 </property>-->
+<!--   </bean>-->
+<!--   -->
+
+	 <bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:/druid.properties</value>
+			</list>
+		</property>
+	</bean>
+<!--	 <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"-->
+<!--        destroy-method="close" >-->
+<!--       <property name="driverClassName"><value>${jdbc.driverClassName}</value></property>-->
+<!-- 	   <property name="url"><value>${jdbc.url}</value></property>-->
+<!--       <property name="username"><value>${jdbc.username}</value></property>-->
+<!--       <property name="password"><value>${jdbc.password}</value></property>-->
+<!--    </bean>-->
+    
+    
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close"> 
+        <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+        <property name="url" value="jdbc:oracle:thin:@192.168.1.111:1521:orcl" />
+        <property name="username" value="fybjxt" />
+        <property name="password" value="fybjxt" />
+        
+        <property name="maxActive" value="1000" />
+        <property name="initialSize" value="1" />
+        <property name="maxWait" value="60000" />
+        <property name="minIdle" value="1" />
+
+        <property name="validationQuery" value="select 1 from dual" /> <!-- 验证连接是否成功, SQL SELECT 指令至少要返回一行  (测试/验证连接池连接的SQL语句也因数据库而异)-->
+        <property name="testOnBorrow" value="false" /> <!-- 申请连接时执行validationQuery检测连接是否有效，做了这个配置会降低性能。 --> 
+        <property name="testOnReturn" value="false" /> <!-- 归还连接时执行validationQuery检测连接是否有效，做了这个配置会降低性能 -->
+        <property name="minEvictableIdleTimeMillis" value="300000" /> <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+         <!-- 建议配置为true，不影响性能，并且保证安全性。申请连接的时候检测，如果空闲时间大于timeBetweenEvictionRunsMillis，执行validationQuery检测连接是否有效。 -->
+        <property name="testWhileIdle" value="true" />
+        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+        <property name="timeBetweenEvictionRunsMillis" value="30000" />
+        <property name="maxOpenPreparedStatements" value="20" /><!-- 要启用PSCache，必须配置大于0，当大于0时，poolPreparedStatements自动触发修改为true。 -->
+        <!-- 是否缓存preparedStatement，也就是PSCache。PSCache对支持游标的数据库性能提升巨大，比如说oracle。在mysql5.5以下的版本中没有PSCache功能，建议关闭掉。5.5及以上版本有PSCache，建议开启。 -->
+        <property name="poolPreparedStatements" value="true" />
+        <!-- 指定每个PSCache连接上PSCache的大小 -->
+        <property name="maxPoolPreparedStatementPerConnectionSize" value="20" />
+        
+        <!-- 配置监控统计拦截的filters 去掉后监控界面sql无法统计
+            开启web监控、开启sql防火墙 -->
+        <property name="filters" value="stat"></property>
+    </bean>
+
+   <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+     <property name="dataSource" ref="dataSource"/>
+   </bean>
+   
+   <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+   	 <property name="dataSource" ref="dataSource"/> 	  
+   	 <property name="configLocations">
+   	 	<list>
+   	 	  <value>classpath:hibernate.cfg.xml</value>
+   	 	</list>
+   	 </property>
+   </bean>
+   <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+   	  <property name="sessionFactory" ref="sessionFactory"/>
+   </bean>
+   <bean id="sessionAdvice" class="com.xyw.sys.flex.session.interceptor.FlexSessionInterceptor"/>
+   <bean id="beanNameAutoProxyCreator" class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">
+   	 <property name="beanNames">
+   	 	<list>
+   	 		<value>*Dao</value>
+   	 	</list>
+   	 </property>
+   	 <property name="interceptorNames">
+   	 	<value>sessionAdvice</value>
+   	 </property>
+   </bean>
+   
+   <import resource="applicationContext-dao.xml"/>
+   <import resource="applicationContext-service.xml"/>
+   
+</beans>

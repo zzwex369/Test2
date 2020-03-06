@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*"
+		   creationComplete = "creationCompleteHandle(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="rwsService" destination="rwsService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryRws" result="queryRwsHandler(event)"/>
+			<s:method name="deleteRws" result="deleteRwsHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]"; 
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		} 
+		s|Label
+		{
+			fontSize:13;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.rws.model.Rws;
+			import com.xyw.module.rws.model.RwsRequest;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.controls.Alert;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			[Bindable]
+			private var rws:Object;
+			private var rwsRequest:RwsRequest;
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			private var systemUser:SystemUser =null;
+			public var rws_06:String = "1";
+			public var rws_03:String = "2";
+			public var navLabel:String = "0-3";
+			private var comboBoxDataList:Object;
+			private function creationCompleteHandle(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				comboBoxDataList= this.parentApplication.comboBoxDataList.wholeInstitutionCode;
+				var date:Date = new Date();
+				var fullYear:Number = date.fullYear;
+				rwsStr.value = fullYear;
+				rwsEnd.value = fullYear;
+				navigator.label=navLabel+"岁儿童视力检查任务数";
+			}
+			private function initQueryParam(pageIndex:int,pageSize:int):void
+			{
+				rwsRequest = new RwsRequest();
+				rwsRequest.rws08=institutionComboBox.getInstitutionCode();
+				rwsRequest.parameterPageindex = pageIndex;
+				rwsRequest.parameterPagesize = pageSize;
+				rwsRequest.rws06 = rws_06;
+				rwsRequest.rws03 = rws_03;
+				rwsRequest.rws02Str = rwsStr.value;
+				rwsRequest.rws02End = rwsEnd.value;
+				
+			}
+			
+			private function queryRws():void
+			{
+				query(1,20);
+			}
+			
+			private function query(pageIndex:int,pageSize:int):void
+			{
+				if(isNaN(rwsStr.value)||isNaN(rwsEnd.value)){
+					Alert.show("请输入一个合理的年份", "系统提示");
+					return;
+				}
+				if(rwsStr.value>rwsEnd.value){
+					Alert.show("起始年份不能大于结束年份！", "系统提示");
+					return;
+				}
+				this.rws = null;
+				initQueryParam(pageIndex,pageSize);
+				this.rwsService.queryRws(rwsRequest);
+			}
+			
+			private function queryRwsHandler(event:ResultEvent):void
+			{  
+				
+				CompMethod.queryHandler(event.result,['rwss','rowCount','errorMessage'],
+					dataGridInfo,pagerBar,pagerFunction);
+				
+			}
+			private function deleteRwsHandler(event:ResultEvent):void
+			{
+				
+				CompMethod.CUDHandler(event.result,['errorMessage','删除'],refrashPage);
+			}
+			private function pagerFunction(currentPageIndex:int,pageSize:int):void
+			{
+				query(currentPageIndex,pageSize);
+			}
+			
+			
+			public function refrashPage():void
+			{	
+				query(this.pagerBar.currentPageIndex,20);
+			}
+			public function refrashPage_(event:Event):void
+			{	
+				refrashPage();
+			}
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.rws = DataGrid(event.target).selectedItem;
+			}
+			private function add():void
+			{
+				var window:tittle=new tittle();
+				window.rws03 = this.rws_03;
+				window.rws06 = this.rws_06;
+				CompMethod.popUpTitleWindow(window,this,true);
+				window.addEventListener("ok_click",refrashPage_);
+			}
+			private function update():void
+			{
+				if(!this.rws){
+					Alert.show("请选择要操作的行！", "系统提示");
+					return;
+				}
+				var date:Date = new Date();
+				var fullYear:Number = date.fullYear;
+				if(rws.rws02<fullYear)
+				{
+					Alert.show("不能修改一个过去年份的任务数","系统提示");
+					return;
+				}
+				var window:tittle=new tittle();
+				window.rws03 = this.rws_03;
+				window.rws06 = this.rws_06;
+				window.modify=true;
+				window.vrws=rws;
+				CompMethod.popUpTitleWindow(window,this,true);
+				window.addEventListener("ok_click",refrashPage_);
+			}
+			
+			private function remove():void
+			{
+				if(!this.rws){
+					Alert.show("请选择要操作的行！", "系统提示");
+					return;
+				}
+				var date:Date = new Date();
+				var fullYear:Number = date.fullYear;
+				if(rws.rws02<fullYear)
+				{
+					Alert.show("不能删除一个过去年份的任务数","系统提示");
+					return;
+				}
+				rwsRequest=new RwsRequest();
+				rwsRequest.rws01=rws.rws01;
+				this.rwsService.deleteRws(rwsRequest);
+				
+			}
+			private function modifyOrDel(isDel:Boolean=false,param:*=null):void
+			{
+				CompMethod.modifyOrDel(this.rws,['rws11','rws12'],
+					isDel?remove:update,param,isDel);
+			}
+			
+			private function setRws03(item:Object, column:GridColumn):String
+			{
+				var rws03:String=item[column.dataField];
+				rws03=(rws03==null)?"":(rws03=='1'?"县区":"单位");
+				return rws03;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%"  paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:TabNavigator width="100%" paddingTop="0" creationPolicy="all" chromeColor="#ffffff">
+			<s:NavigatorContent id="navigator">
+				<s:VGroup width="100%">
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5" verticalAlign="middle">
+						<s:Label text="录入单位" />
+						<component:InstitutionComboBox id="institutionComboBox" width="856" 
+													     villageVisible="{this.parentApplication.paramPermission.villagePermission=='1'}"/>
+					</s:HGroup>
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5" verticalAlign="middle" >
+						<s:Label text="查询年份"/>
+						<s:NumericStepper id="rwsStr" width="114" maximum="2100" minimum="2019" stepSize="1"/>
+						
+						<s:Label text="至"/>
+						<s:NumericStepper id="rwsEnd" width="129" maximum="2100" minimum="2019" stepSize="1"/>
+					</s:HGroup>  
+					
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5">
+						<s:Button label="查询" id="queryButton" click="queryRws()" icon="{CustomIcon.QUERY}"/>
+						<s:Button label="添加" id="addButton" click="add()" icon="{CustomIcon.ADD}"/>
+						<s:Button label="修改" id="modifyButton"  enabled="{this.rws!=null}" click="modifyOrDel()" icon="{CustomIcon.MODYFY}"/>
+						<s:Button label="删除" id="removeButton" enabled="{this.rws!=null}" click="modifyOrDel(true)" icon="{CustomIcon.DEL}" />
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:VGroup width="100%" height="382">
+			<s:DataGrid id="dataGridInfo" width="100%" height="350" 
+						borderAlpha="0.3" alternatingRowColors="[#FFFFFF,#EEEEEE]" rowHeight="23" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin" selectionChange="onSelectionChange(event)">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="45" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="rws02" headerText="年份"/>
+						<s:GridColumn dataField="rws03" headerText="机构类型" labelFunction="setRws03"/>
+						<s:GridColumn dataField="rws04" headerText="机构名称" />
+						<s:GridColumn dataField="rws07" headerText="年度任务数"/>
+						<s:GridColumn dataField="rws08" headerText="录入单位" labelFunction="CompMethod.setInstitutionLabel"/>
+						<s:GridColumn dataField="rws09" headerText="录入人员"/>
+						<s:GridColumn dataField="rws10" headerText="录入时间" labelFunction="CompMethod.setStrDate"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+		</s:VGroup>
+	</s:VGroup>		
+</s:VGroup>

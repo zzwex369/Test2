@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			
+			private var count:int=8;
+			import com.xyw.module.etbj.etsl.model.E702;
+			import com.xyw.module.etbj.etsl.model.E702Request;
+			import com.xyw.module.etbj.etsl.model.E702Response;
+			import com.xyw.module.msss.fnbj.cz.cqzdsh.cqzdshTitle;
+			import com.xyw.module.msss.fnbj.model.F605;
+			import com.xyw.module.msss.fnbj.model.F605Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import com.xyw.sys.custom.component.SecurityControler;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			import spark.events.GridSelectionEvent;
+			private var systemUser:SystemUser ;
+			private var e702Request:E702Request;
+			private var e702Reponse:E702Response;
+			private var e702:E702;
+			[Bindable]
+			private var ve702:Object;
+			private var scVg:Number;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				//security();
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				
+				//this.systemUser = this.parentApplication.systemUser;
+				initializeComboBox();
+				scVg=scVgroup.height;
+				
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				/* this.ve702 = DataGrid(event.target).selectedItem; */
+			}
+			
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=false):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.sql = sql;
+				comboBoxDataRequest.flag = flag;
+				comboBoxDataRequest.showPrompt = showPrompt;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			/**
+			 *
+			 */
+			private function initializeComboBox():void
+			{
+				_initializeComboBox("select e705_04,t.e705_03 from E705 t where e705_11='"+
+					systemUser.institutionCode+"'","E705",true);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				--count;
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(flag == "E705")
+				{
+					this.E702_04.dataProvider = comboBoxDataList;
+					this.E702_04.selectedIndex = 0;
+				}
+			}
+			
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				try
+				{
+					e702Request = new E702Request();
+					var type:String = this.code.getLastSelectedInstitution();
+					var code:String = this.code.getLastSelectedInstitutionCode();
+					var field:Object=new Object();
+					e702Request.institution = type == "10"?code:code.substring(0,Number(type));
+					field.codeField="e702_71";
+					if(CompMethod.getTimeSpace(timeStart,timeEnd))
+						return;
+					
+					field.dateField="e702_73";
+					e702Request.timeStr = DateField.stringToDate(this.timeStart.text,"YYYY-MM-DD");
+					e702Request.timeEnd = DateField.stringToDate(this.timeEnd.text,"YYYY-MM-DD");
+					//e702.e70204=E702_04.selectedItem.data;
+					
+					e702Request.fieldMap=field;
+					e702Request.e702=e702;
+				}catch(error:Error){
+					Alert.show("出错了"+error.getStackTrace());
+					Alert.show("出错了"+error.message);
+				}
+			}
+			
+			private function query():void
+			{
+				
+				var institution:String = this.code.getInstitutionCode();
+//				var code:String = this.code.getLastSelectedInstitutionCode();
+//				var institution = type == "10"?code:code.substring(0,Number(type));
+				//Alert.show(institution+"--", "系统提示");
+				/* var institution:String = this.code.getLastSelectedInstitutionCode();
+				var institutionType:String = this.code.getLastSelectedInstitution();	
+				var date_status:String=null;
+				var hospital:String=this.systemUser.institution;
+				var address_status:String=null;
+				var address:String=null;
+				institution=institutionType == "10"?institution:
+				institution.substring(0,Number(institutionType)); */
+				
+				var e70208:String=CompMethod.getRadioButtonValue(E702_08);
+				
+				
+				var timeStr:String=this.timeStart.text;
+				var timeEnd:String=this.timeEnd.text;
+				if(Number(timeEnd)<Number(timeStr))
+				{
+					Alert.show("开始时间不能大于结束时间!","系统提示!");
+					return;
+				}
+				var e70273:String = CompMethod.getRadioButtonValue(E702_73);
+				var e70204:String = this.E702_04.selectedItem.data;
+				var e70260:String = CompMethod.getRadioButtonValue(E702_60);
+				var e70261:String = CompMethod.getRadioButtonValue(E702_61);
+				var e70209:String = CompMethod.getRadioButtonValue(E702_09);
+			
+				
+				var urlRequest:URLRequest = new URLRequest();
+				var variables:URLVariables = new URLVariables();
+				
+				variables.institution=encodeURIComponent(institution);
+				variables.e70208=encodeURIComponent(e70208);
+				variables.timeStr=encodeURIComponent(timeStr);
+				variables.timeEnd=encodeURIComponent(timeEnd);
+				variables.e70273=encodeURIComponent(e70273);
+				variables.e70204=encodeURIComponent(e70204);
+				variables.e70260=encodeURIComponent(e70260);
+				variables.e70261=encodeURIComponent(e70261);
+				variables.e70209=encodeURIComponent(e70209);
+				
+				urlRequest.data=variables;
+				urlRequest.method=URLRequestMethod.POST;
+				urlRequest.url=this.parentApplication.contextRoot + 
+					"/report_new/jsp/etbj/et/etsljcdjb.jsp";
+				navigateToURL(urlRequest);
+				//	var url:String = this.parentApplication.contextRoot + "/report_new/jsp/etbj/et/etybjsljcdjb.jsp?&institution="+
+				//		institution+"&e70208="+e70208+"&timeStr="+timeStr+"&timeEnd="+timeEnd;
+				
+			}
+			
+		
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent id="scVgroup" label="综合查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle" id="codeField">
+						<s:Label text="录入单位"/>
+						<component:InstitutionComboBox id="code" width="100%" villageVisible="true" />
+					</s:HGroup>
+					
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" id="E702_08"
+							  paddingRight="10" verticalAlign="middle" gap="25">
+						<s:Label text="月龄"/>
+						<s:RadioButton groupName="E702_08" label="全部" value="000" buttonMode="true" selected="true"/>
+						<s:RadioButton groupName="E702_08" label="新生儿" value="0" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="1月龄" value="1" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="3月龄" value="3" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="6月龄" value="6" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="8月龄" value="8" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="1岁" value="12" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="1.5岁" value="14" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="2岁" value="16" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="2.5岁" value="18" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="3岁" value="20" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="4岁" value="24" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="5岁" value="28" buttonMode="true"/>
+						<s:RadioButton groupName="E702_08" label="6岁" value="32" buttonMode="true"/>
+					</s:HGroup>
+					
+					<s:HGroup width="100%" paddingBottom="5"   verticalAlign="middle"  >
+						<s:HGroup paddingBottom="5" paddingLeft="10" verticalAlign="middle">
+							<s:Label text="托幼机构"/>
+							<s:DropDownList id="E702_04" width="130"  />
+						</s:HGroup>
+						<s:HGroup paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle"  id="E702_73">
+							<s:Label text="时间选择 "/>
+							<s:RadioButton value="E702_73" label="录入时间" buttonMode="true" groupName="E702_73" selected="true"/>
+							<s:RadioButton value="E702_70" label="检查时间" buttonMode="true" groupName="E702_73" />
+							<s:RadioButton value="E702_67" label="下次检查时间" buttonMode="true" groupName="E702_73"/>
+							<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" />
+							
+							<s:Label text="至"/>
+							<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+						</s:HGroup>
+						<s:HGroup paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle"  id="E702_09">
+							<s:Label text="筛查类型 "/>
+							<s:RadioButton groupName="E702_09" label="全部" value="" buttonMode="true" />
+							<s:RadioButton groupName="E702_09" label="初筛" value="1" buttonMode="true" selected="true"/>
+							<s:RadioButton groupName="E702_09" label="诊断" value="2" buttonMode="true" />
+						</s:HGroup>	
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="5"   verticalAlign="middle" >
+						<s:HGroup paddingBottom="5" paddingLeft="10" verticalAlign="middle" id="E702_60">
+							<s:Label text="检查结果"  />
+							<s:RadioButton groupName="E702_60" label="全部" value="" buttonMode="true" selected="true"/>
+							<s:RadioButton groupName="E702_60" label="正常" value="3" buttonMode="true"/>
+							<s:RadioButton groupName="E702_60" label="异常" value="2" buttonMode="true"/>
+						</s:HGroup>
+						<s:HGroup paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle" id="E702_61">
+							<s:Label width="37" text="处理"/>
+							<s:RadioButton groupName="E702_61" label="全部" value="" buttonMode="true" selected="true"/>
+							<s:RadioButton groupName="E702_61" label="定期检查" value="1" buttonMode="true"/>
+							<s:RadioButton groupName="E702_61" label="随访" value="2" buttonMode="true"/>
+							<s:RadioButton groupName="E702_61" label="转诊" value="3" buttonMode="true"/>
+						</s:HGroup>
+						<s:Button label="查询" click="query()" icon="{CustomIcon.QUERY}"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

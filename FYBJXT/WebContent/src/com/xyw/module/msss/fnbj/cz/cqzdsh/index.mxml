@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete="creationCompleteHandler(event)"
+		  width="100%" height="100%">
+	
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" 
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="false">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+
+		<s:RemoteObject id="f605Service" destination="f605Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF605" result="queryF605Handler(event)"/>
+		</s:RemoteObject>
+		
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.cz.cqzdcx.czTitle;
+			import com.xyw.module.msss.fnbj.model.F605;
+			import com.xyw.module.msss.fnbj.model.F605Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			private var systemUser:SystemUser;
+			[Bindable]
+			public var vf605:Object;
+			private var f605:F605;
+			private var suffixSql:String='';
+			private var pageIdx:int=1;
+			private var f605Request:F605Request;
+			private var isQueryCode:Boolean=false;
+			private function certificateDataGrid_selectionChangeHandler(event:GridSelectionEvent):void
+			{
+				this.vf605 = DataGrid(event.target).selectedItem;				
+			}
+			
+			/**
+			 *
+			 */
+			private function isQueryD201MS(institution:String):void
+			{
+				var institutionArr:Array=['宛城','南召','卧龙'];
+				for(var i in institutionArr)
+				{
+					if(institution.indexOf(institutionArr[i])!=-1)
+					{
+						isQueryCode=true;
+						break;
+					}
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function verificaInstitution(institution:String):void
+			{
+				this.enabled= institution.indexOf("保健院")!=-1?true:false;
+				if(this.enabled)
+					isQueryD201MS(institution);
+				F605_13.province.enabled=F605_13.city.enabled=F605_13.county.enabled=false;
+			}
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser =this.parentApplication.systemUser;
+				var institution:String=systemUser.institution;
+				verificaInstitution(institution);
+				
+			}
+			
+			
+			private function query():void
+			{
+				_query(1);
+			}
+			
+			private function queryF605Handler(event:ResultEvent):void
+			{
+				var f605Response:Object = event.result;
+				var rowCount:Number = f605Response.rowCount;
+				if(f605Response.errorMessage == null)
+				{
+					var listVF605:ArrayCollection = f605Response.vf605s;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVF605;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.vf605=null;
+				} else {
+					Alert.show(f605Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				_query(pagerBar.currentPageIndex);
+			}
+			
+			/**
+			 *
+			 */
+			private function getText():Boolean
+			{
+				f605=new F605();
+				if(F605_03.text||F605_04.text||F605_05.text||F605_07.text||F605_09.text)
+				{
+					
+					f605.f60503=StringUtil.trim(F605_03.text);
+					f605.f60504=StringUtil.trim(F605_04.text);
+					f605.f60505=StringUtil.trim(F605_05.text);
+					f605.f60507=StringUtil.trim(F605_07.text);
+					f605.f60509=StringUtil.trim(F605_09.text);
+					return true;
+				}
+				return false;
+			}
+			
+		
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam(comboBoxDataList:ArrayCollection):Boolean
+			{
+				try
+				{
+					
+					f605Request = new F605Request();
+					var field:Object=new Object();
+					field.code =isQueryCode?"":F605_13.getAreaCode();
+					if(isQueryCode)
+						f605Request.suffixSql=getSuffixSql(comboBoxDataList);
+					field.codeField="f605_13";
+					f605Request.codeLength=12;
+					if(getText())
+						field.dateField=null;
+					else
+					{
+						if(CompMethod.getTimeSpace(timeStart,timeEnd))
+							return false;
+						f605.f60510=CompMethod.getRadioButtonValue(F605_10);
+						f605.f60540='2';
+						
+						field.dateField="F605_42";;
+						f605Request.timeStr = DateField.stringToDate(this.timeStart.text,"YYYY-MM-DD");
+						f605Request.timeEnd = DateField.stringToDate(this.timeEnd.text,"YYYY-MM-DD");
+					}
+					f605Request.fieldMap=field;
+					f605Request.f605=f605;
+				
+				}catch(error:Error){
+					Alert.show("出错了"+error.getStackTrace());
+					Alert.show("出错了"+error.message);
+					return false;
+				}
+				return true;
+			}
+			
+			private function _initializeComboBox(code:String):void
+			{
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.sql = "select d201_01,d201_02 from d201_ms where d201_07="+code;
+				comboBoxDataRequest.flag = "D201_MS";
+				comboBoxDataRequest.showPrompt = false;
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(!comboBoxDataList.length)
+				{
+					Alert.show("查询失败，错误原因ComboBoxDataList","系统提示");
+					return;
+				}
+				doQueryF605(comboBoxDataList);
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function doQueryF605(comboBoxDataList:ArrayCollection=null):void
+			{
+				if(!this.initQueryParam(comboBoxDataList))
+					return ;
+				f605Request.parameterPageindex = this.pageIdx;
+				f605Request.parameterPagesize = 20;
+				this.f605Service.queryF605(f605Request);
+			}
+			
+			/**
+			 *
+			 */
+			private function getSuffixSql(comboBoxDataList:ArrayCollection):String
+			{
+				var code:String;
+				var sql:String="and (f605_13 "
+				for(var i:int=0;i<comboBoxDataList.length;i++)
+				{
+					code=comboBoxDataList.getItemAt(i).data.toString();
+					sql+=code.length==12?"='"+code+"'":"like '"+code+"%'";
+					if(i<comboBoxDataList.length-1)
+						sql+=" or f605_13 ";
+				}
+				sql+=")";
+				return sql;
+			}
+			
+			private function _query(currentPageIndex:int,pageSize:int=20):void
+			{
+				this.pageIdx=currentPageIndex;
+				isQueryCode?_initializeComboBox(F605_13.getAreaCode()):doQueryF605();
+				
+			}
+			
+			//读卡(母亲)
+			private function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F605_05.text = array[0];//姓名
+							this.F605_07.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function audit():void
+			{
+				var window:cqzdshTitle = new cqzdshTitle();
+				window.vf605 = this.vf605;
+				window.F60584Arr=new ArrayCollection([ { label: systemUser.institution, data: systemUser.institutionCode } ]);
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			
+			/**
+			 *
+			 */
+			private function checkF605():void
+			{
+				var window:czTitle = new czTitle();
+				window.title='信息查看';
+				window.vf605 = this.vf605;
+				CompMethod.popUpTitleWindow(window,this,true);
+				window.setButtonVisible();
+			}
+			
+			/**
+			 *
+			 */
+			private function f60540Function(item:Object, column:GridColumn):String
+			{
+				var result:String;
+				var val:String=item[column.dataField];
+				if(val=='2')
+					result='待审核';
+				else if(val=='4')
+					result='退回';
+				else if(val=='5')
+					result='通过';
+				return result;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator id="xuanze"  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="综合查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						
+						<s:Label color="#E31D1D" fontSize="16" fontStyle="normal" fontWeight="normal"
+								 text="此功能用于妇幼保健院审核产诊基本信息！"
+								 />
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						
+						<s:Label text="户口地址"/>
+						<component:AreaComboBoxVillageAuto id="F605_13" width="938" buttonMode="true" table="D201_MS"
+														   areaCode="{this.parentApplication.systemUser.areaCode}"/>
+						<!--<s:DropDownList width="540" id="code"/>-->
+					</s:HGroup>
+					
+					<s:HGroup width="100%" height="100%" >
+						<s:HGroup width="300" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  id="F605_40" gap="10" verticalAlign="baseline" enabled="false">
+							<s:Label text="信息审核"/>
+							<s:RadioButton buttonMode="true" groupName="F605_40" label="全部" value=""/>
+							<s:RadioButton buttonMode="true" groupName="F605_40" label="待审核" value="2"  selected="true"/>
+							<s:RadioButton buttonMode="true" groupName="F605_40" label="通过" value="5" />
+							<s:RadioButton buttonMode="true" groupName="F605_40" label="退回" value="4"/>
+						</s:HGroup>
+						
+						<s:HGroup width="315" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  id="F605_10" gap="10" verticalAlign="baseline">
+							<s:Label text="付费方式"/>
+							<s:RadioButton buttonMode="true" groupName="F605_10" label="全部" value="" selected="true"/>
+							<s:RadioButton buttonMode="true" groupName="F605_10" label="免费" value="1"/>
+							<s:RadioButton buttonMode="true" groupName="F605_10" label="自费" value="2" />
+							<s:RadioButton buttonMode="true" groupName="F605_10" label="报销" value="3" />
+							
+						</s:HGroup>
+					</s:HGroup>	
+					
+					
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle"  id="date">
+						<s:Label text="申请日期"/>
+
+						<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" />
+						
+						<s:Label text="至"/>
+						<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+						
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="产妇姓名"/><s:TextInput id="F605_05"/>
+						<s:Label text="证号号码"/><s:TextInput id="F605_07" width="140"/>
+						<s:Label text="保健号"/><s:TextInput id="F605_03" width="140"/>
+						<s:Label text="条码号"/><s:TextInput id="F605_04" width="140"/>
+						<s:Label text="联系电话"/><s:TextInput id="F605_09" width="140"/>
+						
+						<s:Button label="读卡" id="duka1" width="60" click="readCard_mother(event)" enabled="false"/>
+						
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						
+						
+						<s:Button label="查询" click="query()"/>
+						<s:Button label="查看信息" click="checkF605()" enabled="{vf605!=null}"/>
+						<s:Button label="审核" click="audit()" enabled="{vf605!=null}"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+			
+		</mx:TabNavigator>
+		<s:DataGrid id="certificateDataGrid" editable="false" rowHeight="22" width="100%" height="330" 
+					alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin"
+					selectionChange="certificateDataGrid_selectionChangeHandler(event)">
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+					<s:GridColumn dataField="f60541zh" headerText="申请单位" />
+					<s:GridColumn dataField="f60540" headerText="信息审核" width="80" labelFunction="f60540Function"/>
+					<s:GridColumn dataField="f60505" headerText="姓名" width="100"/>
+					<s:GridColumn dataField="f60507" headerText="身份证号" width="140"/>
+					<s:GridColumn dataField="f60508" headerText="出生日期" width="90" labelFunction="CompMethod.setStrDate"/>
+					<s:GridColumn dataField="f60509" headerText="联系方式" width="90"/>	
+					<s:GridColumn dataField="f60510zh" headerText="付费方式" width="90"/>
+					<s:GridColumn dataField="f60513zh" headerText="户口地址" width="200"/>
+					<s:GridColumn dataField="f60543" headerText="申请医生" width="90"/>
+					<s:GridColumn dataField="f60542" headerText="申请日期" width="90" labelFunction="CompMethod.setStrDate"/>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+		<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+	</s:VGroup>
+</s:Module>

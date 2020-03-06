@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  xmlns:mdi="http://code.google.com/p/flexlib/"
+		  xmlns:control="com.xyw.sys.custom.itemrenderer.*"
+		  width="100%" height="100%" 
+		  creationComplete="moduleCreationCompleteHandler()"
+		  >
+	<fx:Declarations>
+		<s:RemoteObject id="e601Service" destination="e601Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE601" result="queryE601Handler(event)"/>
+			<s:method name="renewE601" result="renewE601Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.etbj.model.E601;
+			import com.xyw.module.msss.etbj.model.E601Request;
+			import com.xyw.module.msss.etbj.model.VE601;
+			import com.xyw.sys.custom.itemrenderer.CheckBoxItemRenderer;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.TitleWindow;
+			import mx.controls.Alert;
+			import mx.controls.CheckBox;
+			import mx.controls.DataGrid;
+			import mx.controls.ProgressBar;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ModuleEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.components.BorderContainer;
+			import spark.events.GridSelectionEvent;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var ve601:VE601 = null;
+			public var e601:E601 = null;
+			public var e601Request:E601Request=new E601Request;
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			public var allstate:Boolean = false;
+			[Bindable] 
+			private var employeeList:ArrayCollection = new ArrayCollection(); 
+			/****************初始化数据********************/
+			private function moduleCreationCompleteHandler():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected); 
+				initializeComboBox();
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve601= DataGrid(event.target).selectedItem as VE601;
+			}
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from  S601_04 t"
+				comboBoxDataRequest.flag = "S601_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S601_04")
+				{
+					this.E601_30_01.dataProvider = comboBoxDataList;
+					this.E601_30_01.selectedIndex = 2;	
+					this.E601_30_02.dataProvider = comboBoxDataList;
+					this.E601_30_02.selectedIndex = 2;	
+				}
+			}
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():Boolean
+			{
+				e601=new E601();
+				e601Request = new E601Request();
+				try{	
+					var type:String = this.E601_22.getLastSelectedInstitution();
+					var e60122:String = this.E601_22.getLastSelectedInstitutionCode();
+					if(this.systemUser.institutionType == "1")
+					{
+						e601.e60122 = this.systemUser.institutionCode;
+					}else{
+						if(type == "8")
+						{
+							e601.e60122 = e60122;
+						}else if(type == "6")
+						{
+							e601.e60122= e60122.substring(0,6);
+						}else if(type == "4")
+						{
+							e601.e60122= e60122.substring(0,4);
+						}else if(type == "2")
+						{
+							e601.e60122 = e60122.substring(0,2);
+						}
+					}		
+					e601Request.timeStr = DateField.stringToDate(this.timeStart.text,'YYYY-MM-DD');
+					e601Request.timeEnd = DateField.stringToDate(this.timeEnd.text,'YYYY-MM-DD');	
+					if( E601_30_01.selectedIndex!=0)
+					{
+						e601.e60130= E601_30_01.selectedIndex+"";
+					}
+					var index:int=tab.selectedIndex;
+					e601Request.flag="false";
+					//0为false
+					if(Boolean(index)){
+						if(E601_04.text==""&&E601_05.text==""&&E601_06.text==""&&
+							E601_13.text==""&&E601_30_02.selectedIndex==0)
+						{
+							Alert.show("请输入查询条件","系统提示");
+							return false;
+						}else{				
+						/* 	e601.e60104 = StringUtil.trim(this.E601_04.text);
+							e601.e60105 = StringUtil.trim(this.E601_05.text);					
+							e601.e60106= StringUtil.trim(this.E601_06.text);	
+							e601.e60113= StringUtil.trim(this.E601_13.text);	 */
+							if( E601_30_01.selectedIndex!=0)
+							{
+								e601.e60130= E601_30_01.selectedIndex+"";
+							}
+							e601Request.flag="true";
+						}
+					}
+					e601Request.e601=e601;
+				}catch(error:Error) {		
+					Alert.show("查询条件异常");
+					return false;
+				}
+				return true;
+			}
+			
+			/****************读卡********************/
+			protected function readCard(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){	
+						var array:Array = str.split(",");
+						if(array[1]!="女")
+						{
+							Alert.show("请读母亲信息！","系统提示");
+							return;
+						}
+						this.E601_04.text = array[0];//姓名
+						this.E601_05.text = array[5];//身份证号
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			/****************查询********************/
+			public function queryE601():void
+			{
+				var b:Boolean=this.initQueryParam();
+				if(!b){
+					return ;
+				}
+				e601Request.parameterPageindex=1;
+				e601Request.parameterPagesize=500;
+				this.e601Service.queryE601(e601Request);
+			}
+			private function queryE601Handler(event:ResultEvent):void{
+				var e601Response:Object = event.result;
+				var _ve601:ArrayCollection =e601Response.ve601s;
+				var rowCount:Number = e601Response.rowCount;
+				certificateDataGrid.dataProvider=_ve601;
+				//Alert.show("请输入","系统提示"+ve);
+				if(_ve601.length>7)
+				{
+					this.certificateDataGrid.height=450;
+				}
+				else
+				{
+					this.certificateDataGrid.height=340;
+				} 
+			}
+			/*****************获取邮寄编号*******************/
+			public function renewE601():void
+			{	
+				if(certificateDataGrid.getAllItems()!=null)
+				{
+					var _title:title=new title();
+					_title.owner = this;
+					PopUpManager.addPopUp(_title,this,true);
+					var x:Number = (this.parentApplication.mdiCanvas.width - _title.width)/2;
+					var y:Number = (this.parentApplication.mdiCanvas.height - _title.height)/2;
+					_title.move(x,y); 
+					
+				}else{
+					Alert.show("请选择操作的行","系统提示");
+					return;
+				}	
+			}
+			/******************得到邮寄编号******************/
+			public function putNum(num:String):void
+			{
+				/* e601Request.ve601s=certificateDataGrid.getAllItems();
+				e601Request.e60131=num;
+				e601Request.flag="false"; */
+				e601Service.renewE601(e601Request);
+			}
+			/*******************更新数据返回的信息*****************/
+			private function renewE601Handler(event:ResultEvent):void
+			{
+				var e601Response:Object=event.result;
+				if(!e601Response.state){
+					Alert.show(e601Response.errorMessage,"系统提示");
+					return ;
+				}
+				Alert.show(e601Response.promptMessage,"系统提示");
+				refresh();
+			}
+			/****************重新查询********************/
+			public function refresh():void
+			{
+				this.initQueryParam();
+				e601Request.parameterPageindex=1;
+				e601Request.parameterPagesize=500;
+				this.e601Service.queryE601(e601Request);
+			}
+			/*****************datagrid序号生成*******************/
+		 	private function Num(oItem:Object,iCol:int):String    
+			{   
+				var iIndex:int = certificateDataGrid.dataProvider.getItemIndex(oItem) + 1; 	
+				return String(iIndex);     
+			}  
+		]]>
+	</fx:Script>
+	<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all" id="tab">
+		<s:NavigatorContent width="100%" label="综合查询" buttonMode="true">
+			<s:VGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="采血医院"/>
+					<component:InstitutionComboBox id="E601_22" width="100%" buttonMode="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="登记时间"/><mx:DateField id="timeStart" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														formatString="YYYY-MM-DD" yearNavigationEnabled="true" buttonMode="true"/>
+					<s:Label text="至"/><mx:DateField id="timeEnd" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+													 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+													 formatString="YYYY-MM-DD" yearNavigationEnabled="true" buttonMode="true"/>
+					<s:Button label="查询" click="queryE601()" buttonMode="true" />
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="邮寄状态"/><s:DropDownList width="130" id="E601_30_01" enabled="false"/>
+					<s:Button label="邮寄" click="renewE601()" enabled="{certificateDataGrid.selectedItem}" buttonMode="true"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" label="精确查询" buttonMode="true">
+			<s:VGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="母亲姓名"/><s:TextInput id="E601_04"/>
+					<s:Label text="证件号码"/><s:TextInput id="E601_05" width="140"/>
+					<s:Button id="duka1" width="60" label="读卡" click="readCard(event)"  enabled="{systemUser.duka=='1'}" buttonMode="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="儿童姓名"/><s:TextInput id="E601_13"/>
+					<s:Label text="联系电话"/><s:TextInput id="E601_06" width="140"/>
+					<s:Button label="查询" click="queryE601()" buttonMode="true"/>
+					<!--<s:Button label="修改" click="updateE601(event)" buttonMode="true"/>
+					<s:Button label="删除" click="deleteE601(event)" buttonMode="true" id="delete2"/>-->
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="邮寄状态"/><s:DropDownList width="130" id="E601_30_02" enabled="false"/>
+					<s:Button label="邮寄" id="send" click="renewE601()" enabled="{certificateDataGrid.selectedItem}" buttonMode="true"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="126" width="100%" height="500" chromeColor="#C0C0C0" focusColor="#ABCCEB"
+				 horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="100%" height="500" paddingBottom="10">
+			<control:CheckBoxDataGrid id="certificateDataGrid" fontFamily="微软雅黑" 
+									  dataProvider="{employeeList}" width="100%" height="340" 
+									  editable="true" rowHeight="22" verticalGridLineColor="#C0C0C0">
+				<control:columns>  
+						<mx:DataGridColumn visible="false" dataField="e60101" headerText="主键"/>
+						<mx:DataGridColumn width="60" editable="false" headerText="序号" textAlign="center" 
+										   itemRenderer="{new ClassFactory(com.xyw.sys.custom.itemrenderer.DataGridNum)}">
+						</mx:DataGridColumn>
+						<!--<mx:DataGridColumn  sortable="false"  headerText=""  editable="false"
+											itemRenderer="com.xyw.sys.custom.itemrenderer.CheckBoxItemRenderer"
+											headerRenderer="com.xyw.sys.custom.itemrenderer.CheckBoxHeaderRenderer"/> -->
+						<mx:DataGridColumn width="140" dataField="e60104" headerText="母亲姓名" textAlign="center"/>
+						<mx:DataGridColumn width="160" dataField="e60105" headerText="身份证号" textAlign="center"/>
+						<mx:DataGridColumn width="117" dataField="e60106" headerText="联系电话" textAlign="center"/>
+						<mx:DataGridColumn width="140" dataField="e60113" headerText="婴儿姓名" textAlign="center"/>
+						<mx:DataGridColumn width="140" dataField="e60115Str" headerText="出生日期" textAlign="center"/>
+						<mx:DataGridColumn width="140" dataField="e60112" headerText="住院号" textAlign="center"/>
+						<mx:DataGridColumn width="140" dataField="e60121" headerText="条码号" textAlign="center"/>
+						<mx:DataGridColumn width="200" dataField="e60122Zh" headerText="采血医院" textAlign="center"/>
+						<mx:DataGridColumn width="140" dataField="e60123Str" headerText="采血时间" textAlign="center"/>
+						<mx:DataGridColumn width="140" dataField="e60119Zh" headerText="样本状态" textAlign="center"/>
+						<mx:DataGridColumn width="100" dataField="e60130Zh" headerText="碘式" textAlign="center"/>
+					<!--	<mx:DataGridColumn width="100"  headerText="操作" textAlign="center" editable="false">
+							<mx:itemRenderer>
+								<fx:Component>
+									<mx:Button width="55" label="邮寄" buttonMode="true"
+											   chromeColor="#8BDFF7"
+											   click="outerDocument.renewE601()" cornerRadius="5"
+											   enabled="{data.selected}" fontFamily="微软雅黑"/>
+								</fx:Component>
+							</mx:itemRenderer>
+						</mx:DataGridColumn>-->
+				</control:columns>  
+			</control:CheckBoxDataGrid> 
+		</s:VGroup>	
+	</s:Scroller>
+</s:Module>

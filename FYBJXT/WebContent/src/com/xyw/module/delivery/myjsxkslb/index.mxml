@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationComplete()">
+	<fx:Declarations>
+		<s:RemoteObject id="deliveryService" destination="deliveryService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveHealthcareInfo" result="saveDeliveryHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+		
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.delivery.model.D602;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.ResultEvent;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var systemUser:SystemUser = null;
+			private var d602:D602 = new D602();
+			public function moduleCreationComplete():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.initializeComboBox();
+			}
+			private function initializeComboBox():void
+			{
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S602_01";
+				comboBoxDataRequest.sql = "select * from S602_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S602_02";
+				comboBoxDataRequest.sql = "select * from S602_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S602_01")
+				{
+					this.D602_04.dataProvider = comboBoxDataList;
+					this.D602_04.selectedIndex = 0;
+				}else if(flag == "S602_02")
+				{
+					this.D602_08.dataProvider = comboBoxDataList;
+					this.D602_08.selectedIndex = 0;
+				}
+			}
+			public function validateHealthcare():void
+			{
+				if(this.D602_03.text == "")
+				{
+					Alert.show("请输入法人代表","系统提示");
+					return;
+				}
+				if(this.D602_04.selectedItem.data == 0)
+				{
+					Alert.show("请选择机构类别","系统提示");
+					return;
+				}
+				if(this.D602_06.text == "")
+				{
+					Alert.show("请输入联系人","系统提示");
+					return;
+				}
+				if(this.D602_07.text == "")
+				{
+					Alert.show("请输入联系电话","系统提示");
+					return;
+				}
+				if(this.D602_08.selectedItem.data == 0)
+				{
+					Alert.show("请选择申请项目","系统提示");
+					return;
+				}
+				if(this.D602_05.text == "")
+				{
+					Alert.show("请输入地址","系统提示");
+					return;
+				}
+				
+				this.saveHealthcare();
+			}
+			public function saveHealthcare():void
+			{
+				this.d602.d60202 = this.D602_02.getLastSelectedInstitutionCode();
+				this.d602.d60203 = this.D602_03.text;
+				this.d602.d60204 = this.D602_04.selectedItem.data;
+				this.d602.d60205 = this.D602_05.text; 
+				this.d602.d60206 = this.D602_06.text; 
+				this.d602.d60207 = this.D602_07.text;
+				this.d602.d60208 = this.D602_08.selectedItem.data; 
+				this.d602.d60209 = this.systemUser.areaCode;
+				this.deliveryService.saveHealthcareInfo(d602);
+			}
+			public function saveDeliveryHandler(event:ResultEvent):void
+			{
+				Alert.show("我回来了");
+				var queryBirthResponse:Object = event.result;
+				if(!queryBirthResponse.state)
+				{
+					Alert.show(queryBirthResponse.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show("保存成功","系统提示");
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller x="8" y="4" width="1184" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup>
+			<mx:TabNavigator width="1074" height="254" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="母婴保健技术服务执业许可证" width="100%">
+					<s:VGroup width="1062" height="188" horizontalAlign="justify" paddingBottom="20"
+							  paddingLeft="10" paddingRight="10" paddingTop="10">
+						<s:TabBar labelField="aaa"/>
+						<mx:Grid width="1049" height="151" label="信息填写" backgroundAlpha="1.0"
+								 borderAlpha="0.6" borderColor="#222022" borderStyle="solid"
+								 borderVisible="true" cornerRadius="10" dropShadowVisible="false"
+								 paddingTop="20">
+							<mx:GridRow>
+								<mx:GridItem colSpan="4" horizontalAlign="left">
+									<s:HGroup paddingTop="-37" paddingLeft="30">
+										<s:Label color="#315FE2" fontSize="14" paddingLeft="0"
+												 text="信息填写"/>
+									</s:HGroup>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem colSpan="4" horizontalAlign="left">
+									<s:Label text="单位名称" paddingLeft="10"/>
+									<component:InstitutionComboBox id="D602_02" width="666"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow paddingTop="10">
+								<mx:GridItem width="183" horizontalAlign="left">
+									<s:Label text="法人代表" paddingLeft="10"/>
+									<s:TextInput id="D602_03" width="121" maxChars="20"
+												 restrict="^ \f\n\r\t\v"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="机构类别"/>
+									<s:DropDownList id="D602_04" width="115"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="联系人"/>
+									<s:TextInput id="D602_06" width="116" maxChars="20"
+												 restrict="^ \f\n\r\t\v"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">	
+									<s:Label text="联系电话"/>
+									<s:TextInput id="D602_07" width="126" maxChars="12"
+												 restrict="0-9|-"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow paddingTop="10">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="申请项目" paddingLeft="10"/>
+									<s:DropDownList id="D602_08" width="125"/>
+								</mx:GridItem>
+								<mx:GridItem colSpan="3" horizontalAlign="left">
+									<s:Label text="地        址"/>
+									<s:TextInput id="D602_05" width="477" maxChars="20" restrict="^ \f\n\r\t\v"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+						<s:HGroup x="40" width="935" height="30" contentBackgroundColor="#FF0000"
+								  horizontalAlign="right" paddingBottom="20" paddingLeft="10"
+								  paddingRight="350" paddingTop="10" verticalAlign="middle">
+							<s:Button label="确定" click="validateHealthcare()"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

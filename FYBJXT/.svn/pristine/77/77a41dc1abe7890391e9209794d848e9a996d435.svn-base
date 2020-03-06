@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class name="com.xyw.medical.fnbj.model.F401" table="F401">
+		<id name="f40101" type="long">
+			<column name="F401_01" />
+			<generator class="sequence">
+				<param name="sequence">F401_01_SEQ</param>
+			</generator>
+		</id>
+		<property name="f40102" type="java.lang.String">
+			<column name="F401_02" length="50" />
+		</property>
+		<property name="f40103" type="java.lang.String">
+			<column name="F401_03" length="1"/>
+		</property>
+		<property name="f40104" type="java.lang.String">
+			<column name="F401_04" length="200"/>
+		</property>
+		<property name="f40105" type="java.lang.String">
+			<column name="F401_05" length="200"/>
+		</property>
+		<property name="f40106" type="java.lang.String">
+			<column name="F401_06" length="200" />
+		</property>
+		<property name="f40107" type="java.lang.String">
+			<column name="F401_07" length="200" />
+		</property>
+		<property name="f40108" type="java.lang.String">
+			<column name="F401_08" length="200" />
+		</property>
+		<property name="f40109" type="java.lang.String">
+			<column name="F401_09" length="12" />
+		</property>
+		<property name="f40110" type="java.lang.String">
+			<column name="F401_10" length="200" />
+		</property>
+		<property name="f40111" type="java.lang.String">
+			<column name="F401_11" length="200" />
+		</property>
+		<property name="f40112" type="java.lang.String">
+			<column name="F401_12" length="20" />
+		</property>
+		<property name="f40113" type="java.lang.String">
+			<column name="F401_13" length="50" />
+		</property>
+		<property name="f40114" type="java.lang.String">
+			<column name="F401_14" length="2" />
+		</property>
+		<property name="f40115" type="java.lang.String">
+			<column name="F401_15" length="2" />
+		</property>
+		<property name="f40116" type="java.lang.String">
+			<column name="F401_16" length="200" />
+		</property>
+		<property name="f40117" type="java.lang.String">
+			<column name="F401_17" length="2" />
+		</property>
+		<property name="f40118" type="java.lang.String">
+			<column name="F401_18" length="200" />
+		</property>
+		<property name="f40119" type="java.lang.String">
+			<column name="F401_19" length="200" />
+		</property>
+		<property name="f40120" type="java.lang.String">
+			<column name="F401_20" length="200" />
+		</property>
+		<property name="f40121" type="java.lang.String">
+			<column name="F401_21" length="2" />
+		</property>
+		<property name="f40122" type="java.lang.String">
+			<column name="F401_22" length="200" />
+		</property>
+		<property name="f40123" type="java.lang.String">
+			<column name="F401_23" length="2" />
+		</property>
+		<property name="f40124" type="java.lang.String">
+			<column name="F401_24" length="200" />
+		</property>
+		<property name="f40125" type="java.lang.String">
+			<column name="F401_25" length="2" />
+		</property>
+		<property name="f40126" type="long">
+			<column name="F401_26"  />
+		</property>
+		<property name="f40127" type="java.lang.String">
+			<column name="F401_27" length="200" />
+		</property>
+		<property name="f40128" type="java.lang.String">
+			<column name="F401_28" length="200" />
+		</property>
+		<property name="f40129" type="java.lang.String">
+			<column name="F401_29" length="200" />
+		</property>
+		<property name="f40130" type="java.lang.String">
+			<column name="F401_30" length="200" />
+		</property>
+		<property name="f40131" type="double">
+			<column name="F401_31" precision="6" />
+		</property>
+		<property name="f40132" type="double">
+			<column name="F401_32" precision="6"/>
+		</property>
+		<property name="f40133" type="java.lang.String">
+			<column name="F401_33" length="200" />
+		</property>
+		<property name="f40134" type="java.lang.String">
+			<column name="F401_34" length="2" />
+		</property>
+		<property name="f40135" type="java.lang.String">
+			<column name="F401_35" length="200" />
+		</property>
+		<property name="f40136" type="java.lang.String">
+			<column name="F401_36" length="2" />
+		</property>
+		<property name="f40137" type="java.lang.String">
+			<column name="F401_37" length="200" />
+		</property>
+		<property name="f40138" type="java.lang.String">
+			<column name="F401_38" length="2" />
+		</property>
+		<property name="f40139" type="java.lang.String">
+			<column name="F401_39" length="200" />
+		</property>
+		<property name="f40140" type="java.lang.String">
+			<column name="F401_40" length="2" />
+		</property>
+		<property name="f40141" type="java.lang.String">
+			<column name="F401_41" length="20" />
+		</property>
+		<property name="f40142" type="java.lang.String">
+			<column name="F401_42" length="20" />
+		</property>
+		<property name="f40143" type="java.lang.String">
+			<column name="F401_43" length="2" />
+		</property>
+		<property name="f40144" type="java.lang.String">
+			<column name="F401_44" length="2" />
+		</property>
+		<property name="f40145" type="java.lang.String">
+			<column name="F401_45" length="2" />
+		</property>
+		<property name="f40146" type="java.lang.String">
+			<column name="F401_46" length="200" />
+		</property>
+		<property name="f40147" type="java.lang.String">
+			<column name="F401_47" length="200" />
+		</property>
+		<property name="f40148" type="java.lang.String">
+			<column name="F401_48" length="200" />
+		</property>
+		<property name="f40149" type="java.lang.String">
+			<column name="F401_49" length="200" />
+		</property>
+		<property name="f40150" type="long">
+			<column name="F401_50" length="4" />
+		</property>
+		<property name="f40151" type="java.lang.String">
+			<column name="F401_51" length="200" />
+		</property>
+		<property name="f40152" type="java.lang.String">
+			<column name="F401_52" length="2" />
+		</property>
+		<property name="f40153" type="java.lang.String">
+			<column name="F401_53" length="200" />
+		</property>
+		<property name="f40154" type="java.lang.String">
+			<column name="F401_54" length="2" />
+		</property>
+		<property name="f40155" type="java.lang.String">
+			<column name="F401_55" length="200" />
+		</property>
+		<property name="f40156" type="java.lang.String">
+			<column name="F401_56" length="2" />
+		</property>
+		<property name="f40157" type="java.lang.String">
+			<column name="F401_57" length="200" />
+		</property>
+		<property name="f40158" type="java.lang.String">
+			<column name="F401_58" length="2" />
+		</property>
+		<property name="f40159" type="java.lang.String">
+			<column name="F401_59" length="2" />
+		</property>
+		<property name="f40160" type="java.lang.String">
+			<column name="F401_60" length="200" />
+		</property>
+		<property name="f40161" type="java.lang.String">
+			<column name="F401_61" length="2" />
+		</property>
+		<property name="f40162" type="java.lang.String">
+			<column name="F401_62" length="2" />
+		</property>
+		<property name="f40163" type="java.lang.String">
+			<column name="F401_63" length="2" />
+		</property>
+		<property name="f40164" type="java.lang.String">
+			<column name="F401_64" length="200" />
+		</property>
+		<property name="f40165" type="java.lang.String">
+			<column name="F401_65" length="2" />
+		</property>
+		<property name="f40166" type="java.lang.String">
+			<column name="F401_66" length="200" />
+		</property>
+		<property name="f40167" type="java.lang.String">
+			<column name="F401_67" length="2" />
+		</property>
+		<property name="f40168" type="java.lang.String">
+			<column name="F401_68" length="200" />
+		</property>
+		<property name="f40169" type="java.lang.String">
+			<column name="F401_69" length="200" />
+		</property>
+		<property name="f40170" type="java.lang.String">
+			<column name="F401_70" length="2" />
+		</property>
+		<property name="f40171" type="java.lang.String">
+			<column name="F401_71" length="2" />
+		</property>
+		<property name="f40172" type="java.lang.String">
+			<column name="F401_72" length="200" />
+		</property>
+		<property name="f40173" type="java.lang.String">
+			<column name="F401_73" length="200" />
+		</property>
+		<property name="f40174" type="java.lang.String">
+			<column name="F401_74" length="2" />
+		</property>
+		<property name="f40175" type="java.lang.String">
+			<column name="F401_75" length="200" />
+		</property>
+		<property name="f40176" type="java.lang.String">
+			<column name="F401_76" length="200" />
+		</property>
+		<property name="f40177" type="java.lang.String">
+			<column name="F401_77" length="200" />
+		</property>
+		<property name="f40178" type="java.lang.String">
+			<column name="F401_78" length="200" />
+		</property>
+		<property name="f40179" type="java.lang.String">
+			<column name="F401_79" length="200" />
+		</property>
+		<property name="f40180" type="java.lang.String">
+			<column name="F401_80" length="200" />
+		</property>
+		<property name="f40181" type="java.lang.String">
+			<column name="F401_81" length="200" />
+		</property>
+		<property name="f40182" type="java.lang.String">
+			<column name="F401_82" length="200" />
+		</property>
+		<property name="f40183" type="java.lang.String">
+			<column name="F401_83" length="200" />
+		</property>
+		<property name="f40184" type="java.lang.String">
+			<column name="F401_84" length="200" />
+		</property>
+		<property name="f40185" type="java.lang.String">
+			<column name="F401_85" length="200" />
+		</property>
+		<property name="f40186" type="java.lang.String">
+			<column name="F401_86" length="2" />
+		</property>
+		<property name="f40187" type="java.lang.String">
+			<column name="F401_87" length="200" />
+		</property>
+		<property name="f40188" type="java.lang.String">
+			<column name="F401_88" length="200" />
+		</property>
+		<property name="f40189" type="java.lang.String">
+			<column name="F401_89" length="2" />
+		</property>
+		<property name="f40190" type="java.lang.String">
+			<column name="F401_90" length="200" />
+		</property>
+		<property name="f40191" type="java.lang.String">
+			<column name="F401_91" length="2" />
+		</property>
+		<property name="f40192" type="java.lang.String">
+			<column name="F401_92" length="200" />
+		</property>
+		<property name="f40193" type="java.util.Date">
+			<column name="F401_93" />
+		</property>
+		<property name="f40194" type="java.lang.String">
+			<column name="F401_94" length="200" />
+		</property>
+		<property name="f40195" type="java.lang.String">
+			<column name="F401_95" length="200" />
+		</property>
+		<property name="f40196" type="java.lang.String">
+			<column name="F401_96" length="200" />
+		</property>
+		<property name="f40197" type="java.lang.String">
+			<column name="F401_97" length="200" />
+		</property>
+		<property name="f40198" type="java.lang.String">
+			<column name="F401_98" length="200" />
+		</property>
+		<property name="f40199" type="java.lang.String">
+			<column name="F401_99" length="200" />
+		</property>
+		<property name="f401100" type="java.lang.String">
+			<column name="F401_100" length="200" />
+		</property>
+	</class>
+</hibernate-mapping>

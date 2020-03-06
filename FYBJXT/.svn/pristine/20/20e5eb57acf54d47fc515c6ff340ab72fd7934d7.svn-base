@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Label
+		{
+			fontSize:13;
+		}	
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+						
+			protected function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				
+				date_satrt.selectedDate=new Date(new Date().fullYear,new Date().month,'01');
+				date_end.selectedDate=new Date();
+				
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z307_27";
+				comboBoxDataRequest.sql = "select * from Z307_27 t";
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+			}
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(flag=="Z307_27"){     
+					this.F307_27.dataProvider =comboBoxDataList;
+					this.F307_27.selectedIndex =1;
+				}
+			
+			}
+			private function query():void
+			{
+				if(this.date_satrt.text == "")
+				{
+					Alert.show("请选择开始时间!","系统提示!");
+					return;
+				}else if(this.date_end.text == "")
+				{
+					Alert.show("请选择结束时间!","系统提示!");
+					return;
+				}
+				if((this.date_end.selectedDate.time)-(this.date_satrt.selectedDate.time)<0)
+				{
+					Alert.show("开始时间不能大于结束时间","系统提示");
+					return;
+				}
+				var date_start:String = this.date_satrt.text;
+				var date_end:String = this.date_end.text;
+				var date_status:String="0";
+				var f307_27:String="";
+				var f307_27Data:String="";
+				var institution:String = this.institution.getLastSelectedInstitutionCode();
+				var institutionType:String = this.institution.getLastSelectedInstitution();		
+				
+				institution = (institutionType == "10")?institution:institution.substring(0,Number(institutionType));
+
+				if(F307_03.selected)
+					date_status="0";
+				else if(F307_24.selected)
+					date_status="1";
+				if(All.selected)
+					f307_27="0";
+				else if(Single.selected)
+				{
+					if(this.F307_27.selectedIndex==0)
+					{
+						Alert.show("请选择条件","系统提示");
+						return ;
+					}
+					f307_27="1";
+				    f307_27Data=this.F307_27.selectedItem.data;
+				}
+				var url:String = null;
+				url = this.parentApplication.contextRoot + "/report_new/jsp/Report_07.jsp?f307_27Data="+f307_27Data+"&f307_27="+f307_27+"&date_status="+date_status+"&date_start="+date_start+"&date_end="+date_end+"&institution="+institution;
+				navigateToURL(new URLRequest(url), null);
+			}
+			//测试路径
+			private function printCertificate2():void
+			{
+				var urlRequest:URLRequest = null;
+				urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print_new/PrintDirect/Report.htm") ;
+				navigateToURL(urlRequest,"_blank");
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<mx:TabNavigator  width="900" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="产后访视登记本" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid width="100%">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="建卡单位"/>
+								<component:InstitutionComboBox id="institution"  width="730" villageVisible="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="产后访视查询"/>
+								<s:RadioButton id="All" label="查询全部产后访视" groupName="x" buttonMode="true" click="row.enabled=false" selected="true"/>
+								<s:RadioButton id="Single" label="按产后访视范围查询" groupName="x" buttonMode="true" click="row.enabled=true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow id="row" enabled="false">
+							<mx:GridItem>						
+									<s:Label text="产后访视"/>
+									<s:DropDownList id="F307_27" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="查询时间"/>
+								<s:RadioButton id="F307_03" label="按随访日期查询" groupName="cx" buttonMode="true" click="labelName.text='随访日期'" selected="true"/>
+								<s:RadioButton id="F307_24" label="按下次随访日期查询" groupName="cx" buttonMode="true" click="labelName.text='下次随访日期'"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="随访日期" id="labelName"/>
+								<mx:DateField yearNavigationEnabled="true" id="date_satrt" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD"/>
+								<s:Label text="至"/>
+								<mx:DateField yearNavigationEnabled="true" id="date_end" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD"/>
+								<s:Button label="查询" id="loadDelivery" click="query()"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

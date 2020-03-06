@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+			
+		</s:RemoteObject>
+		
+		
+		<s:RemoteObject id="l301Service" destination="l301Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryL301" result="queryL301Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l303Service" destination="l303Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL303" result="saveL303Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:Parallel target="{vgroupDataGrid}" id="parallel">
+			<!--<s:Resize widthTo="500" duration="1000"/>-->
+			<!--模糊-->
+			<!--<mx:Blur duration="1000" 
+			blurXFrom="10.0" blurXTo="0.0" 
+			blurYFrom="10.0" blurYTo="0.0"/>-->
+			<!--正常-->
+			<!--<mx:Blur duration="1000"
+			blurXFrom="0.0" blurXTo="10.0" 
+			blurYFrom="0.0" blurYTo="10.0"/>-->
+			<s:Resize widthTo="1135"/>
+		</s:Parallel>
+		<s:GlowFilter id="glow1" color="#de7800" />
+		<s:AnimateFilter id="effect1" target="{lbl}" bitmapFilter="{glow1}"
+						 repeatBehavior="reverse" repeatCount="0" duration="2000">
+			<s:SimpleMotionPath property="blurX" valueFrom="0" valueTo="20"/>
+			<s:SimpleMotionPath property="blurY" valueFrom="0" valueTo="20"/>
+		</s:AnimateFilter>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		.myGrid {
+			verticalAlign:middle;
+		}
+		.myTextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		.errorTip
+		{
+			font-size: 15;
+			border-color: red;/* //控制背景色 */
+			color: #fff;
+			font-weight: bold;
+			paddingBottom:1; 
+			cornerRadius:5;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.assist.index;
+			import com.xyw.module.msss.la.model.L301;
+			import com.xyw.module.msss.la.model.L301Request;
+			import com.xyw.module.msss.la.model.L303;
+			import com.xyw.module.msss.la.model.VL301;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			[Bindable]
+			private var systemUser:SystemUser;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			[Bindable]
+			public var vl301:Object=null;
+			private var l301:L301=null;
+			private var l301Request:L301Request=null;
+
+		
+			private function init():void
+			{
+				systemUser=this.parentApplication.systemUser;
+				initializeComboBox();
+			}
+			/******************下拉框填充数据******************/
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t";
+				comboBoxDataRequest.flag = "D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from  LA302_16 t";
+				comboBoxDataRequest.flag = "LA302_16";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA302_17 t";
+				comboBoxDataRequest.flag = "LA302_17";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from  LA302_18 t";
+				comboBoxDataRequest.flag = "LA302_18";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from  LA303_01 t";
+				comboBoxDataRequest.flag = "LA303_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from  LA303_02 t";
+				comboBoxDataRequest.flag = "LA303_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest); 
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select t.s_01,t.s_02 from S301_10 t where t.S_05='1' and t.S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select t.s_01,t.s_02 from S301_10 t where t.S_05='4' and t.S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+					var index:int=CompMethod.getDropDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					L303_08.dataProvider=L303_13.dataProvider =L303_16.dataProvider = comboBoxDataList;
+					L303_08.selectedIndex=0;
+					L303_13.selectedIndex=L303_16.selectedIndex=index;
+				}else if(flag=="LA302_16")
+				{
+					L303_04.dataProvider=comboBoxDataList;
+					L303_04.selectedIndex=0;
+				}else if(flag=="LA302_17")
+				{
+					L303_05.dataProvider=comboBoxDataList;
+					L303_05.selectedIndex=0;
+				}else if(flag=="LA302_18")
+				{
+					L303_07.dataProvider=comboBoxDataList;
+					L303_07.selectedIndex=0;
+				}else if(flag=="LA303_01")
+				{
+					L303_10.dataProvider=comboBoxDataList;
+					L303_10.selectedIndex=1;
+				}else if(flag=="LA303_02")
+				{
+					L303_12.dataProvider=comboBoxDataList;
+					L303_12.selectedIndex=1;
+				}else if(flag=="S301_10")
+				{
+					L303_18.dataProvider=comboBoxDataList;
+					L303_18.selectedIndex=0;
+				}else if(flag=="S301_10_01")
+				{
+					L303_15.dataProvider=comboBoxDataList;
+					L303_15.selectedIndex=0;
+				}
+			}
+			
+			private function validate():void
+			{
+				if(CompMethod.validate('2',L303_04,'宫颈脱落细胞取材方式！'))
+					return;
+				if(CompMethod.validate('2',L303_05,'分级标准！'))
+					return;	
+				if(CompMethod.validate('1',L303_06,'样本号'))
+					return;
+				if(CompMethod.validate('2',L303_07,'原报告！'))
+					return;
+				if(CompMethod.validate('2',L303_08,'原报告诊断单位!'))
+					return;				
+				if(CompMethod.validate('1',L303_09,'报告日期!'))
+					return;
+				if(CompMethod.validate('2',L303_10,'质控结果!'))
+					return;
+				if(CompMethod.validate('1',L303_11,'质控结果详细！'))
+					return;
+				if(CompMethod.validate('2',L303_12,'标本满意度！'))
+					return;
+				if(CompMethod.validate('2',L303_13,'质控单位！'))
+					return;
+				if(CompMethod.validate('1',L303_14,'质控时间！'))
+					return;
+				if(CompMethod.validate('1',L303_15,'质控人员！'))
+					return;
+				if(CompMethod.validate('2',L303_16,'操作单位!'))
+					return;
+				if(CompMethod.validate('1',L303_18,'操作员名称！'))
+					return;
+				if(CompMethod.validate('1',L303_19,'操作时间!'))
+					return;
+				saveL303();
+			}
+			
+			private function saveL303():void
+			{
+				var l303:L303=new L303();
+				l303.l30302=vl301.l30101;
+				l303.l30303=vl301.l30116;
+				l303.l30321=vl301.l30102;
+				l303.l30322=vl301.l30104;
+				l303.l30323=vl301.l30110;
+				l303.l30304=L303_04.selectedItem.data;
+				l303.l30305=L303_05.selectedItem.data;
+				l303.l30306=StringUtil.trim(L303_06.text);
+				l303.l30307=L303_07.selectedItem.data;
+				l303.l30308=L303_08.selectedItem.data;
+				l303.l30310=L303_10.selectedItem.data;
+				l303.l30311=StringUtil.trim(L303_11.text);
+				l303.l30312=L303_12.selectedItem.data;
+				l303.l30313=L303_13.selectedItem.data;
+				l303.l30315=StringUtil.trim(L303_15.text);
+				l303.l30316=L303_16.selectedItem.data;
+				l303.l30324=L303_16.selectedItem.label;
+				l303.l30317=this.systemUser.institutionCode+'01';
+				l303.l30318=StringUtil.trim(L303_18.text);
+				l303.l30314=DateField.stringToDate(L303_14.text,'YYYY-MM-DD');
+				l303.l30309=DateField.stringToDate(L303_09.text,'YYYY-MM-DD');
+				l303.l30319=DateField.stringToDate(L303_19.text,'YYYY-MM-DD');
+				l303.l30320=l303.l30319;
+				l303Service.saveL303(l303);
+			}
+			
+			private function saveL303Handler(event:ResultEvent):void
+			{
+				var l303Response:Object=event.result;
+				if(l303Response.state)
+				{
+					Alert.show(l303Response.promptMessage+",点击确定即将刷新页面！","系统提示",1,this,closeHander);
+				}else
+					Alert.show(l303Response.errorMessage,"系统提示");
+			}
+			
+			private function closeHander(event:CloseEvent):void
+			{
+				if(event.detail==1)
+					CompMethod._refreshIndex(this);
+			}
+			
+			public function queryL301():void
+			{
+				_query(1,10);
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				_query(pagerBar.currentPageIndex,10);
+			}
+			
+			
+			private function _query(currentPageIndex:int,pageSize:int):void
+			{
+				this.initQueryParam();
+				l301Request.parameterPageindex=currentPageIndex;
+				l301Request.parameterPagesize=pageSize;
+				this.l301Service.queryL301(l301Request);	
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():Boolean
+			{
+				var boolean:Boolean=true;
+				l301=new L301();
+				var l30102:String=StringUtil.trim(L301_02.text);
+				var l30104:String=StringUtil.trim(L301_04.text);
+				var l30110:String=StringUtil.trim(L301_10.text);
+				l301Request = new L301Request();
+				try{
+						var type:String = L301_17.getLastSelectedInstitution();
+						var l301_17:String = L301_17.getLastSelectedInstitutionCode();
+						if(this.systemUser.institutionType == "1")
+						{
+							l301.l30117 = this.systemUser.institutionCode;
+						}else{
+							if(type == "8")
+							{
+								l301.l30117  = l301_17;
+							}else if(type == "6")
+							{
+								l301.l30117 = l301_17.substring(0,6);
+							}else if(type == "4")
+							{
+								l301.l30117 = l301_17.substring(0,4);
+							}else if(type == "2")
+							{
+								l301.l30117  = l301_17.substring(0,2);
+							}
+						}
+						if(l30102||l30104||l30110)
+						{
+							l301.l30102=l30102;
+							l301.l30104=l30104;
+							l301.l30110=l30110;
+							l301Request.flag="true";
+						}else
+						{
+							l301Request.timeStr=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+							l301Request.timeEnd=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+							l301Request.flag="false";
+						}
+						l301Request.l301=l301;
+						this.currentState='special';
+				}catch(e:Error)
+				{
+					Alert.show("查询异常","系统提示");
+				}
+				return boolean;
+			}
+			
+			public function queryL301Handler(event:ResultEvent):void
+			{
+				if(certificateDataGrid.dataProvider)
+				{
+					certificateDataGrid.dataProvider=null;
+					pagerBar.rowCount=0;
+				}
+				var l301Response:Object = event.result;
+				if(!l301Response.state)
+				{
+					Alert.show(l301Response.errorMessage,"系统提示");
+					return;
+				}
+				var vl301s:ArrayCollection =l301Response.vl301s;
+				var rowCount:Number = l301Response.rowCount;
+				certificateDataGrid.dataProvider=vl301s;
+				pagerBar.pageSize = 10;
+				pagerBar.dataGrid = certificateDataGrid;  
+				pagerBar.rowCount = rowCount;
+				pagerBar.resultData = vl301s;
+				pagerBar.dataBind();
+				pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					pagerBar.enabled = true;
+				}
+			}
+			
+			
+			private function onSelected(event:Event):void
+			{
+				this.vl301 = DataGrid(event.target).selectedItem;
+				this.currentState="";
+			}
+			
+			private function readCard():void
+			{
+				var arr:Array =CompMethod.readCard();
+				if(arr)
+				{
+					if(CompMethod.sex('女',arr[1]))
+					{
+						L301_02.text=arr[0];
+						L301_04.text=arr[5];
+						queryL301();
+					}else
+						Alert.show("请读女性身份证","系统提示");
+				}else
+					Alert.show("读卡失败","系统提示");
+			}
+		]]>
+	</fx:Script> 
+	<s:states>
+		<s:State name="normal"/>			
+		<s:State name="special"/>
+	</s:states>
+	<s:Scroller  width="100%" height="100%" horizontalScrollPolicy="auto"
+				 chromeColor="#cccccc" verticalScrollPolicy="auto">
+		<s:VGroup horizontalAlign="center" paddingTop="10" creationComplete="init()">
+			
+			<mx:TabNavigator width="100%" id="tab" height.normal="132" height.special="419">
+				<s:NavigatorContent width="100%" label="档案查询" buttonMode="true" height.normal="132" height.special="419">
+					<s:VGroup width="100%">
+						
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							
+							<s:Label id="lbl"  text="! 注意：若输入内容，查询不受日期和录入单位条件限制，有读卡功能的直接读卡就可以查询"
+									 color="#FD0909" fontSize="16"  creationComplete="effect1.play();"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="录入单位"/>
+							<component:InstitutionComboBox id="L301_17" width="732" buttonMode="true"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" paddingTop="5" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="姓      名"/><s:TextInput id="L301_02"/>
+							<s:Label text="证件号码"/><s:TextInput id="L301_04" width="140"/>
+							<s:Label text="联系方式"/><s:TextInput id="L301_10" />
+							<s:Label text="登记时间"/><mx:DateField id="timeStart" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+																monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																text="{DateField.dateToString(new Date(),'YYYY-MM-01')}"
+																formatString="YYYY-MM-DD" yearNavigationEnabled="true" buttonMode="true"/>
+							<s:Label text="至"/><mx:DateField id="timeEnd" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+															 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+															 text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"
+															 formatString="YYYY-MM-DD" yearNavigationEnabled="true" buttonMode="true"/>
+							<s:Button id="duka1" width="60" label="读卡"   buttonMode="true" enabled="{systemUser.duka=='1'}" click="readCard()"/>
+							<s:Button label="查询" buttonMode="true" click="queryL301()" />
+						</s:HGroup>
+						
+						
+						<s:VGroup  paddingRight="5" width="500" height="100%" includeIn="special" creationCompleteEffect="{parallel}"  itemDestructionPolicy="auto" id="vgroupDataGrid">
+							<s:DataGrid id="certificateDataGrid" alternatingRowColors="[#FFFFFF,#EEEEEE]"  
+										editable="false" rowHeight="22" width="100%" height="246" 
+										selectionChange="onSelected(event)">
+								<s:columns>
+									<s:ArrayList>
+										<s:GridColumn visible="false" dataField="l30101" headerText="主键"/>
+										<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+										<s:GridColumn width="200" dataField="l30116" headerText="档案编号"/>
+										<s:GridColumn width="100" dataField="l30102" headerText="姓名"/>
+										<s:GridColumn width="140" dataField="l30104" headerText="证件号码"/>
+										<s:GridColumn width="117" dataField="l30110" headerText="联系电话"/>
+										<s:GridColumn width="125" dataField="l30105str" headerText="出生日期"/>
+										<s:GridColumn width="200" dataField="l30117zh" headerText="录入单位"/>
+										<s:GridColumn width="100" dataField="l30118" headerText="录入人员"/>
+										<s:GridColumn  dataField="l30119str" headerText="录入时间"/>
+									</s:ArrayList>
+								</s:columns>
+							</s:DataGrid>					
+							<component:PagerBar pageSize="10" id="pagerBar" enabled="false"/>
+						</s:VGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="基本信息">	
+					<mx:Grid>
+						<mx:GridRow paddingBottom="5">
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="姓            名" paddingLeft="5"/>
+								<s:TextInput id="L303_21" text="{vl301.l30102}" width="130" restrict="^0-9" editable="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="证件号码"/>
+								<s:TextInput id="L303_22" text="{vl301.l30104}" width="130" restrict="0-9-X" editable="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="电        话 "/>
+								<s:TextInput id="L303_23" text="{vl301.l30110}" width="130" restrict="^0-9" editable="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="编               号"/>
+								<s:TextInput id="L303_03" text="{vl301.l30116}" width="170" restrict="^0-9" editable="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label styleName="myLabel"  text="宫颈脱落细&#13;胞取材方式" paddingLeft="5"/><s:DropDownList id="L303_04" width="130" />
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="分级标准"/><s:DropDownList id="L303_05" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="样  本  号"/>
+								<s:TextInput id="L303_06" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="原报告(分级)"/><s:DropDownList id="L303_07" width="169"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label styleName="myLabel"  text="原报告诊断&#13;单位" paddingLeft="5"/>
+								<s:DropDownList id="L303_08" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="报告日期"/><mx:DateField id="L303_09" width="130"
+																						dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+																						formatString="YYYY-MM-DD"
+																						monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+																						yearNavigationEnabled="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="质控结果"/><s:DropDownList id="L303_10" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="满意度(标本)"/><s:DropDownList id="L303_12" width="169" />
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem colSpan="4" paddingBottom="5">
+								<s:Label styleName="myLabel"  text="质控结果详细" paddingLeft="5"/>
+								<s:TextInput id="L303_11" width="758" />
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="录入信息">			
+					<mx:Grid paddingBottom="5">
+						<mx:GridRow paddingLeft="5">
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="质控单位"/>
+								<s:DropDownList id="L303_13" width="130"/>				
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="质控人员"/>
+								<component:FindSelectedItemComboBox editable="true"  id="L303_15"  height="21" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="质控时间"/>
+								<mx:DateField id="L303_14" width="130"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  yearNavigationEnabled="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow paddingLeft="5">
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="操作单位"/>
+								<s:DropDownList id="L303_16" width="130" mouseChildren="false"/>				
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="操作人员"/>
+								<component:FindSelectedItemComboBox editable="true"  id="L303_18" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="操作时间"/>
+								<mx:DateField id="L303_19" width="130"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"
+											  yearNavigationEnabled="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup width="100%" height="30" contentBackgroundColor="#FF0000" horizontalAlign="center"
+					  paddingBottom="20" paddingLeft="10" paddingTop="10" verticalAlign="middle">
+				<s:Button id="save" label="保存"  enabled="{vl301}" buttonMode="true" chromeColor="#CCCCCC" click="validate()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

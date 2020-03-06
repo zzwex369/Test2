@@ -1,0 +1,860 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="1128" height="470" xmlns:component="com.xyw.sys.custom.component.*" creationComplete="moduleComplete()" close="removeWindow()" backgroundColor="white" chromeColor="#5CACEE" title="信息修改" cornerRadius="5">
+	<fx:Declarations>
+		<s:RemoteObject id="e701Service" destination="e701Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="updateE701" result="updateE701Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.myLabel
+		{
+			fontSize:12;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.etsl.model.E701;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			public var e701:E701;
+			[Bindable]
+			public var systemUser:SystemUser = null;
+			public var ve701:Object;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var countryIndex:int;
+			private var jigouindex:int;
+			
+			private function moduleComplete():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.initializeComboBox();
+				putVaule();
+				this.e701_19.addEventListener(FlexEvent.CHANGING,sete701_19);
+				this.e701_19.addEventListener(FlexEvent.ENTER,sete701_19);
+				this.e701_23.addEventListener(FlexEvent.CHANGING,sete701_23);
+				this.e701_23.addEventListener(FlexEvent.ENTER,sete701_23);
+			}
+			public function sete701_19(event:Event):void{
+				if(this.e701_18.selectedItem.data == 1){
+					var cardId:String  = this.e701_19.text;
+					if(cardId.length >= 16){
+						var year:Number = Number(this.e701_19.text.substr(6,4));
+						var month:Number = Number(this.e701_19.text.substr(10,2));
+						var day:Number = Number(this.e701_19.text.substr(12,2));
+						var date:Date = new Date();
+						var nowDay:Number = date.date;
+						var nowMonth:Number = date.month + 1;
+						var nowYear:Number = date.fullYear;
+						var age:Number;
+						if(nowMonth < month){
+							age = nowYear - year - 1;
+						}else if(nowMonth == month){
+							if(day > nowDay){
+								age = nowYear - year -1;
+							}else{
+								age = nowYear - year;
+							}
+						}else if(nowMonth > month){
+							age = nowYear - year;
+						}
+						this.e701_37.text = age + "";
+						this.e701_36.text=CompMethod.getBirthday(cardId);
+					}
+				}
+			}
+			public function sete701_23(event:Event):void{
+				if(this.e701_22.selectedItem.data == 1){
+					var cardId:String  = this.e701_23.text;
+					if(cardId.length >= 16){
+						var year:Number = Number(this.e701_23.text.substr(6,4));
+						var month:Number = Number(this.e701_23.text.substr(10,2));
+						var day:Number = Number(this.e701_23.text.substr(12,2));
+						var date:Date = new Date();
+						var nowDay:Number = date.date;
+						var nowMonth:Number = date.month + 1;
+						var nowYear:Number = date.fullYear;
+						var age:Number;
+						if(nowMonth < month){
+							age = nowYear - year - 1;
+						}else if(nowMonth == month){
+							if(day > nowDay){
+								age = nowYear - year -1;
+							}else{
+								age = nowYear - year;
+							}
+						}else if(nowMonth > month){
+							age = nowYear - year;
+						}
+						this.e701_42.text = age + "";
+						this.e701_41.text=CompMethod.getBirthday(cardId);
+					}
+				}
+			}
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t "; //where t.d101_01 ="+this.systemUser.institutionCode+"or t.d101_11 ="+this.systemUser.institutionCode;
+				comboBoxDataRequest.flag = "D101";//单位
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_01";//性别
+				comboBoxDataRequest.sql = "select * from S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.flag = "S301_03";//国籍
+				comboBoxDataRequest.sql = "select * from S301_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.flag = "S301_04";//民族
+				comboBoxDataRequest.sql = "select * from S301_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from S301_06";
+				comboBoxDataRequest.flag ="S301_06";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S301_01")//性别
+				{
+					this.e701_07.dataProvider = comboBoxDataList;
+					this.e701_07.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve701.e70107);
+				}else if(flag =="S301_03"){  //国籍
+					this.e701_10.dataProvider = comboBoxDataList;
+					this.e701_10.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve701.e70110);
+					this.e701_38.dataProvider = comboBoxDataList;
+					this.e701_43.dataProvider = comboBoxDataList;
+					if(ve701.e70138==""||ve701.e70138==null){
+						this.e701_38.selectedIndex=getCountrySelectedIndex(comboBoxDataList);
+					}else{
+						this.e701_38.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve701.e70138);
+					}
+					if(ve701.e70143==""||ve701.e70143==null){
+						this.e701_43.selectedIndex=getCountrySelectedIndex(comboBoxDataList);
+					}else{
+						this.e701_43.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve701.e70143);
+					}
+				}else if(flag == "S301_04")//民族
+				{
+					this.e701_11.dataProvider = comboBoxDataList;
+					this.e701_11.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve701.e70111);
+					this.e701_39.dataProvider = comboBoxDataList;
+					this.e701_39.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve701.e70139);
+					this.e701_44.dataProvider = comboBoxDataList;
+					this.e701_44.selectedIndex = getDropDownListSelectedIndex(comboBoxDataList,ve701.e70144);
+				}else if(flag =="S301_06"){  //证件类型
+					this.e701_18.dataProvider =comboBoxDataList;
+					this.e701_18.selectedIndex =getDropDownListSelectedIndex(comboBoxDataList,ve701.e70118);
+					this.e701_22.dataProvider =comboBoxDataList;
+					this.e701_22.selectedIndex =getDropDownListSelectedIndex(comboBoxDataList,ve701.e70122);
+				}else if(flag == "D101")//单位
+				{
+					jigouindex = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.e701_31.dataProvider = comboBoxDataList;
+					this.e701_31.selectedIndex = jigouindex;
+				}
+			}
+			/*-----------------默认国籍 中国---------------------*/
+			private function getCountrySelectedIndex(arrayCollection:ArrayCollection):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == "CHN") {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			public function putVaule():void{
+				e701_06.text=ve701.e70106;
+				e701_08.text=ve701.e70108;
+				//e701_09.selectedDate=ve701.e70109;
+				e701_09.text = ve701.e70109Str;
+				if(ve701.e70112!="0"){
+					e701_12.text=ve701.e70112;
+				}
+				if(ve701.e70113!="0"){
+					e701_13.text=ve701.e70113;
+				}
+				e701_15.setAreaCode(ve701.e70115);
+				e701_16.setAreaCode(ve701.e70116);
+				e701_17.text=ve701.e70117;
+				e701_19.text=ve701.e70119;
+				e701_20.text=ve701.e70120;
+				e701_21.text=ve701.e70121;
+				e701_23.text=ve701.e70123;
+				e701_30.text=ve701.e70130;
+				e701_32.text=ve701.e70132;
+				e701_33.text=ve701.e70133Str;
+				//e701_36.selectedDate=ve701.e70136;
+				e701_36.text = ve701.e70136Str;
+				if(ve701.e70137!="0"){
+					e701_37.text=ve701.e70137;
+				}
+				e701_40.text=ve701.e70140;
+			//	e701_41.selectedDate=ve701.e70141;
+				e701_41.text = ve701.e70141Str;
+				if(ve701.e70142!="0"){
+					e701_42.text=ve701.e70142;
+				}
+				e701_45.text=ve701.e70145;
+			}
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}	
+				return index;
+			}
+			private function savee701(event:MouseEvent):void
+			{
+				
+				var bool:Boolean = validate1();
+				if(!bool){
+					return;
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show('确认保存？','保存信息',1|2,this,savee701_hanlder);
+			}
+			private function savee701_hanlder(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					quzhi();
+					e701Service.updateE701(e701);
+					//	clear();
+				}
+			}
+			public function updateE701Handler(event:ResultEvent):void{
+				var e701Response:Object =event.result;
+				if(!e701Response.falg){
+					if(e701Response.state==4){
+						Alert.show("已登记过检查,不能修改", "系统提示");
+						return;
+					}
+					if(e701Response.state==5){
+						Alert.show("已登记过随访,不能修改", "系统提示");
+						return;
+					}
+					Alert.show("请稍后重试","系统提示");
+					return;
+				}
+				Alert.show("修改成功！ ","系统提示");
+				dispatchEvent(new Event("ok_click"));
+				this.removeWindow();
+			}
+			private function removeWindow():void
+			{ 
+				
+				PopUpManager.removePopUp(this);
+			}
+			private function quzhi():void{
+				e701 = new E701();
+				e701.e70101=ve701.e70101;
+				e701.e70103=ve701.e70103;
+				e701.e70106=StringUtil.trim(e701_06.text);
+				e701.e70108=StringUtil.trim(e701_08.text);
+				e701.e70112=StringUtil.trim(e701_12.text);
+				e701.e70113=StringUtil.trim(e701_13.text);
+				if(validatef()){
+					e701.e70121=StringUtil.trim(e701_21.text);
+					e701.e70122=e701_22.selectedItem.data;
+					e701.e70123=StringUtil.trim(e701_23.text);
+					e701.e70130=StringUtil.trim(e701_30.text);
+					e701.e70141=DateField.stringToDate(e701_41.text,'YYYY-MM-DD');
+					e701.e70142=StringUtil.trim(e701_42.text);
+					e701.e70143=e701_43.selectedItem.data;
+					e701.e70144=e701_44.selectedItem.data;
+					e701.e70145=StringUtil.trim(e701_45.text);
+				}
+				if(validatem()){
+					e701.e70117=StringUtil.trim(e701_17.text);
+					e701.e70118=e701_18.selectedItem.data;
+					e701.e70119=StringUtil.trim(e701_19.text);
+					e701.e70120=StringUtil.trim(e701_20.text);
+					e701.e70136=DateField.stringToDate(e701_36.text,'YYYY-MM-DD');
+					e701.e70137=StringUtil.trim(e701_37.text);
+					e701.e70138=e701_38.selectedItem.data;
+					e701.e70139=e701_39.selectedItem.data;
+					e701.e70140=StringUtil.trim(e701_40.text);
+				}
+				e701.e70107=e701_07.selectedItem.data;
+				e701.e70109=DateField.stringToDate(e701_09.text,'YYYY-MM-DD');
+				e701.e70110=e701_10.selectedItem.data;
+				e701.e70111=e701_11.selectedItem.data;
+				e701.e70115=e701_15.getAreaCode();
+				e701.e70116=e701_16.getAreaCode();
+				e701.e70132=StringUtil.trim(e701_32.text);;
+				e701.e70131=e701_31.selectedItem.data;
+				e701.e70146=systemUser.userCode;
+				e701.e70133=DateField.stringToDate(e701_33.text,'YYYY-MM-DD');
+			}
+			private function validate1():Boolean
+			{
+//				if(StringUtil.trim(e701_06.text)==""){
+//					Alert.show("请输入儿童的姓名","系统提示");
+//					return false;
+//				}
+//				if(this.e701_07.selectedItem.data == 0){
+//					Alert.show("请选择儿童性别!","系统提示");
+//					return false;
+//				}
+//				
+//				if(this.e701_09.text ==""){
+//					Alert.show("请输入儿童的出生日期","系统提示");
+//					return false;
+//				}
+//				if(this.e701_10.selectedItem.data == 0){
+//					Alert.show("请选择国籍!","系统提示");
+//					return false;
+//				}
+//				if(this.e701_11.selectedItem.data == 0){
+//					Alert.show("请选择民族!","系统提示");
+//					return false;
+//				}
+				if(StringUtil.trim(e701_13.text)!=""){
+					var e13:Number = new Number(StringUtil.trim(e701_13.text));
+					if(e13<30||e13>200){
+						Alert.show("不合理的身高","系统提示");
+						return false;
+					}
+				}
+				
+				if(StringUtil.trim(e701_12.text)!=""){
+					var e12:Number = new Number(StringUtil.trim(e701_12.text));
+					if(e12<2||e12>100){
+						Alert.show("不合理的体重","系统提示");
+						return false;
+					}
+				}
+				if(StringUtil.trim(this.e701_08.text)!=""){
+					var patternMonther3:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+					if(!patternMonther3.test(this.e701_08.text))
+					{	//只有在证件类别为身份证，国籍为中国的时候才验证身份证格式是否正确
+						Alert.show("儿童证件号码有误!","系统提示");
+						return false;
+					}
+				}
+				if(e701_15.getAreaCode().substr(0,4)!="4113")
+				{
+					Alert.show("现地址请选择南阳市地址","系统提示");
+					return false;
+				}
+				if(!CompMethod.validateAreaCode(e701_15.getAreaCode(),'4113'))
+				{
+					Alert.show("现地址选择到最下级","系统提示");
+					return false;
+				}
+				if(e701_16.getAreaCode().substr(0,4)=="4113"){
+					if(!CompMethod.validateAreaCode(e701_16.getAreaCode(),"4113"))
+					{
+						Alert.show("户口地址选择到最下级","系统提示");
+						return false;
+					}
+				}else{
+					if(!CompMethod.validateAreaCode(e701_16.getAreaCode(),"4113",true))
+					{
+						Alert.show("户口地址选择到乡镇","系统提示");
+						return false;
+					}
+				}
+//				if(!validatefm()){
+//					Alert.show("父母信息必须有一方填写完整","系统提示");
+//					return false;	
+//				}
+//				var num_:Number=validatef()?(validatem()?3:1):(validatem()?2:0);
+//				if(num_==1||num_==3){
+//					if(this.e701_22.selectedItem.data == 1&&StringUtil.trim(this.e701_23.text)!=""){
+//						var patternMonther1:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+//						if(this.e701_22.selectedItem.data == 1 &&  !patternMonther1.test(this.e701_23.text))
+//						{	//只有在证件类别为身份证，国籍为中国的时候才验证身份证格式是否正确
+//							Alert.show("父亲证件号码有误!","系统提示");
+//							return false;
+//						}
+//					}
+//					var patternPhonef:RegExp = /^1(3|4|5|6|7|8|9)\d{9}$/;
+//					if(StringUtil.trim(e701_30.text)!=""&&!patternPhonef.test(e701_30.text)){
+//						Alert.show("父亲联系电话不正确!","系统提示");
+//						return false;
+//					}
+//				}
+//				if(num_==2||num_==3){
+//					if(this.e701_18.selectedItem.data == 1&&StringUtil.trim(this.e701_19.text)!=""){
+//						var patternMonther:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+//						if(this.e701_18.selectedItem.data == 1 &&  !patternMonther.test(this.e701_19.text))
+//						{	//只有在证件类别为身份证，国籍为中国的时候才验证身份证格式是否正确
+//							Alert.show("母亲证件号码有误!","系统提示");
+//							return false;
+//						}
+//					}
+//					var patternPhonem:RegExp = /^1(3|4|5|6|7|8|9)\d{9}$/;
+//					if(StringUtil.trim(e701_20.text)!=""&&!patternPhonem.test(e701_20.text)){
+//						Alert.show("母亲联系电话不正确!","系统提示");
+//						return false;
+//					}
+//				}
+//				
+//				if(num_==1&&!vam()){
+//					if(StringUtil.trim(e701_17.text)==""){
+//						Alert.show("请完善母亲姓名信息或清除母亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(this.e701_18.selectedItem.data == 0){
+//						Alert.show("请完善母亲证件类型信息或清除母亲其他相关信息!","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_19.text)==""){
+//						Alert.show("请完善母亲证件号码信息或清除母亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_20.text)==""){
+//						Alert.show("请完善母亲联系电话信息或清除母亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_36.text)==""){
+//						Alert.show("请完善母亲出生日期信息或清除母亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_37.text)==""){
+//						Alert.show("请完善母亲年龄信息或清除母亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(this.e701_38.selectedItem.data == 0){
+//						Alert.show("请完善母亲国籍信息或清除母亲其他相关信息!","系统提示");
+//						return false;
+//					}
+//					if(this.e701_39.selectedItem.data == 0){
+//						Alert.show("请完善母亲民族信息或清除母亲其他相关信息!","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_40.text)==""){
+//						Alert.show("请完善母亲证件地址信息或清除母亲其他相关信息","系统提示");
+//						return false;
+//					}
+//				}
+//				if(num_==2&&!vaf()){
+//					if(StringUtil.trim(e701_21.text)==""){
+//						Alert.show("请完善父亲姓名信息或清除父亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(this.e701_22.selectedItem.data == 0){
+//						Alert.show("请完善父亲证件类型信息或清除父亲其他相关信息!","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_23.text)==""){
+//						Alert.show("请完善父亲证件号码信息或清除父亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_30.text)==""){
+//						Alert.show("请完善父亲联系电话信息或清除父亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_41.text)==""){
+//						Alert.show("请完善父亲出生日期信息或清除父亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_42.text)==""){
+//						Alert.show("请完善父亲年龄信息或清除父亲其他相关信息","系统提示");
+//						return false;
+//					}
+//					if(this.e701_43.selectedItem.data == 0){
+//						Alert.show("请完善父亲国籍信息或清除父亲其他相关信息!","系统提示");
+//						return false;
+//					}
+//					if(this.e701_44.selectedItem.data == 0){
+//						Alert.show("请完善父亲民族信息或清除父亲其他相关信息!","系统提示");
+//						return false;
+//					}
+//					if(StringUtil.trim(e701_45.text)==""){
+//						Alert.show("请完善父亲证件地址信息或清除父亲其他相关信息","系统提示");
+//						return false;
+//					}
+//				}
+				if(StringUtil.trim(e701_32.text)==""||StringUtil.trim(e701_32.text)=="选择")
+				{
+					Alert.show("请输入录入人员信息","系统提示");
+					return false;
+				}
+				
+				return true;
+			}
+			private function vam():Boolean{
+				if(StringUtil.trim(e701_17.text)==""&&StringUtil.trim(e701_19.text)==""&&StringUtil.trim(e701_20.text)==""&&StringUtil.trim(e701_36.text)==""&&StringUtil.trim(e701_37.text)==""&&StringUtil.trim(e701_40.text)==""){
+					return true;
+				}
+				return false;
+			}
+			private function vaf():Boolean{
+				if(StringUtil.trim(e701_21.text)==""&&StringUtil.trim(e701_23.text)==""&&StringUtil.trim(e701_30.text)==""&&StringUtil.trim(e701_41.text)==""&&StringUtil.trim(e701_42.text)==""&&StringUtil.trim(e701_45.text)==""){
+					return true;
+				}
+				return false;
+			}
+			private function validatefm():Boolean{
+				if(validatef()||validatem()){
+					return true;
+				}
+				return false;
+			}
+			private function validatef():Boolean{
+				if(StringUtil.trim(e701_21.text)==""){
+					return false;
+				}
+				if(this.e701_22.selectedItem.data == 0){
+					return false;
+				}
+				if(StringUtil.trim(e701_23.text)==""){
+					return false;
+				}
+				if(StringUtil.trim(e701_30.text)==""){
+					return false;
+				}
+				if(StringUtil.trim(e701_41.text)==""){
+					return false;
+				}
+				if(StringUtil.trim(e701_42.text)==""){
+					return false;
+				}
+				if(this.e701_43.selectedItem.data == 0){
+					return false;
+				}
+				if(this.e701_44.selectedItem.data == 0){
+					return false;
+				}
+				if(StringUtil.trim(e701_45.text)==""){
+					return false;
+				}
+				return true;
+			}
+			
+			private function validatem():Boolean{
+				if(StringUtil.trim(e701_17.text)==""){
+					return false;
+				}
+				if(this.e701_18.selectedItem.data == 0){
+					return false;
+				}
+				if(StringUtil.trim(e701_19.text)==""){
+					return false;
+				}
+				if(StringUtil.trim(e701_20.text)==""){
+					return false;
+				}
+				if(StringUtil.trim(e701_36.text)==""){
+					return false;
+				}
+				if(StringUtil.trim(e701_37.text)==""){
+					return false;
+				}
+				if(this.e701_38.selectedItem.data == 0){
+					return false;
+				}
+				if(this.e701_39.selectedItem.data == 0){
+					return false;
+				}
+				if(StringUtil.trim(e701_40.text)==""){
+					return false;
+				}
+				return true;
+			}
+			protected function readCard_B2(event:MouseEvent):void
+			{
+				try
+				{
+					var array:Array = CompMethod.read_card("女");//性别
+					if(!array)
+						return ;
+					this.e701_18.selectedIndex=0;
+					this.e701_17.text = array[0];//姓名
+					this.e701_36.text = array[3];//出生日期
+					this.e701_19.text = array[5];//身份证号
+					this.e701_40.text = array[4];//户口地址
+					
+					e701_37.text=CompMethod._getAge(DateField.stringToDate(array[3],"YYYY-MM-DD"));
+					e701_39.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(e701_39.dataProvider),array[2],true);
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			protected function readCard_B3(event:MouseEvent):void
+			{
+				try
+				{
+					var array:Array = CompMethod.read_card("男");//性别
+					if(!array)
+						return ;
+					this.e701_22.selectedIndex=0;
+					this.e701_21.text = array[0];//姓名
+					this.e701_41.text = array[3];//出生日期
+					this.e701_23.text = array[5];//身份证号
+					this.e701_45.text = array[4];//户口地址
+					
+					e701_42.text=CompMethod._getAge(DateField.stringToDate(array[3],"YYYY-MM-DD"));
+					e701_44.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(e701_44.dataProvider),array[2],true);
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			/**
+			 *设置户口地址 
+			 */
+			private function e701_16_clickHandler(event:MouseEvent):void
+			{
+				
+				e701_16.setAreaCode(e701_15.getAreaCode());
+				
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator width="1114" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="儿童信息">
+					<s:VGroup width="1112" paddingLeft="6">
+					
+					<mx:Grid paddingLeft="1" paddingBottom="1">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="儿 童姓 名" styleName="myLabel"/>
+								<s:TextInput id="e701_06" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="性　     别" styleName="myLabel"/>
+								<s:DropDownList id="e701_07" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出生日期" paddingLeft="2" styleName="myLabel"/>
+								<component:CustomRangeDateField id="e701_09" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="国　    籍" styleName="myLabel"/>
+								<s:DropDownList id="e701_10" width="170" enabled="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="民　      族" paddingLeft="2" styleName="myLabel"/>
+								<s:DropDownList id="e701_11" width="130" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="身高(cm)" styleName="myLabel"/>
+								<s:TextInput id="e701_13" restrict="0-9"  width="130" maxChars="6"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="体重 (kg)" styleName="myLabel"/>
+								<s:TextInput id="e701_12" restrict="0-9." maxChars="6"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="身份证号" paddingLeft="2" styleName="myLabel"/>
+								<s:TextInput id="e701_08" width="170"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						</mx:Grid>
+						
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="57" paddingLeft="2" text="现   住   址" styleName="myLabel"/>
+							<component:AreaComboBoxVillageAuto id="e701_15" width="844" buttonMode="true" areaCode="{this.parentApplication.systemUser.areaCode}" enabled="false"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="57" paddingLeft="2" text="户 口地 址" styleName="myLabel"/>
+							<component:AreaComboBoxVillageAuto id="e701_16" width="844" buttonMode="true" areaCode="{this.parentApplication.systemUser.areaCode}"/>
+							<s:Button label="同现住址" click="e701_16_clickHandler(event)" buttonMode="true"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1114" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="其他信息">
+					<mx:Grid paddingLeft="6" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="母亲姓名" styleName="myLabel"/>
+								<s:TextInput id="e701_17" width="120" paddingLeft="3" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件类别" paddingLeft="1" styleName="myLabel"/>
+								<s:DropDownList id="e701_18" width="130" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem width="258">
+								<s:Label text="证件号码" paddingLeft="1" styleName="myLabel"/>
+								<s:TextInput id="e701_19" width="197" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem width="217">
+								<s:Label text="出生日期" paddingLeft="1" styleName="myLabel"/>
+								<component:CustomRangeDateField id="e701_36" width="146" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="年　　龄" paddingLeft="1" styleName="myLabel"/>
+								<s:TextInput id="e701_37" restrict="0-9" width="169" maxChars="2" enabled="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="国        籍" styleName="myLabel"/>
+								<s:DropDownList id="e701_38" width="120" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="民        族" styleName="myLabel"/>
+								<s:DropDownList id="e701_39" width="130" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem width="258">
+								<s:Label text="联系电话" paddingLeft="2" styleName="myLabel"/>
+								<s:TextInput id="e701_20" width="196" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">	
+								<s:Label paddingLeft="1" text="证件地址" styleName="myLabel"/>
+								<s:TextInput id="e701_40" width="319" enabled="false"/>
+								<s:Button label="读卡" id="duka2" enabled="false" click="readCard_B2(event)" icon="{CustomIcon.READCARD}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="3" text="父亲姓名" styleName="myLabel"/>
+								<s:TextInput id="e701_21" width="118" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件类别" paddingLeft="1" styleName="myLabel"/>
+								<s:DropDownList id="e701_22" width="130" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem width="258">
+								<s:Label text="证件号码" paddingLeft="1" styleName="myLabel"/>
+								<s:TextInput id="e701_23" width="197" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem width="217">
+								<s:Label text="出生日期" paddingLeft="1" styleName="myLabel"/>
+								<component:CustomRangeDateField id="e701_41" width="146" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="年　　龄" paddingLeft="1" styleName="myLabel"/>
+								<s:TextInput id="e701_42" restrict="0-9" width="168" maxChars="2" enabled="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="国        籍" styleName="myLabel"/>
+								<s:DropDownList id="e701_43" width="119" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" text="民        族" styleName="myLabel"/>
+								<s:DropDownList id="e701_44" width="130" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem width="258">
+								<s:Label text="联系电话" paddingLeft="2" styleName="myLabel"/>
+								<s:TextInput id="e701_30" width="196" enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">	
+								<s:Label paddingLeft="1" text="证件地址" styleName="myLabel"/>
+								<s:TextInput id="e701_45" width="319" enabled="false"/>
+								<s:Button label="读卡" id="duka3" enabled="false" click="readCard_B3(event)" icon="{CustomIcon.READCARD}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label paddingTop="0" text="录入单位" styleName="myLabel"/><s:DropDownList id="e701_31" width="124"
+																	  enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" paddingTop="0" styleName="myLabel"
+										 text="录入人员"/>
+								<s:TextInput id="e701_32"  width="128" height="21"/>	
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="2" paddingTop="0" text="录入时间" styleName="myLabel"/>
+								<component:CustomRangeDateField  id="e701_33" enabled="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+					
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup paddingBottom="10" verticalAlign="middle" width="50%" horizontalAlign="right">
+				<s:Button label="保存"  id="saveE701" click="savee701(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>

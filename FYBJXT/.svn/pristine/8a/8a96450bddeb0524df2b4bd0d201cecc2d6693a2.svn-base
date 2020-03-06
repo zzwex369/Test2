@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DateField xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			  xmlns:s="library://ns.adobe.com/flex/spark" 
+			  xmlns:mx="library://ns.adobe.com/flex/mx"
+			  creationComplete="initializeHandler(event)" width="130">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+		<s:method name="getServiceDate" result="getServiceDateHandler(event)"/>
+		</s:RemoteObject>	
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="getSysDate", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.model.ServiceDateRequest;
+			
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			[Bindable]
+			public var  now:Date;
+			public var 	isQuerySysDate:Boolean=true;// 是否查询服务器时间  默认 true
+			public var  formatStr:String=null;
+			public var  isSelectFirst:Boolean=false;//默认选择当前月第一天
+			public var  isSelectNow:Boolean=false;//默认选择今天
+			public var  isDisabledRanges:Boolean=true;//是否限制选择范围   默认一天
+			public var  disabledRangesDate:Number=1;//是否限制选择范围   默认一天
+
+			private function initializeHandler(event:FlexEvent):void
+			{
+				
+				setDefaultVal();
+				getServiceDate();
+			}
+			
+			/**
+			 *默认返回String 日期  类型
+			 */
+			private function getServiceDate():void
+			{
+				var mainServiceNow:Date=this.parentApplication.serviceNow;
+				if(mainServiceNow)
+					setRangesDate(mainServiceNow);
+				else if(isQuerySysDate)
+				{
+					var dateRequest:ServiceDateRequest=new ServiceDateRequest();
+					this.systemService.getServiceDate(dateRequest);
+				}
+			}
+			
+			private function getServiceDateHandler(event:ResultEvent):void 
+			{
+				var serviceDateResponse:Object=event.result;
+				var dateStr:String=serviceDateResponse.date.toString();
+				var date:Date=DateField.stringToDate(dateStr,formatString);
+				this.now=date;
+				setRangesDate(date);
+			}
+			
+			private function setDefaultVal():void
+			{
+				
+				buttonMode=true;
+				formatString=formatStr?formatStr:"YYYY-MM-DD"
+				yearNavigationEnabled=true;
+			//	dayNames = ["    周日      ","    周一    ","    周二    ","    周三    ","    周四    ","    周五    ","    周六       "];
+				dayNames = ["  周日    ","  周一    ","  周二    ","  周三    ","  周四    ","  周五    ","  周六  "];
+
+				monthNames = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
+				
+			}
+			
+			/**
+			 * 
+			 */
+			public function setRangesDate(date:*):void
+			{
+				if(date)
+				{
+					date=date is String?DateField.stringToDate(date,formatString):date;
+					if(isSelectNow)
+						this.selectedDate=date;
+					else if(isSelectFirst)
+						this.selectedDate=new Date(date.fullYear,date.month,1);
+					var _date:Date=CompMethod.cloneObject(date);
+					disabledRanges=isDisabledRanges?[{rangeStart:CompMethod.getRangeStart(_date,disabledRangesDate)}]:[];
+					if((isSelectFirst||isSelectNow)&&!this.text)//验证是否输入框为空
+						this.text=DateField.dateToString(this.selectedDate,formatString);
+				}
+				this.dispatchEvent(new Event("getSysDate"));
+			}
+			
+			/**
+			 *根据开始禁止日期  设置时间
+			 */
+			public function set getRangesDate(_disabledRanges:Array):void
+			{
+				var range:Object=_disabledRanges[0];
+				var date:Date=CompMethod.cloneObject(range.rangeStart);
+				date=new Date(date.time-=24*60*60*1000);
+				setRangesDate(date);
+			}
+			
+		]]>
+	</fx:Script>
+	
+</mx:DateField>

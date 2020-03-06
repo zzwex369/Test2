@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e305Service" destination="e305Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE305" result="queryE305Handler(event)"/>
+			<s:method name="deleteE305" result="deleteE305Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.etbjzhcx.zhTitle;
+			import com.xyw.module.etbj.model.E305;
+			import com.xyw.module.etbj.model.E305Request;
+			import com.xyw.module.etbj.model.E305Response;
+			import com.xyw.module.etbj.model.VE305;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var ve305:Object = null;
+			public var e305Request:E305Request=null;
+			public var systemUser:SystemUser =null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+				} 
+				
+			
+				this.e305Data.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+				this.F301_05.addEventListener(FocusEvent.FOCUS_OUT,validateCard);
+			}
+			
+			public function validateCard(event:Event):void{
+				var IC:String = this.F301_05.text;
+				if(IC.length>=15){
+					if(IC.length != 15 && IC.length != 18){
+						Alert.show("身份证号长度是15或18位","系统提示");
+						return;
+					}else{
+						var n:String = IC.substring(IC.length-1,IC.length);
+						if((n>='a'&&n<='z')){
+							IC.replace(n,n.toLowerCase());
+							this.F301_05.text = IC.substring(0,IC.length-1)+n.toUpperCase();
+						}
+					}
+				}
+			}
+			
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve305= DataGrid(event.target).selectedItem;
+			}
+			
+			private function initQueryParam():void
+			{
+				e305Request =new E305Request();
+				try{	
+					var type:String = this.e305_81.getLastSelectedInstitution();
+					var e30581:String = this.e305_81.getLastSelectedInstitutionCode();
+					var e305:E305=new E305();
+				
+					e305.e30581 = (type == "10")?e30581:e30581.substring(0,Number(type));
+					
+					var f30102:String=StringUtil.trim(F301_02.text);
+					var f30105:String=StringUtil.trim(F301_05.text);
+					if(f30102||f30105)
+					{
+						e305Request.f301_02 = f30102;
+						e305Request.f301_05 = f30105;
+					}else
+					{
+						if(CompMethod.getTimeSpace(timeStart,timeEnd))
+						{
+							return;
+						}
+						
+						e305Request.timeStart=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+						e305Request.timeEnd=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+					}
+					
+					e305Request.e305=e305;
+				}catch(error:Error) {		
+					
+				}
+			}
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F301_02.text = array[0];//姓名
+							this.F301_05.text = array[5];//身份证号
+						}else{
+							Alert.show("请读妇女信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			} 
+			
+			public function querye305(event:MouseEvent):void
+			{
+				e305Request= new E305Request();
+				this.initQueryParam();
+				e305Request.parameterPageindex=1;
+				e305Request.parameterPagesize=20;
+				this.e305Service.queryE305(e305Request);
+			}
+			private function queryE305Handler(event:ResultEvent):void{
+				var e305Response:Object = event.result;
+				var e305s:ArrayCollection =e305Response.ve305s;
+				var rowCount:Number = e305Response.rowCount;
+				this.e305Data.dataProvider=e305s;
+				this.pagerBar.pageSize = 20;
+				this.pagerBar.dataGrid = this.e305Data;  
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = e305s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(!e305Response.state){
+					Alert.show(e305Response.errorMessage,"系统提示");
+				}
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}else
+					Alert.show("暂无数据");
+			}
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				//e305Request = new E305Request();
+				initQueryParam();
+				e305Request.parameterPageindex=currentPageIndex;
+				e305Request.parameterPagesize=pageSize;
+				this.e305Service.queryE305(e305Request);		
+			}		
+			public function update305(event:MouseEvent):void{
+				if(!this.ve305){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+				} 
+				var window:title = new title();
+				window.e30501=ve305.e30501;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			public function delete305(event:MouseEvent):void
+			{
+				//var e305Request:E305Request = new E305Request();
+				if(this.ve305 == null){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				var e305:E305=new E305();
+				e305.e30501 =this.ve305.e30501;
+				e305Request.e305=e305;
+				Alert.yesLabel = '是'; 
+				Alert.noLabel = '否';
+				Alert.show('确认删除信息？','删除随访信息',1|2,this,deleteValidate);
+			}
+			protected function deleteValidate(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+					this.e305Service.deleteE305(e305Request);
+				}
+			}
+			public function deleteE305Handler(event:ResultEvent):void
+			{
+				var e305Response:Object = event.result;
+				if(e305Response.errorMessage == null){
+					if(e305Response.promptMessage != null){
+						Alert.show(e305Response.promptMessage, "系统提示");
+					}
+				} else {
+					Alert.show(e305Response.errorMessage, "系统提示");
+				}
+				e305Request = new E305Request();
+				this.initQueryParam();
+				e305Request.parameterPageindex=1;
+				e305Request.parameterPagesize=20;
+				this.e305Service.queryE305(e305Request);
+				this.ve305 =null;
+			}
+			public function refresh():void
+			{
+				e305Request = new E305Request();
+				this.initQueryParam();
+				e305Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				e305Request.parameterPagesize = 20;
+				this.e305Service.queryE305(e305Request);
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function queryAll(event:MouseEvent):void
+			{
+				
+				if(!this.ve305){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				var querywindow:zhTitle = new zhTitle();
+				querywindow.ve305 = this.ve305;
+				querywindow.e30101 = this.ve305.e30578;
+				querywindow.creationMoveWindow(this);				
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="seleall" width="100%" height="130" chromeColor="#ffffff"
+					 creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="随访机构"/>
+					<component:InstitutionComboBox id="e305_81" width="644" villageVisible="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="随访时间"/>
+					<component:CustomRangeDateField isSelectFirst="true" id="timeStart" width="130"/>
+					<s:Label text="至"/>
+					<component:CustomRangeDateField isSelectNow="true" id="timeEnd" width="130"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"  verticalAlign="middle">
+					<s:Label text="产妇姓名"/><s:TextInput id="F301_02"/>
+					<s:Label text="证件号码"/><s:TextInput id="F301_05" width="200"/>
+					<s:Button id="duka1" width="60" label="读卡" click="readCard_mother(event)" enabled="false"/>
+					<s:Button label="查询" click="querye305(event)"/>
+					<s:Button label="修改" click="update305(event)"/>
+					<s:Button label="删除" click="delete305(event)"/>
+					<s:Button label="综合查询" click="queryAll(event)"/>
+				<!--	<s:Button label="明细" click="Detailse305(event)"/>-->
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		
+	</mx:TabNavigator>
+	<s:Scroller y="126" width="100%" height="560" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="e305Data" width="100%" height="340"	alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e30501" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="120" dataField="e30502" headerText="婴儿姓名"/>
+						<s:GridColumn width="120" dataField="e30504Str" headerText="出生日期"/>
+						<s:GridColumn width="120" dataField="e30507" headerText="父亲姓名"/>
+						<s:GridColumn width="120" dataField="e30511" headerText="母亲姓名"/>
+						<s:GridColumn width="120" dataField="e30577" headerText="随访医生"/>
+						<s:GridColumn width="120" dataField="e30581Zh" headerText="随访机构名称"/>						
+						<s:GridColumn width="120" dataField="e30517Zh" headerText="助产机构名称"/>
+						<s:GridColumn width="120" dataField="e30574Str" headerText="随访日期"/>
+						<s:GridColumn  dataField="e30576Str" headerText="下次随访时间"/>
+						
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+			<component:PagerBar id="pagerBar" enabled="false"  isExcel="false" isExcel2="false" isPrinter="false"/>
+		</s:VGroup>	
+	</s:Scroller>
+</s:Module>

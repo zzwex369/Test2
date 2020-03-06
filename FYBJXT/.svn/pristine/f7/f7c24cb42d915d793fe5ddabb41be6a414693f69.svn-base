@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   title="打印及填写错误处理" width="850" height="205"
+			   creationComplete="init()" chromeColor="#429edd" 
+			   backgroundColor="white" close = "removeWindow()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Declarations>
+		<s:RemoteObject id="abandonCertificateService" destination="abandonCertificateService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="updateCertiticate" result="updateCertiticateHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.gridItem
+		{
+			horizontalAlign:right;
+			verticalAlign:middle;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D401;
+			import com.xyw.module.csyxzm.model.VD401;
+			
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			public var vd401:VD401 = null;
+			
+			private function init():void
+			{
+				this.d401_02.text = this.vd401.d40102;
+				this.d401_03.text = this.vd401.d40103Zh;
+				this.d401_04.text = DateField.dateToString(this.vd401.d40104,"YYYY-MM-DD");
+				this.d401_10.text = this.vd401.d40110Zh;
+				this.d401_05.text = this.vd401.d40105;
+				this.d401_08.text = DateField.dateToString(this.vd401.d40108,"YYYY-MM-DD");
+				this.d401_09.text = this.vd401.d40109;
+				this.d401_11.text = this.vd401.d40111;
+			}
+			
+			private function manage():void
+			{
+				if(this.d401_15.text == "")
+				{
+					Alert.show("请输入遗失原因!","系统提示");
+					return;
+				}
+				if(this.d401_16.text == "")
+				{
+					Alert.show("请输入遗失(其它废证)作废声明时间!","系统提示");
+					return;
+				}
+				if(this.d401_17.text == "")
+				{
+					Alert.show("请输入报刊名称!","系统提示");
+					return;
+				}
+				if(this.d401_18.text == "")
+				{
+					Alert.show("请输入对单位处理!","系统提示");
+					return;
+				}
+				if(this.d401_19.text == "")
+				{
+					Alert.show("请输入对个人处理!","系统提示");
+					return;
+				}
+				
+				
+				vd401.d40115 = this.d401_15.text;
+				vd401.d40116 = this.d401_16.selectedDate;
+				vd401.d40117 = this.d401_17.text;
+				vd401.d40118 = this.d401_18.text;
+				vd401.d40119 = this.d401_19.text;
+				
+				this.abandonCertificateService.updateCertiticate(vd401);
+			}
+			
+			private function updateCertiticateHandler(event:ResultEvent):void
+			{
+				var d401Response:Object = event.result;
+				
+				if(d401Response.errorMessage == null)
+				{
+					Alert.show(d401Response.promptMessage);
+				}else
+				{
+					Alert.show(d401Response.errorMessage);
+				}
+				var window:index = this.owner as index;
+				window.refresh();
+				this.removeWindow();
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup>
+		<s:HGroup width="100%" height="100%" paddingLeft="10" paddingTop="10">
+			<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+				<mx:Grid width="100%">
+					<mx:GridRow>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="婴儿姓名"/><s:TextInput id="d401_02" enabled="false"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="婴儿性别"/><s:TextInput id="d401_03" enabled="false"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="　单位名称"/><s:TextInput id="d401_10" enabled="false"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="　出生日期"/><s:TextInput id="d401_04" enabled="false"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="出生证号"/><s:TextInput id="d401_05" enabled="false"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="　审核人"/><s:TextInput id="d401_11" enabled="false"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="　　经办人"/><s:TextInput id="d401_09" enabled="false"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="　作废时间"/><s:TextInput id="d401_08" enabled="false"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="遗失原因"/><s:TextInput id="d401_15"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="报刊名称"/><s:TextInput id="d401_17"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="对单位处理"/><s:TextInput id="d401_18"/>
+						</mx:GridItem>
+						<mx:GridItem styleName="gridItem">
+							<s:Label text="对个人处理"/><s:TextInput id="d401_19"/>
+						</mx:GridItem>
+					</mx:GridRow>
+					<mx:GridRow>
+						<mx:GridItem colSpan="4" verticalAlign="middle">
+							<s:Label text="遗失(其它废证)作废声明时间"/>
+							<mx:DateField yearNavigationEnabled="true" id="d401_16" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+										  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+										  formatString="YYYY-MM-DD"/>
+						</mx:GridItem>
+					</mx:GridRow>
+				</mx:Grid>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			<s:Button label="确定处理" click="manage()"/>
+			<s:Button label="关闭" click="removeWindow()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

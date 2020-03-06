@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   width="813" height="570" chromeColor="#6EE0ED" 
+			   close="removeWindow()"
+			   cornerRadius="5" title="图片信息">
+	<fx:Declarations>
+		<s:RemoteObject id="pictureService" destination="pictureService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryVPicture" result="queryVPictureHandler(event)"/>
+			<s:method name="delbyId" result="delbyIdHandler(event)" />	
+		</s:RemoteObject>
+			
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.itemrenderer.CustomCsBgListColumnItemRenderer;
+			import com.xyw.uploadPictures.model.PictureRequest;
+			import com.xyw.uploadPictures.model.VPicture;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.DataGroup;
+			import spark.components.Label;
+			import spark.effects.WipeDirection;
+			import spark.events.RendererExistenceEvent;
+			private var f50249:String;
+			[Bindable]
+			private var picSourceIdx:int;
+			private var delIdx:int;
+			private var selectFile:Object;//选中的图片
+			[Bindable]
+			private var picDataArr:ArrayCollection;
+			[Bindable]
+			private var sourceArr:ArrayCollection=new ArrayCollection();
+			
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+			public function queryPic(f50201:String,f50249:String):void
+			{
+				this.f50249=f50249;
+				var picRequest:PictureRequest= new PictureRequest();
+				picRequest.pic02=f50201;
+				picRequest.parameterPageindex = 1;
+				picRequest.parameterPagesize = 10;
+				this.pictureService.queryVPicture(picRequest); 
+			}
+			
+			private function queryVPictureHandler(event:ResultEvent):void
+			{
+				var picResponse:Object = event.result ;
+				var rowCount:Number = picResponse.rowCount;
+				if(picResponse.status){
+					picDataArr=new ArrayCollection();
+					var picArr:ArrayCollection= picResponse.vp;
+					var minLength:int=picArr.length-3;
+					for(var i:int=picArr.length-1;i>minLength;i--)
+					{
+						var pic:Object=picArr.getItemAt(i);
+						var picObj:Object=new Object();
+						picObj.height=229;
+						picObj.id=pic.pic01;
+						picObj.delStatus=f50249=='3'?true:false;
+						picObj.picType=pic.pic10;
+						picObj.urlSuffix=pic.pic03+pic.pic04;
+						picDataArr.addItem(picObj);
+					}
+					picList.dataProvider=picDataArr;
+					callLater(addSourceArr);
+				}
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function addSourceArr():void
+			{
+				
+				var dataGroup:DataGroup=picList.dataGroup;
+				if(dataGroup.numChildren!=picDataArr.length)
+				{
+					callLater(addSourceArr);
+					return ;				
+				}
+				var hasItemRenderer:Boolean=true;
+				for(var i:int=0;i<picList.dataGroup.numChildren;i++)
+				{
+					var obj:CustomCsBgListColumnItemRenderer=picList.dataGroup.getChildAt(i)as CustomCsBgListColumnItemRenderer;
+					var picSource:Object=obj.smallerimg.source;
+					if(!picSource)
+					{
+						hasItemRenderer=false;
+						break;
+					}
+					sourceArr.addItemAt(picSource,i);
+				}
+				
+				if(!hasItemRenderer)
+				{
+					callLater(addSourceArr);
+					return ;				
+				}
+				pic1.source=sourceArr.getItemAt(0);
+				pic2.source=sourceArr.getItemAt(1);
+			}
+			
+			/**
+			 *
+			 */
+			private function picList_itemClickHandler(event:MouseEvent):void 
+			{
+				if(!picList.dataProvider)
+					return;
+				selectFile=picList.selectedItem;
+				var changeImg:Boolean=false;
+				if(picSourceIdx!=picList.selectedIndex)
+					changeImg=true;
+				if(event.target is Label)
+				{
+					var label:Label=Label(event.target);
+					if(label.text=="删除")
+					{
+						delIdx=picList.selectedIndex;				
+						CompMethod.delConfirm(delPic,"是否要删除这张图片信息?");
+					}
+				}
+				if(changeImg)
+					getImgSource(picList.selectedIndex);
+			}
+			
+			/**
+			 *
+			 */
+			private function hasLength():Boolean
+			{
+				var length:int=picList.dataGroup.numChildren;
+				if(!length)
+				{
+					delIdx=null;
+					picSourceIdx=null;
+					return false;
+				}
+				return true;
+			}
+			
+			/**
+			 *
+			 */
+			private function getImgSource(idx:int=0):void
+			{
+				
+				picSourceIdx=idx;
+				this.currentState=this.states[idx].name;
+			}
+			
+			/**
+			 *
+			 */
+			private function delPic():void
+			{
+				picList.enabled=false;
+				var pic:VPicture=new VPicture();
+				pic.pic01=this.selectFile.id;
+				this.pictureService.delbyId(pic); 
+			}
+			
+			
+			/*------------------返回删除图片信息-------------------------*/
+			private function delbyIdHandler(event:ResultEvent):void
+			{
+				var picmessage:Object=event.result;
+				if(!picmessage.status){
+					Alert.show(picmessage.message,"系统提示");
+					return;
+				}
+				removePicList();
+				Alert.show(picmessage.message,"系统提示");
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function removePicList():void
+			{
+				sourceArr.removeItemAt(delIdx);
+				picDataArr.removeItemAt(delIdx);
+				this.picList.dataProvider=picDataArr;
+				if(hasLength())
+				{
+					getImgSource(0);
+					picList.enabled=true;
+				}
+				
+				
+			}
+			
+			private function mouseOutHandler(event:MouseEvent):void
+			{
+				
+				setImgAlpha(Image(event.currentTarget),0.3);
+			}
+			
+			private function mouseOverHandler(event:MouseEvent):void
+			{
+				setImgAlpha(Image(event.currentTarget),1);
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function setImgAlpha(img:Image,alpha:Number):void
+			{
+				img.alpha=alpha;
+			}		
+			
+			private function image_clickHandler(event:MouseEvent):void
+			{
+				var idx:Number=Number(Image(event.currentTarget).automationName);
+				picList.selectedIndex=idx;
+				getImgSource(idx);
+				
+			}
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="first"/>
+		<s:State name="last"/>
+	</s:states>
+	
+	<s:HGroup width="825" height="100%" gap="0">
+		<s:VGroup width="205" height="100%" >
+			<mx:TabNavigator chromeColor="#ffffff"
+							 creationPolicy="all">
+				<s:NavigatorContent  height="504" label="图片信息">	
+					<s:List id="picList" width="203" borderVisible="false"
+							click="picList_itemClickHandler(event)" contentBackgroundColor="#FFFFFF"
+							itemRenderer="{new ClassFactory(CustomCsBgListColumnItemRenderer)}">
+						<s:layout>
+							<s:TileLayout useVirtualLayout="true" requestedColumnCount="1" requestedRowCount="2"/>
+						</s:layout>
+					</s:List>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>  
+		<s:VGroup width="608" height="100%" >
+			<mx:TabNavigator  chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent label="图片详情">	
+					<s:BorderContainer backgroundColor="#050505" id="picBorder">
+						<s:Image id="pic1" width="603" height="504" scaleMode="stretch" visible="true" visible.last="false"/>
+						<s:Image id="pic2" width="603" height="504" scaleMode="stretch" visible="false" visible.last="true"/>
+						<s:Image x="8" y="230" width="64" height="64" enabled="{picSourceIdx==1}"
+								 source="images/left_w.png" buttonMode="true" alpha=".3" 
+								 automationName="0"
+								 mouseOut="mouseOutHandler(event)" 
+								 mouseOver="mouseOverHandler(event)"
+								 click="image_clickHandler(event)"/>
+						<s:Image x="530" y="230" width="64" height="64" enabled="{picSourceIdx==0&amp;&amp;picDataArr.length>1}"
+								 source="images/right_w.png" buttonMode="true" alpha=".3"
+								 automationName="1"
+								 mouseOut="mouseOutHandler(event)" 
+								 mouseOver="mouseOverHandler(event)"
+								 click="image_clickHandler(event)"/>
+					</s:BorderContainer>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>  
+	</s:HGroup>
+</s:TitleWindow>

@@ -1,0 +1,1778 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationComplete()">
+	<fx:Declarations>
+		<s:RemoteObject id="f401Service" destination="f401Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveF401" result="saveF401Handle(event)"/>
+			<s:method name="queryF401" result="queryF401Handle(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandle(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|SkinnableTextBase:disabledWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		s|SkinnableTextBase:normalWithPrompt {
+			color: #000000;
+			fontStyle:normal;
+			
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F401;
+			import com.xyw.module.fnbj.model.F401Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import com.xyw.sys.custom.component.CustomRegex;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.TextOperationEvent;
+			public var f40101:Number;
+			private var vf401:Object;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var systemUser:SystemUser =null;
+			private var f401:F401 =new F401();
+			public var array:Array = new Array();
+			private var countryIndex:int;
+			private var f401Request:F401Request;
+			
+			private function moduleCreationComplete():void
+			{
+				this.systemUser =this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka =="1"){
+					this.duka1.enabled =true;
+					this.duka2.enabled =true;
+					this.duka3.enabled =true;
+				}
+				initclick();
+				CompMethod.getDefaultCode([F401_95,F401_102]);
+				
+				
+				//  this.F401_06.addEventListener(FlexEvent.CHANGING,setF401_04);
+				this.initializeComboBox();
+			}
+			private function initclick():void{
+				enclick4();
+				F401_30_1.selected=true;
+				F401_30_0.selected=false;
+				enclick();
+				F401_19_1.selected=true;
+				F401_19_0.selected=false;
+				enclick2();
+				F401_27_1.selected=true;
+				F401_27_0.selected=false;
+			}
+			private function initializeComboBox():void{	
+				
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from S301_01";
+				comboBoxDataRequest.flag ="S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from S301_03";
+				comboBoxDataRequest.flag ="S301_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from S301_04";
+				comboBoxDataRequest.flag ="S301_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from S301_06";
+				comboBoxDataRequest.flag ="S301_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from S301_07";
+				comboBoxDataRequest.flag ="S301_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='1' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10_1";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select * from S301_10 where S_05='2' and S_04 ="+this.systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10_2";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from S601_01";
+				comboBoxDataRequest.flag ="S601_01";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from S601_02";
+				comboBoxDataRequest.flag ="S601_02";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from S601_03";
+				comboBoxDataRequest.flag ="S601_03";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from S601_18";
+				comboBoxDataRequest.flag ="S601_18";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_01";
+				comboBoxDataRequest.flag ="Z401_01";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_02";
+				comboBoxDataRequest.flag ="Z401_02";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_03";
+				comboBoxDataRequest.flag ="Z401_03";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_04";
+				comboBoxDataRequest.flag ="Z401_04";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_05";
+				comboBoxDataRequest.flag ="Z401_05";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from Z401_06";
+				comboBoxDataRequest.flag ="Z401_06";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_07";
+				comboBoxDataRequest.flag ="Z401_07";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_08";
+				comboBoxDataRequest.flag ="Z401_08";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_09";
+				comboBoxDataRequest.flag ="Z401_09";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =false;
+				comboBoxDataRequest.sql ="select * from Z401_10";
+				comboBoxDataRequest.flag ="Z401_10";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			private function getDroupDownListSelectedIndex(arrayCollection:ArrayCollection,defaultValue:String):int{
+				var len:int =arrayCollection.length;
+				var i:uint =0;
+				var index:int =0;
+				while(i<len){
+					var comboBoxDataP:Object =arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data ==defaultValue){
+						index =arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandle(event:ResultEvent):void{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;	
+				
+				if(flag =="S301_01"){   //性别
+					this.F401_03.dataProvider =comboBoxDataList; 
+					this.F401_03.selectedIndex =0;
+				}else if(flag =="S301_03"){
+					countryIndex =this.getCountrySelectedIndex(comboBoxDataList);
+					this.F401_08.dataProvider =comboBoxDataList;
+					this.F401_08.selectedIndex =countryIndex;
+				}else if(flag =="S301_04"){
+					this.F401_07.dataProvider =comboBoxDataList;
+					this.F401_07.selectedIndex =0;
+				}else if(flag =="S301_06"){
+					var TypeIndex:int =this.getDroupDownListSelectedIndex(comboBoxDataList,"1");
+					this.F401_05.dataProvider =comboBoxDataList;
+					this.F401_05.selectedIndex =TypeIndex;
+				}else if(flag =="S301_07"){
+					this.F401_29.dataProvider =comboBoxDataList;
+					this.F401_29.selectedIndex =0;
+				}else if(flag =="S301_10_1"){
+					this.F401_99.dataProvider =comboBoxDataList;
+					this.F401_99.selectedIndex =0;
+				}else if(flag =="S301_10_2"){
+					this.F401_92.dataProvider =comboBoxDataList;
+					this.F401_92.selectedIndex =0;
+				}else if(flag =="S601_01"){
+					this.F401_15.dataProvider =comboBoxDataList;
+					this.F401_15.selectedIndex =0;
+				}else if(flag =="S601_02"){
+					this.F401_14.dataProvider =comboBoxDataList;
+					this.F401_14.selectedIndex =0;
+				}else if(flag =="S601_03"){
+					this.F401_21.dataProvider =comboBoxDataList;
+					this.F401_23.dataProvider =comboBoxDataList;
+					this.F401_36.dataProvider =comboBoxDataList;
+					this.F401_52.dataProvider =comboBoxDataList;
+					this.F401_61.dataProvider =comboBoxDataList;
+					this.F401_74.dataProvider =comboBoxDataList;
+					this.F401_21.selectedIndex =0;
+					this.F401_23.selectedIndex =0;
+					this.F401_36.selectedIndex =0;
+					this.F401_52.selectedIndex =0;
+					this.F401_61.selectedIndex =1;
+					this.F401_74.selectedIndex =0;
+				}else if(flag =="S601_18"){
+					this.F401_25.dataProvider =comboBoxDataList;
+					this.F401_25.selectedIndex =0;	
+				}else if(flag =="Z401_01"){
+					this.F401_38.dataProvider =comboBoxDataList;
+					this.F401_40.dataProvider =comboBoxDataList;
+					this.F401_43.dataProvider =comboBoxDataList;
+					this.F401_46.dataProvider =comboBoxDataList;
+					this.F401_48.dataProvider =comboBoxDataList;
+					this.F401_59.dataProvider =comboBoxDataList;
+					this.F401_65.dataProvider =comboBoxDataList;
+					this.F401_71.dataProvider =comboBoxDataList;
+					this.F401_34.dataProvider =comboBoxDataList;
+					this.F401_86.dataProvider =comboBoxDataList;
+					this.F401_38.selectedIndex =0;	
+					this.F401_40.selectedIndex =0;
+					this.F401_43.selectedIndex =0;
+					this.F401_46.selectedIndex =0;
+					this.F401_48.selectedIndex =0;
+					this.F401_59.selectedIndex =0;
+					this.F401_65.selectedIndex =0;
+					this.F401_71.selectedIndex =0;
+					this.F401_34.selectedIndex =0;
+					this.F401_86.selectedIndex =0;
+				}else if(flag =="Z401_02"){
+					this.F401_44.dataProvider =comboBoxDataList;
+					this.F401_45.dataProvider =comboBoxDataList;
+					this.F401_44.selectedIndex =0;
+					this.F401_45.selectedIndex =0;
+				}else if(flag =="Z401_03"){
+					this.F401_54.dataProvider =comboBoxDataList;
+					this.F401_56.dataProvider =comboBoxDataList;
+					this.F401_54.selectedIndex =0;
+					this.F401_56.selectedIndex =0;
+				}else if(flag =="Z401_04"){
+					this.F401_62.dataProvider =comboBoxDataList;
+					this.F401_62.selectedIndex =0;
+				}else if(flag =="Z401_05"){
+					this.F401_67.dataProvider =comboBoxDataList;
+					this.F401_67.selectedIndex =0;
+				}else if(flag =="Z401_06"){
+					this.F401_70.dataProvider =comboBoxDataList;
+					this.F401_70.selectedIndex =0;
+				}else if(flag =="Z401_07"){
+					this.F401_89.dataProvider =comboBoxDataList;
+					this.F401_89.selectedIndex =0;
+				}else if(flag =="Z401_08"){
+					this.F401_91.dataProvider =comboBoxDataList;
+					this.F401_91.selectedIndex =0;
+				}else if(flag =="Z401_09"){
+					this.F401_17.dataProvider =comboBoxDataList;
+					this.F401_17.selectedIndex =0;
+				}else if(flag =="Z401_10"){
+					this.F401_58.dataProvider =comboBoxDataList;
+					this.F401_58.selectedIndex =0;
+				}
+			}
+			/*-----------------默认国籍 中国---------------------*/
+			private function getCountrySelectedIndex(arrayCollection:ArrayCollection):int{
+				var len:int =arrayCollection.length;
+				var i:uint =0;
+				var index:int =0;
+				while(i<len){
+					var comboBoxDataP:Object =arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data =="CHN"){
+						index =arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			private function validateAreaCode(areaCode:String):Boolean
+			{
+				if(areaCode == "" || areaCode.length == 0){
+					return false;
+				} else if(areaCode.length <6 ){
+					return false;
+				} else {
+					return true;
+				}
+			}
+			public function validate1():void{
+				if(this.F401_02.text ==""){
+					Alert.show("请输入男性的姓名","系统提示");
+					return;
+				}
+				if(this.F401_03.selectedItem.data ==0){
+					Alert.show("请选择男性性别！","系统提示");
+					return;
+				}
+				if(this.F401_05.selectedItem.data ==0){
+					Alert.show("请选择男性证件类型","系统提示");
+					return;
+				}
+				if(this.F401_06.text ==""){
+					Alert.show("请输入男性的证件号码","系统提示");
+					return;
+				}
+				
+				if(this.F401_05.selectedItem.data ==1&&this.F401_08.selectedItem.data=="CHN"&&!CustomRegex.testRegExp(CustomRegex.COMMON_CARD,StringUtil.trim(F401_06.text)))
+				{
+					Alert.show("男性的证件号码有误!","系统提示");
+					return;
+				}
+				
+				
+				if(this.F401_04.text ==""){
+					Alert.show("请输入男性的出生日期","系统提示");
+					return;
+				}
+				if(this.F401_08.selectedItem.data ==0){
+					Alert.show("请选择男性国籍！","系统提示");
+					return;
+				} 
+				if(this.F401_09.text == ""){
+					Alert.show("请输入男性身份证地址!","系统提示");
+					return;
+				}
+				
+				if(StringUtil.trim(this.F401_12.text) ==""){
+					Alert.show("请输入男性联系方式！","系统提示");
+					return;
+				}
+				if(!CustomRegex.testRegExp(CustomRegex.CELLPHONE,StringUtil.trim(F401_12.text)))
+				{
+					Alert.show("男性联系方式不正确!","系统提示");
+					return;
+				}
+				
+				if(this.F401_13.text ==""){
+					Alert.show("请输入配偶的姓名","系统提示");
+					return;
+				}
+				if(this.F401_94.text ==""){
+					Alert.show("请输入配偶的证件号码","系统提示");
+					return;
+				}
+				if(this.F401_95.selectedItem.data ==0){
+					Alert.show("请选择检查单位","系统提示");
+					return;
+				}
+				if(this.F401_93.text ==""){
+					Alert.show("请输入检查日期（时）！","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.F401_92.text) ==""){
+					Alert.show("请输入医师签名！","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.F401_99.text) ==""){
+					Alert.show("请输入录入人！","系统提示");
+					return;
+				}
+				if(F401_10.getAreaCode().substr(0,4)!="4113")
+				{
+					Alert.show("现地址请选择南阳市地址","系统提示");
+					return;
+				}
+				if(!CompMethod.validateAreaCode(F401_10.getAreaCode(),'4113'))
+				{
+					Alert.show("现地址选择到最下级","系统提示");
+					return;
+				}
+				if(F401_98.getAreaCode().substr(0,4)=="4113"){
+					if(!CompMethod.validateAreaCode(F401_98.getAreaCode(),"4113"))
+					{
+						Alert.show("户口地址选择到最下级","系统提示");
+						return;
+					}
+				}else{
+					if(!CompMethod.validateAreaCode(F401_98.getAreaCode(),"4113",true))
+					{
+						Alert.show("户口地址选择到乡镇","系统提示");
+						return;
+					}
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show('确认保存？','保存信息',1|2,this,savef401_hanlder);
+			}
+			private function savef401_hanlder(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					saveRecord();
+				}
+			}
+			public function saveRecord():void{
+				this.f401.f40102 =StringUtil.trim(this.F401_02.text);
+				this.f401.f40103 =this.F401_03.selectedItem.data;
+				this.f401.f40104 =DateField.stringToDate(this.F401_04.text,"YYYY-MM-DD");
+				this.f401.f40105 =this.F401_05.selectedItem.data;
+				this.f401.f40106 =StringUtil.trim(this.F401_06.text);
+				this.f401.f40107 =this.F401_07.selectedItem.data;
+				this.f401.f40108 =this.F401_08.selectedItem.data;
+				this.f401.f40109 =StringUtil.trim(this.F401_09.text);
+				this.f401.f40110 =this.F401_10.getAreaCode();
+				this.f401.f40111 =StringUtil.trim(this.F401_11.text);
+				this.f401.f40112 =StringUtil.trim(this.F401_12.text);
+				this.f401.f40113 =StringUtil.trim(this.F401_13.text);
+				this.f401.f40114 =this.F401_14.selectedItem.data;
+				this.f401.f40115 =this.F401_15.selectedItem.data;
+				this.f401.f40116 =StringUtil.trim(this.F401_16.text);
+				this.f401.f40117 =this.F401_17.selectedItem.data;
+				this.f401.f40118 =StringUtil.trim(this.F401_18.text);
+				this.f401.f40121 =this.F401_21.selectedItem.data;
+				this.f401.f40122 =StringUtil.trim(this.F401_22.text);
+				this.f401.f40123 =this.F401_23.selectedItem.data;
+				this.f401.f40124 =StringUtil.trim(this.F401_24.text);
+				this.f401.f40125 =this.F401_25.selectedItem.data;
+				this.f401.f40126 =StringUtil.trim(this.F401_26.text);
+				this.f401.f40131 =StringUtil.trim(this.F401_31.text);
+				this.f401.f40132 =StringUtil.trim(this.F401_32.text);
+				this.f401.f40133 =StringUtil.trim(this.F401_33_1.text)+"/"+StringUtil.trim(this.F401_33_2.text);
+				this.f401.f40134 =this.F401_34.selectedItem.data;
+				this.f401.f40135 =StringUtil.trim(this.F401_35.text);
+				this.f401.f40136 =this.F401_36.selectedItem.data;
+				this.f401.f40137 =StringUtil.trim(this.F401_37.text);
+				this.f401.f40138 =this.F401_38.selectedItem.data;
+				this.f401.f40139 =StringUtil.trim(this.F401_39.text);
+				this.f401.f40140 =this.F401_40.selectedItem.data;
+				this.f401.f40141 =StringUtil.trim(this.F401_41.text);
+				this.f401.f40142 =StringUtil.trim(this.F401_42.text);
+				this.f401.f40143 =this.F401_43.selectedItem.data;
+				this.f401.f40144 =this.F401_44.selectedItem.data;
+				this.f401.f40145 =this.F401_45.selectedItem.data;
+				this.f401.f40146 =this.F401_46.selectedItem.data;
+				this.f401.f40147 =StringUtil.trim(this.F401_47.text);
+				this.f401.f40148 =this.F401_48.selectedItem.data;
+				this.f401.f40149 =StringUtil.trim(this.F401_49.text);
+				this.f401.f40150 =StringUtil.trim(this.F401_50.text);
+				this.f401.f40151 =StringUtil.trim(this.F401_51.text);
+				this.f401.f40152 =this.F401_52.selectedItem.data;
+				this.f401.f40153 =StringUtil.trim(this.F401_53.text);
+				this.f401.f40154 =this.F401_54.selectedItem.data;
+				this.f401.f40155 =StringUtil.trim(this.F401_55.text);
+				this.f401.f40156 =this.F401_56.selectedItem.data;
+				this.f401.f40157 =StringUtil.trim(this.F401_57.text);
+				this.f401.f40158 =this.F401_58.selectedItem.data;
+				this.f401.f40159 =this.F401_59.selectedItem.data;
+				this.f401.f40160 =StringUtil.trim(this.F401_60.text);
+				
+				this.f401.f40161 =this.F401_61.selectedItem.data;
+				this.f401.f40162 =this.F401_62.selectedItem.data;
+				this.f401.f40165 =this.F401_65.selectedItem.data;
+				this.f401.f40166 =StringUtil.trim(this.F401_66.text);
+				this.f401.f40167 =this.F401_67.selectedItem.data;
+				this.f401.f40168 =StringUtil.trim(this.F401_68.text);
+				this.f401.f40169 =StringUtil.trim(this.F401_69.text);
+				this.f401.f40170 =this.F401_70.selectedItem.data;
+				this.f401.f40171 =this.F401_71.selectedItem.data;
+				this.f401.f40172 =StringUtil.trim(this.F401_72.text);
+				this.f401.f40173 =StringUtil.trim(this.F401_73.text);
+				this.f401.f40174 =this.F401_74.selectedItem.data;
+				this.f401.f40175 =StringUtil.trim(this.F401_75.text);
+				this.f401.f40176 =StringUtil.trim(this.F401_76.text);
+				
+				this.f401.f40186 =this.F401_86.selectedItem.data;
+				this.f401.f40187 =StringUtil.trim(this.F401_87.text);
+				this.f401.f40188 =StringUtil.trim(this.F401_88.text);
+				this.f401.f40189 =this.F401_89.selectedItem.data;
+				this.f401.f40190 =StringUtil.trim(this.F401_90.text);
+				this.f401.f40191 =this.F401_91.selectedItem.data;
+				this.f401.f40192 =StringUtil.trim(this.F401_92.text);
+				this.f401.f40193 =DateField.stringToDate(this.F401_93.text,"YYYY-MM-DD");
+				this.f401.f40194 =StringUtil.trim(this.F401_94.text);
+				this.f401.f40195 =this.F401_95.selectedItem.data;
+				this.f401.f40198 =this.F401_98.getAreaCode();
+				this.f401.f40120 =StringUtil.trim(this.F401_20.text);
+				this.f401.f40128 =StringUtil.trim(this.F401_28.text);
+				this.f401.f40129 =this.F401_29.selectedItem.data;
+				this.f401.f40199 =StringUtil.trim(this.F401_99.text);
+				this.f401.f401101 =DateField.stringToDate(this.F401_101.text,"YYYY-MM-DD");
+				this.f401.f401102 =this.F401_102.selectedItem.data;
+				this.f401.f401103 =systemUser.userCode;
+				this.f401Service.saveF401(f401);
+			}
+			public function saveF401Handle(event:ResultEvent):void{
+				var f401Response:Object =event.result;
+				f40101 = f401Response.f40101;
+				if(!f401Response.state){
+					Alert.show(f401Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show("保存成功！ ","系统提示");
+				//				Alert.show("		保存成功！\n请点击确认之后选择相应功能！ ","系统提示",4,this,picLoad);
+				this.clean();
+		//		this.saveF401.enabled =false;
+		//		this.F401_02.addEventListener(FlexEvent.CHANGING,openSave);
+			}
+			//			private function picLoad(e:CloseEvent):void{
+			//				if(e.detail==Alert.OK){
+			//					var manTitleWindow:ManTitleWindow = new ManTitleWindow();
+			//					manTitleWindow.diqucode = this.systemUser.institutionCode;
+			//					manTitleWindow.f40101 = this.f40101;
+			//					CompMethod.popUpTitleWindow(manTitleWindow,this,true);
+			//				}
+			//			}
+			private function resetbu():void{
+				F401_30_1.selected=true;
+				F401_30_0.selected=false;
+				F401_19_1.selected=true;
+				F401_19_0.selected=false;
+				F401_27_1.selected=true;
+				F401_27_0.selected=false;
+			}
+			private function clean(bool:Boolean=true):void{	
+				if(bool){
+					this.F401_02_nv.text = "";
+					this.F401_06_nv.text = "";
+				}
+				this.F401_02.text="";
+				this.F401_03.selectedIndex=0;
+				this.F401_04.text="";
+				this.F401_05.selectedIndex=0;
+				this.F401_06.text="";
+				this.F401_07.selectedIndex=0;
+				this.F401_08.selectedIndex=countryIndex;
+				this.F401_09.text="";
+				this.F401_10.setAreaCode(this.systemUser.areaCode);
+				this.F401_98.setAreaCode(this.systemUser.areaCode);
+				this.F401_11.text="";
+				this.F401_12.text="";
+				this.F401_13.text="";
+				this.F401_14.selectedIndex=0;
+				this.F401_15.selectedIndex=0;
+				this.F401_16.text="";
+				this.F401_17.selectedIndex=0;			
+				this.F401_18.text="";
+				enclick();
+				enclick1();
+				
+				this.F401_21.selectedIndex=0;
+				this.F401_22.text="";
+				this.F401_23.selectedIndex=0;
+				this.F401_24.text="";
+				this.F401_25.selectedIndex=0;
+				this.F401_26.text="";
+				enclick2();
+				enclick3();
+				enclick4();
+				enclick5();
+				resetbu();
+				this.F401_31.text="";
+				this.F401_32.text="";
+				this.F401_33_1.text="";
+				this.F401_33_2.text="";
+				this.F401_34.selectedIndex=0;
+				this.F401_35.text="";
+				this.F401_36.selectedIndex=0;
+				this.F401_37.text="";
+				this.F401_38.selectedIndex=0;
+				this.F401_39.text="";
+				this.F401_40.selectedIndex=0;
+				this.F401_41.text="";
+				this.F401_42.text="";
+				this.F401_43.selectedIndex=0;
+				this.F401_44.selectedIndex=0;
+				this.F401_45.selectedIndex=0;
+				this.F401_46.selectedIndex=0;
+				this.F401_47.text="";
+				this.F401_48.selectedIndex=0;
+				this.F401_49.text="";
+				this.F401_50.text="";
+				this.F401_51.text="";
+				this.F401_52.selectedIndex=0;
+				this.F401_53.text="";
+				this.F401_54.selectedIndex=0;
+				this.F401_55.text="";
+				this.F401_56.selectedIndex=0;
+				this.F401_57.text="";
+				this.F401_58.selectedIndex=0;
+				this.F401_59.selectedIndex=0;
+				this.F401_60.text="";
+				
+				this.F401_61.selectedIndex=1;
+				this.F401_62.selectedIndex=0;
+				this.F401_65.selectedIndex=0;
+				this.F401_66.text="";
+				this.F401_67.selectedIndex=0;
+				this.F401_68.text="";
+				this.F401_69.text="";
+				this.F401_70.selectedIndex=0;
+				this.F401_71.selectedIndex=0;
+				this.F401_72.text="";
+				this.F401_73.text="";
+				this.F401_74.selectedIndex=0;
+				this.F401_75.text="";
+				this.F401_76.text="";
+				
+				this.F401_86.selectedIndex=0;
+				this.F401_87.text="";
+				this.F401_88.text="";
+				this.F401_89.selectedIndex=0;
+				this.F401_90.text="";
+				this.F401_91.selectedIndex=0;
+			//	this.F401_92.text="";				
+				this.F401_94.text="";				
+				this.F401_20.text="";
+				this.F401_28.text="";
+				this.F401_29.selectedIndex=0;
+				initclick();
+			}
+			private function openSave(event:Event):void{
+				this.saveF401.enabled =true;
+			}
+			
+			//读卡(父亲)
+			protected function readCard_father(event:MouseEvent):void
+			{
+				try
+				{
+					var array:Array = CompMethod.read_card("男");//性别
+					if(!array)
+						return ;
+					this.F401_02.text = array[0];//姓名
+					this.F401_06.text = array[5];//身份证号
+					this.F401_04.text = array[3];//出生日期
+					this.F401_09.text = array[4];//现住址
+					var nation:String = array[2] + "族";//民族
+					var nationDataProvider:ArrayCollection = ArrayCollection(this.F401_07.dataProvider);
+					var nationIndex:int = getNationDropDownListSelectedIndex(nationDataProvider,nation);
+					this.F401_07.selectedIndex = nationIndex;
+							//setF301_23(null); 
+					this.F401_05.selectedIndex=0;			
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var array:Array = CompMethod.read_card("女");//性别
+					if(!array)
+						return ;
+					this.F401_13.text = array[0];//姓名
+					this.F401_94.text = array[5];//身份证号
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			//读卡获取民族信息
+			private function getNationDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.label == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			public function setF401_04(event:Event):void{
+				if(this.F401_05.selectedItem.data == 1){
+					var cardId:String  = this.F401_06.text;
+					if(cardId.length >= 16){
+						var year:Number = Number(this.F401_06.text.substr(6,4));
+						var month01:String = this.F401_06.text.substr(10,2);
+						var month:Number = Number(month01);
+						var day01:String = this.F401_06.text.substr(12,2);
+						var day:Number = Number(day01);
+						var date:Date = new Date();
+						var nowDay:Number = date.date;
+						var nowMonth:Number = date.month + 1;
+						var nowYear:Number = date.fullYear;
+						var age:Number;
+						if(nowMonth < month){
+							age = nowYear - year - 1;
+						}else if(nowMonth == month){
+							if(day > nowDay){
+								age = nowYear - year -1;
+							}else{
+								age = nowYear - year;
+							}
+						}else if(nowMonth > month){
+							age = nowYear - year;
+						}
+						//this.F301_07.text = age + "";
+						this.F401_04.text =year+"-"+month01+"-"+day01;
+					}
+				}
+			}
+			//既往病史    Z302_03  1无  2心脏病  3肺结核  4肝脏病  5泌尿生殖系疾病  6糖尿病  7高血压  8精神病  9性病  10癫痫  11甲亢  12先天疾病   99其他
+			private function f40119_1():void{
+				if(this.F401_19_1.selected){
+					array[1]="1,";
+				}else{
+					array[1]="";
+				}
+				if(this.F401_19_2.selected){
+					array[2]="2,";
+				}else{
+					array[2]="";
+				}
+				if(this.F401_19_3.selected){
+					array[3]="3,";
+				}else{
+					array[3]="";
+				}
+				if(this.F401_19_4.selected){
+					array[4]="4,";
+				}else{
+					array[4]="";
+				}
+				if(this.F401_19_5.selected){
+					array[5]="5,";
+				}else{
+					array[5]="";
+				}
+				if(this.F401_19_6.selected){
+					array[6]="6,";
+				}else{
+					array[6]="";
+				}
+				if(this.F401_19_7.selected){
+					array[7]="7,";
+				}else{
+					array[7]="";
+				}
+				if(this.F401_19_8.selected){
+					array[8]="8,";
+				}else{
+					array[8]="";
+				}
+				if(this.F401_19_9.selected){
+					array[9]="9,";
+				}else{
+					array[9]="";
+				}
+				if(this.F401_19_10.selected){
+					array[10]="10,";
+				}else{
+					array[10]="";
+				}
+				if(this.F401_19_11.selected){
+					array[11]="11,";
+				}else{
+					array[11]="";
+				}
+				if(this.F401_19_12.selected){
+					array[12]="12,";
+				}else{
+					array[12]="";
+				}
+				if(this.F401_19_13.selected){
+					array[13]="99,";
+				}else{
+					array[13]="";
+				}
+				this.f401.f40119 =array[1]+array[2]+array[3]+array[4]+array[5]+array[6]+array[7]+array[8]+array[9]+array[10]+array[11]+array[12]+array[13];
+			}
+			private function enclick():void{
+				this.F401_19_2.visible=false;
+				this.F401_19_3.visible=false;
+				this.F401_19_4.visible=false;
+				this.F401_19_5.visible=false;
+				this.F401_19_6.visible=false;
+				this.F401_19_7.visible=false;
+				this.F401_19_8.visible=false;
+				this.F401_19_9.visible=false;
+				this.F401_19_10.visible=false;
+				this.F401_19_11.visible=false;
+				this.F401_19_12.visible=false;
+				this.F401_19_13.visible=false;
+				this.F401_19_2_1.visible=false;
+				this.F401_19_3_1.visible=false;
+				this.F401_19_4_1.visible=false;
+				this.F401_19_5_1.visible=false;
+				this.F401_19_6_1.visible=false;
+				this.F401_19_7_1.visible=false;
+				this.F401_19_8_1.visible=false;
+				this.F401_19_9_1.visible=false;
+				this.F401_19_10_1.visible=false;
+				this.F401_19_11_1.visible=false;
+				this.F401_19_12_1.visible=false;
+				this.F401_19_13_1.visible=false;
+				
+				this.F401_19_2.selected=false;
+				this.F401_19_3.selected=false;
+				this.F401_19_4.selected=false;
+				this.F401_19_5.selected=false;
+				this.F401_19_6.selected=false;
+				this.F401_19_7.selected=false;
+				this.F401_19_8.selected=false;
+				this.F401_19_9.selected=false;
+				this.F401_19_10.selected=false;
+				this.F401_19_11.selected=false;
+				this.F401_19_12.selected=false;
+				this.F401_19_13.selected=false;
+				this.F401_20.visible=false;
+				this.F401_20.text ="";
+				f40119_1();
+			}
+			private function enclick1():void{
+				this.F401_19_2.visible=true;
+				this.F401_19_3.visible=true;
+				this.F401_19_4.visible=true;
+				this.F401_19_5.visible=true;
+				this.F401_19_6.visible=true;
+				this.F401_19_7.visible=true;
+				this.F401_19_8.visible=true;
+				this.F401_19_9.visible=true;
+				this.F401_19_10.visible=true;
+				this.F401_19_11.visible=true;
+				this.F401_19_12.visible=true;
+				this.F401_19_13.visible=true;
+				this.F401_20.visible=true;
+				this.F401_19_2_1.visible=true;
+				this.F401_19_3_1.visible=true;
+				this.F401_19_4_1.visible=true;
+				this.F401_19_5_1.visible=true;
+				this.F401_19_6_1.visible=true;
+				this.F401_19_7_1.visible=true;
+				this.F401_19_8_1.visible=true;
+				this.F401_19_9_1.visible=true;
+				this.F401_19_10_1.visible=true;
+				this.F401_19_11_1.visible=true;
+				this.F401_19_12_1.visible=true;
+				this.F401_19_13_1.visible=true;
+				f40119_1();
+			}
+			//家族病史  Z302_04  1无   2盲   3聋   4哑  5精神病   6先天性智力低下  7先天性心脏病   8血友病   9糖尿病   99其他
+			private function f40127_1():void{
+				if(this.F401_27_1.selected){
+					array[21]="1,";
+				}else{
+					array[21]="";
+				}
+				if(this.F401_27_2.selected){
+					array[22]="2,";
+				}else{
+					array[22]="";
+				}
+				if(this.F401_27_3.selected){
+					array[23]="3,";
+				}else{
+					array[23]="";
+				}
+				if(this.F401_27_4.selected){
+					array[24]="4,";
+				}else{
+					array[24]="";
+				}
+				if(this.F401_27_5.selected){
+					array[25]="5,";
+				}else{
+					array[25]="";
+				}
+				if(this.F401_27_6.selected){
+					array[26]="6,";
+				}else{
+					array[26]="";
+				}
+				if(this.F401_27_7.selected){
+					array[27]="7,";
+				}else{
+					array[27]="";
+				}
+				if(this.F401_27_8.selected){
+					array[28]="8,";
+				}else{
+					array[28]="";
+				}
+				if(this.F401_27_9.selected){
+					array[29]="9,";
+				}else{
+					array[29]="";
+				}
+				if(this.F401_27_99.selected){
+					array[30]="99,";
+				}else{
+					array[30]="";
+				}
+				this.f401.f40127 =array[21]+array[22]+array[23]+array[24]+array[25]+array[26]+array[27]+array[28]+array[29]+array[30];	
+			}
+			//判断选择是否
+			private function enclick2():void{
+				this.F401_27_2.visible=false;
+				this.F401_27_3.visible=false;
+				this.F401_27_4.visible=false;
+				this.F401_27_5.visible=false;
+				this.F401_27_6.visible=false;
+				this.F401_27_7.visible=false;
+				this.F401_27_8.visible=false;
+				this.F401_27_9.visible=false;
+				this.F401_27_99.visible=false;
+				this.F401_27_2_1.visible=false;
+				this.F401_27_3_1.visible=false;
+				this.F401_27_4_1.visible=false;
+				this.F401_27_5_1.visible=false;
+				this.F401_27_6_1.visible=false;
+				this.F401_27_7_1.visible=false;
+				this.F401_27_8_1.visible=false;
+				this.F401_27_9_1.visible=false;
+				this.F401_27_99_1.visible=false;
+				
+				this.F401_27_2.selected=false;
+				this.F401_27_3.selected=false;
+				this.F401_27_4.selected=false;
+				this.F401_27_5.selected=false;
+				this.F401_27_6.selected=false;
+				this.F401_27_7.selected=false;
+				this.F401_27_8.selected=false;
+				this.F401_27_9.selected=false;
+				this.F401_27_99.selected=false;
+				this.F401_28.visible=false;
+				this.F401_29.visible=false;
+				this.F401_29_1.visible=false;
+				this.F401_28.text ="";
+				this.F401_29.selectedIndex =0;
+				f40127_1();
+			}
+			//判断选择是否
+			private function enclick3():void{
+				this.F401_27_2.visible=true;
+				this.F401_27_3.visible=true;
+				this.F401_27_4.visible=true;
+				this.F401_27_5.visible=true;
+				this.F401_27_6.visible=true;
+				this.F401_27_7.visible=true;
+				this.F401_27_8.visible=true;
+				this.F401_27_9.visible=true;
+				this.F401_27_99.visible=true;
+				this.F401_28.visible=true;
+				this.F401_29.visible=true;
+				this.F401_29_1.visible=true;
+				this.F401_27_2_1.visible=true;
+				this.F401_27_3_1.visible=true;
+				this.F401_27_4_1.visible=true;
+				this.F401_27_5_1.visible=true;
+				this.F401_27_6_1.visible=true;
+				this.F401_27_7_1.visible=true;
+				this.F401_27_8_1.visible=true;
+				this.F401_27_9_1.visible=true;
+				this.F401_27_99_1.visible=true;
+				f40127_1();
+			}
+			//家庭近亲婚配  s601_17  1无   2父母   3祖父母   4外祖父母
+			private function f40130_1():void{
+				if(this.F401_30_1.selected){
+					array[31]="1,";
+				}else{
+					array[31]="";
+				}
+				if(this.F401_30_2.selected){
+					array[32]="2,";
+				}else{
+					array[32]="";
+				}
+				if(this.F401_30_3.selected){
+					array[33]="3,";
+				}else{
+					array[33]="";
+				}
+				if(this.F401_30_4.selected){
+					array[34]="4,";
+				}else{
+					array[34]="";
+				}
+				
+				this.f401.f40130 =array[31]+array[32]+array[33]+array[34];	
+			}
+			//判断选择是否
+			private function enclick4():void{
+				this.F401_30_2.visible=false;
+				this.F401_30_3.visible=false;
+				this.F401_30_4.visible=false;
+				this.F401_30_2_1.visible=false;
+				this.F401_30_3_1.visible=false;
+				this.F401_30_4_1.visible=false;
+				
+				this.F401_30_2.selected=false;
+				this.F401_30_3.selected=false;
+				this.F401_30_4.selected=false;
+				f40130_1();
+			}
+			//判断选择是否
+			private function enclick5():void{
+				this.F401_30_2.visible=true;
+				this.F401_30_3.visible=true;
+				this.F401_30_4.visible=true;
+				this.F401_30_2_1.visible=true;
+				this.F401_30_3_1.visible=true;
+				this.F401_30_4_1.visible=true;
+				f40130_1();
+			}
+			private function F401_06_changingHandler(event:TextOperationEvent):void
+			{
+				if(F401_05.selectedItem.data==1)
+					F401_04.text=CompMethod.getBirthday(event.target.text);
+				
+			}
+			protected function readCard_B(event:MouseEvent):void
+			{
+				try
+				{
+					var array:Array = CompMethod.read_card("女");//性别
+					if(!array)
+						return ;
+					this.F401_02_nv.text = array[0];//姓名
+					this.F401_06_nv.text = array[5];//身份证号
+					//	queryfnwcdj();
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			private function onSelected(event:Event):void{
+				this.vf401 = DataGrid(event.target).selectedItem;
+				clean(false);
+				this.loadf401(this.vf401);
+				this.currentState="";
+			}
+			public function loadf401(vf401:Object):void
+			{
+				this.F401_02.text = vf401.f40113;	
+				this.F401_06.text = vf401.f40194;	
+				this.F401_13.text = vf401.f40102;	
+				this.F401_94.text = vf401.f40106;	
+				if(F401_06.text!=""||F401_06.text!=null){
+					if(F401_05.selectedItem.data==1)
+						F401_04.text=CompMethod.getBirthday(this.F401_06.text);
+				}
+			}
+			private function queryVf401():void
+			{
+				if(StringUtil.trim(this.F401_02_nv.text)==""){
+					Alert.show("请输入女性姓名！","系统提示");
+					return;
+				}
+				if(StringUtil.trim(this.F401_06_nv.text)==""){
+					Alert.show("请输入女性证件号码！","系统提示");
+					return;
+				}
+				f401Request=new F401Request();
+				initQueryParam();
+				
+				f401Request.parameterPageindex = 1;
+				f401Request.parameterPagesize = 3;
+				this.f401Service.queryF401(f401Request);
+			}
+			private function initQueryParam():void
+			{
+				this.currentState="special";
+				f401Request.f40102 =StringUtil.trim(this.F401_02_nv.text);
+				f401Request.f40106 =StringUtil.trim(this.F401_06_nv.text);
+				f401Request.f40103 ="2";
+			}
+			protected function queryF401Handle(event:ResultEvent):void
+			{
+				var f401Response:Object = event.result;
+				var flag:String = f401Response.flag;
+				var listVF401:ArrayCollection = f401Response.vf401s;
+				var rowCount:Number = f401Response.rowCount;
+				if(f401Response.errorMessage == null)
+				{ 
+					this.pagerBar.pageSize = 3;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVF401;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.vf401 = null;
+				} else {
+					Alert.show(f401Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				f401Request = new F401Request();
+				this.initQueryParam();
+				f401Request.parameterPageindex = currentPageIndex;
+				f401Request.parameterPagesize = pageSize;
+				this.f401Service.queryF401(f401Request);
+			}
+			/**
+			 *设置户口地址 
+			 */
+			private function F401_98_clickHandler(event:MouseEvent):void
+			{
+				
+				F401_98.setAreaCode(F401_10.getAreaCode());
+				
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal"/>			
+		<s:State name="special"/>
+	</s:states>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			
+			<mx:TabNavigator width="1134" height="173" chromeColor="#ffffff" creationPolicy="all"
+							 width.normal="1135" height.normal="68"
+							 height.special="68">
+				<s:NavigatorContent width="100%" label="女性婚检查询" >	
+					
+					<s:VGroup paddingBottom="2" paddingLeft="6" paddingRight="5">	
+						<s:HGroup width="100%" height="100%" verticalAlign="middle" paddingBottom="0">
+							<s:Label text="请输入女性姓名" paddingLeft="1"/><s:TextInput id="F401_02_nv"/>
+							<s:Label text="女性证件号码" /><s:TextInput id="F401_06_nv" width="170"/>
+							<s:Button click="queryVf401()" label="查询"/>	
+							<s:Button label="读卡" id="duka2" enabled="false" click="readCard_B(event)" icon="{CustomIcon.READCARD}"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<s:VGroup id="vgroupDataGrid" height="128" includeIn="special" itemDestructionPolicy="auto" paddingRight="5" width.special="1134">
+				<s:DataGrid id="certificateDataGrid" height="96"
+							alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="false" rowHeight="22"
+							selectionChange="onSelected(event)"
+							width.special="1134" height.special="92">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+							<s:GridColumn width="80" dataField="f40102" headerText="女性姓名"/>
+							<s:GridColumn width="150" dataField="f40106" headerText="证件号码"/>
+							<s:GridColumn width="100" dataField="f40104Str" headerText="出生日期"/>
+							<s:GridColumn width="70" dataField="f40112" headerText="联系电话"/>
+							<s:GridColumn width="130" dataField="f40113" headerText="配偶姓名"/>
+							<s:GridColumn width="100" dataField="f40194" headerText="配偶证件号码"/>
+							<s:GridColumn width="150" dataField="f40199" headerText="录入人"/>
+							<s:GridColumn width="100" dataField="f401101Str" headerText="录入时间"/>
+							<s:GridColumn dataField="f401102Zh" headerText="录入单位"/>
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>					
+				<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+			</s:VGroup>
+			
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all"
+							 width.normal="1135"
+							 width.special="1133">
+				<s:NavigatorContent width="100%" label="基础信息">
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="姓        名"/>
+								<s:TextInput id="F401_02" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem width="193">
+								<s:Label text="性        别" paddingLeft="1"/>
+								<s:DropDownList id="F401_03" width="112" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="证件类别"/>
+								<s:DropDownList id="F401_05" width="140"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="证 件  号 码"/>
+								<s:TextInput id="F401_06"  width="171" changing="F401_06_changingHandler(event)" />
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="出生日期"/>
+								<component:CustomRangeDateField  id="F401_04" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="国        籍"/>
+								<s:DropDownList id="F401_08" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="民        族"/>
+								<s:DropDownList id="F401_07" width="112"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="联系方式" paddingLeft="1"/>
+								<s:TextInput id="F401_12" width="140" maxChars="12" restrict="0-9"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">	
+								<s:Label paddingLeft="1" text="身份证地址"/>
+								<s:TextInput id="F401_09" width="303"/>
+								<s:Button id="duka1"  label="读卡" click="readCard_father(event)" enabled="false" 
+										  icon="{CustomIcon.READCARD}"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="文化程度" />
+								<s:DropDownList id="F401_15" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="职        业" paddingLeft="1"/>
+								<s:DropDownList id="F401_14" width="112"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:Label text="工作单位" paddingLeft="1"/>
+								<s:TextInput id="F401_11" width="405"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="婚检编号" paddingLeft="1"/>
+								<s:TextInput id="F401_16" width="130" />
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="配偶姓名"/>
+								<s:TextInput id="F401_13" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem width="263" colSpan="2">
+								<s:Label paddingLeft="1" text="证件号码"/>
+								<s:TextInput id="F401_94" width="206"/>
+								<s:Label text="*" styleName="must"/>
+								<s:Button id="duka3"  label="读卡" click="readCard_mother(event)" enabled="false" 
+										  icon="{CustomIcon.READCARD}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem colSpan="6">
+								<s:Label text="现  住  址"/>
+								<component:AreaComboBoxVillageAuto id="F401_10" width="963" buttonMode="true" table="D201_MS" areaCode="{this.parentApplication.systemUser.areaCode}"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem colSpan="6">
+								<s:Label text="户口地址"/>
+								<component:AreaComboBoxVillageAuto id="F401_98" width="961" buttonMode="true" table="D201_MS" areaCode="{this.parentApplication.systemUser.areaCode}"/>
+								<s:Label text="*" styleName="must"/>
+								<s:Button label="同现住址" click="F401_98_clickHandler(event)" buttonMode="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator width="1133" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="既往史">
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="血缘关系"/>
+								<s:DropDownList id="F401_17" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="其        他"/>
+								<s:TextInput id="F401_18" width="200" restrict="^ \f\n\r\t\v" prompt="其他情况描述"  enabled="{F401_17.selectedIndex==3}"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:Label text="近 亲  婚 配" paddingLeft="1"/>
+								<mx:VBox>
+									<s:HGroup paddingLeft="10" paddingRight="10" verticalAlign="middle">
+										<s:RadioButton id="F401_30_1" groupName="operation3" click="enclick4()"/><s:Label text="无"/>
+										<s:RadioButton id="F401_30_0" groupName="operation3"  selected="true" click="enclick5()"/><s:Label text="有"/>
+										<mx:CheckBox id="F401_30_2" click="f40130_1()"/><s:Label id="F401_30_2_1" text="父母"/>
+										<mx:CheckBox id="F401_30_3" click="f40130_1()"/><s:Label id="F401_30_3_1" text="祖父母"/>
+										<mx:CheckBox id="F401_30_4" click="f40130_1()"/><s:Label id="F401_30_4_1" text="外祖父母"/>
+									</s:HGroup>
+								</mx:VBox>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="现  病  史"/>
+								<s:DropDownList id="F401_23" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="其        他" />
+								<s:TextInput id="F401_24" width="200" restrict="^ \f\n\r\t\v" prompt="其他情况描述" enabled="{F401_23.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="既往婚育史"/>
+								<s:DropDownList id="F401_25" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="手  术  史"/>
+								<s:DropDownList id="F401_21" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="其        他" />
+								<s:TextInput id="F401_22" width="200" restrict="^ \f\n\r\t\v" prompt="其他情况描述"  enabled="{F401_21.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="子    女    数" paddingLeft="1"/>
+								<s:TextInput id="F401_26" width="130" restrict="0-9"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem colSpan="4">
+								<s:Label text="既往病史"/>
+								<mx:VBox>
+									<s:HGroup paddingLeft="10" paddingRight="10" verticalAlign="middle">
+										<s:RadioButton id="F401_19_1" groupName="operation1" click="enclick()"/><s:Label text="无"/>
+										<s:RadioButton id="F401_19_0" groupName="operation1"  selected="true" click="enclick1()"/><s:Label text="有"/>
+										<mx:CheckBox id="F401_19_2" click="f40119_1()"/><s:Label id="F401_19_2_1" text="心脏病"/>
+										<mx:CheckBox id="F401_19_3" click="f40119_1()"/><s:Label id="F401_19_3_1" text="肺结核"/>
+										<mx:CheckBox id="F401_19_4" click="f40119_1()"/><s:Label id="F401_19_4_1" text="肝脏病"/>
+										<mx:CheckBox id="F401_19_5" click="f40119_1()"/><s:Label id="F401_19_5_1" text="泌尿生殖系疾病"/>
+										<mx:CheckBox id="F401_19_6" click="f40119_1()"/><s:Label id="F401_19_6_1" text="糖尿病"/>
+										<mx:CheckBox id="F401_19_7" click="f40119_1()"/><s:Label id="F401_19_7_1" text="高血压"/>
+										<mx:CheckBox id="F401_19_8" click="f40119_1()"/><s:Label id="F401_19_8_1" text="精神病"/>
+										<mx:CheckBox id="F401_19_9" click="f40119_1()"/><s:Label id="F401_19_9_1" text="性病"/>
+										<mx:CheckBox id="F401_19_10" click="f40119_1()"/><s:Label id="F401_19_10_1" text="癫痫"/>
+										<mx:CheckBox id="F401_19_11" click="f40119_1()"/><s:Label id="F401_19_11_1" text="甲亢"/>
+										<mx:CheckBox id="F401_19_12" click="f40119_1()"/><s:Label id="F401_19_12_1" text="先天疾患"/>
+										<mx:CheckBox id="F401_19_13" click="f40119_1()"/><s:Label id="F401_19_13_1" text="其他"/>
+									</s:HGroup>
+								</mx:VBox>
+								<s:TextInput id="F401_20" width="150" restrict="^ \f\n\r\t\v"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem colSpan="3">
+								<s:Label text="家族病史"/>
+								<mx:VBox>
+									<s:HGroup paddingLeft="10" paddingRight="10" verticalAlign="middle">
+										<s:RadioButton id="F401_27_1" groupName="operation2" click="enclick2()"/><s:Label text="无"/>
+										<s:RadioButton id="F401_27_0" groupName="operation2" selected="true" click="enclick3()"/><s:Label text="有"/>
+										<mx:CheckBox id="F401_27_2" click="f40127_1()" /><s:Label id="F401_27_2_1" text="盲"/>
+										<mx:CheckBox id="F401_27_3" click="f40127_1()" /><s:Label id="F401_27_3_1" text="聋"/>
+										<mx:CheckBox id="F401_27_4" click="f40127_1()" /><s:Label id="F401_27_4_1" text="哑"/>
+										<mx:CheckBox id="F401_27_5" click="f40127_1()" /><s:Label id="F401_27_5_1" text="精神病"/>
+										<mx:CheckBox id="F401_27_6" click="f40127_1()" /><s:Label id="F401_27_6_1" text="先天性智力低下"/>
+										<mx:CheckBox id="F401_27_7" click="f40127_1()" /><s:Label id="F401_27_7_1" text="先天性心脏病"/>
+										<mx:CheckBox id="F401_27_8" click="f40127_1()" /><s:Label id="F401_27_8_1" text="血友病"/>
+										<mx:CheckBox id="F401_27_9" click="f40127_1()" /><s:Label id="F401_27_9_1" text="糖尿病"/>
+										<mx:CheckBox id="F401_27_99" click="f40127_1()" /><s:Label id="F401_27_99_1" text="其他"/>
+									</s:HGroup>
+								</mx:VBox>
+								<s:TextInput id="F401_28" width="150" restrict="^ \f\n\r\t\v"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="于本人关系" id="F401_29_1" paddingLeft="15"/>
+								<s:DropDownList id="F401_29" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="1134" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="体格检查">
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="身高(cm)"/>
+								<s:TextInput id="F401_31" width="130" maxChars="6" restrict="0-9."/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="体 重(kg)" paddingLeft="1"/>
+								<s:TextInput id="F401_32" width="196" maxChars="6" restrict="0-9."/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="血        压" paddingLeft="1"/>
+								<s:BorderContainer width="196" height="23">
+									<s:HGroup width="194" verticalAlign="middle">
+										<s:TextInput id="F401_33_1" width="70" borderVisible="false" maxChars="3" textAlign="right" restrict="0-9"/>
+										<s:Label text="/    "/>
+										<s:TextInput id="F401_33_2" width="55" borderVisible="false" maxChars="3" textAlign="right" restrict="0-9"/>
+										<s:Label text="mmHg    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="精神状态"/>
+								<s:DropDownList id="F401_34" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="异        常" />
+								<s:TextInput id="F401_35" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_34.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="特殊体态" paddingLeft="1"/>
+								<s:DropDownList id="F401_36" width="196"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="异        常" />
+								<s:TextInput id="F401_37" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_36.selectedIndex==1}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="皮肤毛发"/>
+								<s:DropDownList id="F401_38" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="异        常" />
+								<s:TextInput id="F401_39" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_38.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="左眼视力" paddingLeft="1"/>
+								<s:TextInput id="F401_41" width="196"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="右眼视力" />
+								<s:TextInput id="F401_42" width="199"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="辨  色  力" />
+								<s:DropDownList id="F401_43" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="听  力  左" paddingLeft="1"/>
+								<s:DropDownList id="F401_44" width="196"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="听  力  右" paddingLeft="1"/>
+								<s:DropDownList id="F401_45" width="196"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="甲  状  腺" paddingLeft="1"/>
+								<s:DropDownList id="F401_40" width="199"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>	
+							<mx:GridItem>
+								<s:Label text="胸        廓"/>
+								<s:DropDownList id="F401_46" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="胸廓异常" />
+								<s:TextInput id="F401_47" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_46.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="肺" paddingLeft="19" paddingRight="17"/>
+								<s:DropDownList id="F401_48" width="197"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="肺  异  常" />
+								<s:TextInput id="F401_49" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_48.selectedIndex==1}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="心        率"/>
+								<s:TextInput id="F401_50" width="110" restrict="0-9"/>
+								<s:Label text="次/分"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="心        律" />
+								<s:TextInput id="F401_51" width="162" restrict="0-9"/>
+								<s:Label text="次/分"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="杂        音" paddingLeft="1"/>
+								<s:DropDownList id="F401_52" width="196"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="异        常" />
+								<s:TextInput id="F401_53" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_52.selectedIndex==1}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="肝" paddingLeft="17" paddingRight="17"/>
+								<s:DropDownList id="F401_54" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="可  触  及" />
+								<s:TextInput id="F401_55" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述"  enabled="{F401_54.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="脾 " paddingLeft="19" paddingRight="17"/>
+								<s:DropDownList id="F401_56" width="198"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="可  触  及" />
+								<s:TextInput id="F401_57" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_56.selectedIndex==1}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="四       肢"/>
+								<s:DropDownList id="F401_58" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="脊        柱" paddingLeft="1"/>
+								<s:DropDownList id="F401_59" width="196"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="脊柱异常" />
+								<s:TextInput id="F401_60" width="200" restrict="^ \f\n\r\t\v" prompt="异常情况描述" enabled="{F401_59.selectedIndex==1}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="1134" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="第二性征">
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="喉        结"/>
+								<s:DropDownList id="F401_61" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="阴            毛" paddingLeft="1"/>
+								<s:DropDownList id="F401_62" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="阴            茎" paddingLeft="1"/>
+								<s:DropDownList id="F401_65" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="阴   茎  异   常" />
+								<s:TextInput id="F401_66" width="130" restrict="^ \f\n\r\t\v"  prompt="异常情况描述" enabled="{F401_65.selectedIndex==1}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="包        皮"/>
+								<s:DropDownList id="F401_67" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="睾丸体积左" paddingLeft="1"/>
+								<s:TextInput id="F401_68" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="睾丸体积右" />
+								<s:TextInput id="F401_69" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="睾 丸 未 扪 及" paddingLeft="1"/>
+								<s:DropDownList id="F401_70" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="附        睾"/>
+								<s:DropDownList id="F401_71" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="附    睾    左" paddingLeft="1"/>
+								<s:TextInput id="F401_72" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="附    睾    右" paddingLeft="1"/>
+								<s:TextInput id="F401_73" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="精索静脉曲张" paddingLeft="1"/>
+								<s:DropDownList id="F401_74" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="部        位"/>
+								<s:TextInput id="F401_75" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="程            度" paddingLeft="1"/>
+								<s:TextInput id="F401_76" width="130"/>
+							</mx:GridItem>
+							<!--<mx:GridItem>
+							<s:Label text="其        他" paddingLeft="15"/>
+							<s:TextInput id="F302_39" width="130" restrict="^ \f\n\r\t\v" text="无"/>
+							</mx:GridItem>-->
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="1134" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="实验室检查">
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="检查结果"/>
+								<s:DropDownList id="F401_86" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="异  常   情   况" paddingLeft="15" />
+								<s:TextInput id="F401_87" width="130" restrict="^ \f\n\r\t\v"  prompt="异常情况描述" enabled="{F401_86.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="15" text="疾   病  诊   断" />
+								<s:TextInput id="F401_88" width="130" restrict="^ \f\n\r\t\v"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="医学意见" />
+								<s:DropDownList id="F401_89" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="婚前卫生咨询" paddingLeft="15"/>
+								<s:TextInput id="F401_90" width="130" restrict="^ \f\n\r\t\v"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="咨询指导结果" paddingLeft="15"/>
+								<s:DropDownList id="F401_91" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1135" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="录入信息">
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="检查单位" paddingLeft="1"/>
+								<s:DropDownList id="F401_95" width="168" enabled="false" />
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="医师签名"/>
+								<component:FindSelectedItemComboBox id="F401_92" width="130" editable="true"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="1" text="检查日期"/>
+								<component:CustomRangeDateField id="F401_93" isSelectNow="true"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="录入单位"/>
+								<s:DropDownList id="F401_102" width="169" labelField="label" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="录  入  人"/>
+								<component:FindSelectedItemComboBox id="F401_99" width="130" editable="true"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="录入日期" paddingLeft="1"/>
+								<component:CustomRangeDateField id="F401_101" isSelectNow="true" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<s:HGroup paddingBottom="10"  verticalAlign="middle" width="1134" horizontalAlign="center">
+				<s:Button id="saveF401" label="保存" click="validate1()"/>
+			</s:HGroup>	
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

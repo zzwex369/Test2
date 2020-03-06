@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:zk="com.xyw.module.msss.la.fnbjlatpzk.*"
+			   maxHeight="{this.parentApplication.stage.stageHeight-50}" maxWidth="1200"
+			   backgroundColor="#FFFFFF" borderAlpha="1.0"
+			   borderColor="#D5700D" borderVisible="true" chromeColor="#2CCAF1"
+			   close="closeHandler()"  contentBackgroundColor="#FFFFFF"
+			   cornerRadius="5" creationComplete="init()" initialize="initializeComboBox()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l306Service" destination="l306Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveLaZk" result="saveLaZkHandler(event)"/>
+			<s:method name="queryL306" result="queryL306Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace gja "com.xyw.module.msss.la.fngjada.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		.myGrid {
+			verticalAlign:middle;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L301Request;
+			import com.xyw.module.msss.la.model.L306;
+			import com.xyw.module.msss.la.model.L306Request;
+			import com.xyw.module.msss.la.model.VL306;
+			import com.xyw.sys.event.CustomDataEvent;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ItemClickEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			[Bindable]
+			public var vl306:Object;
+			[Bindable]
+			public var vl402:Object;
+			[Bindable]
+			public var status:Boolean=true;// true质控     false整改  
+			//[Bindable]
+		//	public var l30604:String;
+			[Bindable]
+			public var index:Number;//当前数据类型下标
+			[Bindable]
+			private var la30601:Number;//质控结果
+			[Bindable]
+			public var saveStatus:Boolean=true;//修改还是保存
+			[Bindable]
+			public var gradeVal:String;//机构级别 3县 4市 5省
+			private var statusFlag:String;//修改还是保存
+			private var l306:L306;
+			private var grade:Number;//质控等级
+			private var l306Request:L306Request;
+			private var systemUser:SystemUser;
+			[Bindable]
+			private var dataArr:ArrayCollection;//保存返回的机构列表
+			private var idArr:Array=[""];// 当前保存的类型  质控 整改
+			private var vl402FieldArr:Array=["","l40284","l402102"];// vl402 机构字段
+			private var zkFieldArr:Array=[14,23,32];// 质控字段后缀
+			private var zgFieldArr:Array=[19,28,37];// 质控字段后缀
+			private var zkHeightArr:Array=[460,435,395];// 质控字段后缀
+			private var typeArr:Array;//  宫颈 乳腺
+			private var now:String;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var institutionalDataArr:Array=
+				[
+					["报告","检查","检查",'l30294str',175,'l30293','l30292'],
+					["检查","检查","检查",'l40286Str',175,'l40285','l40284'],
+					["检查","检查","检查",'l402104Str',175,'l402103','l402102']
+					
+				];//机构 日期 长度 检查人 
+			private function closeHandler():void
+			{
+				var parent:Object=this.owner;
+				parent.refresh();			
+				PopUpManager.removePopUp(this);
+			}
+			
+			/**
+			 *
+			 */
+			private function queryL306(parentID:String):void
+			{
+				l306=new L306();
+				var l306Request:L306Request = new L306Request();
+				l306.l30602=parentID;
+				l306.l30641="2";
+				l306.l30604=(this.index+1).toString();
+				l306Request.l306=l306;
+				l306Request.parameterPagesize=1;
+				l306Request.parameterPageindex=1;
+				this.l306Service.queryL306(l306Request);	
+			}
+			
+			/**
+			 *质控 乳腺信息的时候 是否有306信息 没有则新建
+			 */
+			private function queryL306Handler(event:ResultEvent):void
+			{
+				var l306Response:Object = event.result;
+				var vl306s:ArrayCollection =l306Response.vl306s;
+				var rowCount:Number = l306Response.rowCount;
+				if(rowCount)
+				{
+					this.vl306=vl306s.getItemAt(0);
+					setFieldVal();
+				}else
+				{
+					this.l306=new L306();
+					this.vl306=new VL306();
+					l306.l30602=vl402.l40201;
+					l306.l30603=vl402.l40205;
+					l306.l30604=(this.index+1).toString();
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function zkSetData(institutionCode:String):void
+			{
+				if(!zk.dataArr)
+				{
+					callLater(zkSetData,[institutionCode]);
+					return ;
+				}
+				zk.setDropDownListSelect(institutionCode);	
+			}
+			/**
+			 *调整组件尺寸
+			 */
+			private function changeHeight():void
+			{
+				zkTab.height=zkHeightArr[index];
+				zkNav.height=zkHeightArr[index];
+				zkVgroup.height=zkHeightArr[index];
+				picTab.height=zgTab.height+zkTab.height+3;
+				institutionalTab.width=typeArr[index].width;
+			}
+		
+			/**
+			 *设置监听
+			 */
+			private function eventListener():void
+			{
+				zg.addEventListener(CustomDataEvent.CUSTOM_DATA,zg_customDataEventHandler);
+				zk.addEventListener(CustomDataEvent.CUSTOM_DATA,zk_customDataEventHandler);
+				zkInspection.addEventListener(IndexChangedEvent.CHANGE,zkinspection_indexChangedHandler);
+				if(!saveStatus||!status)
+				{
+					var institutionArr:Array=zkInspection.loadZk(l306,systemUser.institutionCode,zkFieldArr[grade]);
+					institutionArr=institutionArr.slice(3);
+					loadInstitutionArr(zk,institutionArr.slice(0,3));
+					institutionArr=institutionArr.slice(3);
+					institutionArr.push(institutionArr.shift());
+					if(saveStatus&&!status)
+						institutionArr[2]=new Date();
+					loadInstitutionArr(zg,institutionArr);
+				}
+			}
+			/**
+			 * 
+			 */
+			private function init():void
+			{
+				grade=isNaN(grade)?Number(gradeVal)-3:grade;
+				changeHeight();
+				eventListener();
+				statusFlag=saveStatus?"保存":"修改";
+				var institutionCodeArr:Array=["l30617","l30626","l30635"];
+				zkSetData(status?systemUser.institutionCode:vl306[institutionCodeArr[grade]]);
+				typeArr[index].queryObject(vl402?[vl402,saveStatus]:[vl306]);
+			}
+			
+			
+			private function getComboBoxData(sql:String,flag:String,showPrompt:Boolean=true):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql =sql ;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			/******************下拉框填充数据******************/
+			private function initializeComboBox():void
+			{
+				typeArr=[ydj,csxx,csxx];
+				vl306?setFieldVal():queryL306(vl402.l40201);
+				systemUser=this.parentApplication.systemUser;
+				var institutionCode:String=vl306?vl306.l30611:vl402[vl402FieldArr[index]];
+				getComboBoxData("select t.d101_01, t.d101_02 from D101 t where t.D101_01 = " + institutionCode
+					+ " or t.D101_11 = " + institutionCode,"D101_0");
+				if(!gradeVal)
+					getComboBoxData("select t.d101_06, t.d101_02 from D101 t where t.D101_01 = "
+						+systemUser.institutionCode ,"D101_1",false);
+			}
+			
+			/**
+			 * 加载数据
+			 */
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101_0")
+				{
+					now=DateField.dateToString(new Date(),"YYYY-MM-DD");
+					setLabel(zk,["质控","质控","质控",now,110]);
+					setLabel(zg,["整改","整改","整改",now,110]);
+					this.dataArr =zk.dataArr=zg.dataArr= comboBoxDataList;
+				}else if(flag == "D101_1")
+				{
+						this.gradeVal=comboBoxDataList.getItemAt(0).data;
+				}
+			}
+			
+			/**
+			 *得到字段值
+			 */
+			private function setFieldVal():void
+			{
+				l306=new L306();
+				for(var i:int=1;i<43;i++)
+				{
+					var field:String='l306'+(i<10?"0"+i:i);
+					if(vl306[field])
+						l306[field]=vl306[field];	
+				}
+			}
+			
+			
+		
+			private function zkinspection_indexChangedHandler(event:IndexChangedEvent):void
+			{
+				this.la30601=event.newIndex;
+				
+			}
+			
+			/**
+			 * dataArr 数据
+			 * fieldArr 字段
+			 * length  个数
+			 * id  当前保存的对象ID
+			 */
+			private function saveOrUpdateL306(dataArr:Array,fieldArr:Array,length:Number,flag:String,id:Object):void
+			{
+				idArr[0]=id;
+				idArr[0].enabled=false;
+				l306Request=new L306Request();
+				var suffix:Number=fieldArr[grade];
+				setL306FieldVal(suffix,suffix+length,dataArr);
+				l306Request.l306=l306;
+				l306Request.flag=flag;
+				l306Service.saveLaZk(l306Request);
+			}
+			
+			/**
+			 *保存 修改字段内容
+			 */
+			private function setL306FieldVal(suffix:Number,length:Number,dataArr:Array=null):void
+			{
+				var j:Number=0;
+				for(var i:int=suffix;i<length;i++)
+				{
+					l306["l306"+i]=dataArr?dataArr[j]:null;
+					j++;
+				}
+			}
+			
+			/**
+			 *保存质控结果 
+			 */
+			private function zk_customDataEventHandler(event:CustomDataEvent):void
+			{
+				var zkBasicArr:Object=event.data;
+				var zkResultArr:Array=zkInspection.verification(zkBasicArr);
+				if(zkResultArr)
+				{
+					l306.l30641='1';
+					grade=zkResultArr.pop();
+					saveOrUpdateL306(zkResultArr,zkFieldArr,5,"质控结果"+statusFlag+"成功！",zkVgroup);
+				}
+			}
+			
+			/**
+			 *返回保存结果
+			 */
+			private function saveLaZkHandler(event:ResultEvent):void
+			{
+				var l306Response:Object =event.result;
+				if(!l306Response.status){
+					saveStatus[0].enabled=true;
+					Alert.show(l306Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show(l306Response.message,"系统提示");
+			}
+			/**
+			 * 保存整改意见
+			 */
+			private function zg_customDataEventHandler(event:CustomDataEvent):void
+			{
+				var zgyjVal:String=StringUtil.trim(zgyj.text);
+				if(!zgyjVal)
+				{
+					Alert.show("请输入整改意见！","系统提示");
+					return;
+				}
+				var zgBasicArr:Array=event.data as Array;
+				zgBasicArr.splice(0,0,zgyjVal);
+				l306.l30642='1';
+				saveOrUpdateL306(zgBasicArr,this.zgFieldArr,4,"整改意见"+statusFlag+"成功！",zgVgroup);
+			}
+			
+			
+			/**
+			 *修改状态加载机构日期信息
+			 */
+			private function loadInstitutionArr(id:Object,dataArr:Array):void
+			{
+				id.checknameVal=dataArr[0];
+				id.setDropDownListSelect(dataArr[1]);
+				id.timeVal=DateField.dateToString(dataArr[2],'YYYY-MM-DD');
+				if(id==zg)
+					zgyj.text=dataArr[3];
+			}
+			
+			
+			/**
+			 * 给机构 检查人 时间 赋值 并命名 
+			 */
+			private function setInstitutionalData(obj:Object):void
+			{
+				if(!obj||!this.dataArr)
+					callLater(setInstitutionalData,[null]);
+				else
+				{
+					downPicData();
+					var arr:Array=institutionalDataArr[index];
+					if(!l306.l30611)
+						l306.l30611=obj[arr[6]];//乳腺 首次质控可能没有上传图片 没有机构信息 
+					setLabel(institutional,arr.slice(0,5),obj);
+					institutional.checknameVal=obj[arr[5]];
+					institutional.dataArr=this.dataArr;
+					institutional.setDropDownListSelect(obj[arr[6]]);
+					if(saveStatus)
+					{
+						zg.setDropDownListSelect(obj[arr[6]]);
+						zg.checknameVal=obj[arr[5]];
+					}
+				}
+			}
+			
+			/**
+			 *加载图片信息
+			 */
+			private function downPicData():void
+			{
+				if(!this.vl306)
+				{
+					callLater(downPicData);
+					return ;
+				}
+				picList.downPicData(new ArrayCollection([vl306]),(index+1).toString());
+			}
+			
+			/**
+			 *设置名称
+			 */
+			private function setLabel(id:Object,valArr:Array,obj:Object=null):void
+			{
+				id.checknameLabel=valArr[0];
+				id.timeLabel=valArr[1];
+				id.institutionLabel=valArr[2];
+				id.timeVal=obj?obj[valArr[3]]:valArr[3];
+				id.DateFieldWidth=valArr[4];
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller chromeColor="#FFFFFF" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+	<s:HGroup width="100%" maxHeight="{this.parentApplication.stage.stageHeight-90}" gap="0">
+		<s:VGroup enabled="false" paddingLeft="3">
+			<zk:ydjInspection id="ydj" visible="{index==0}" includeInLayout="{index==0}"
+							  loadSuccess="setInstitutionalData(ydj.vl302)"/>
+			<zk:csxxInspection id="csxx" visible="{index!=0}" dataArr="{this.dataArr}"
+							   includeInLayout="{index!=0}"
+							   loadSuccess="setInstitutionalData(csxx.vl402)"
+							   state="{index-1}"/>
+			<mx:TabNavigator id="institutionalTab" height="100%">
+				<s:NavigatorContent width="100%" height="100%" label="检查机构">
+					<zk:institutionalInformation id="institutional"/>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>
+		
+		<s:VGroup height="100%">
+			<mx:TabNavigator id="picTab" width="314">
+				<s:NavigatorContent label="图片列表" chromeColor="#CCCCCC">
+						<zk:picList id="picList" borderAlpha="0" colCount="2" horizontalCenter="0"
+									listHeight="500" listWidth="313" rowCount="2"/>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>  
+		<s:VGroup id="zkzgVgroup" width="100%" height="100%" gap="3">
+			<mx:TabNavigator id="zkTab" width="100%">
+				<s:NavigatorContent id="zkNav" width="100%" label="质控结果">
+					<s:VGroup id="zkVgroup" width="100%" enabled="{status}">
+							<zk:zkInspection id="zkInspection" gradeVal="{this.gradeVal}"
+											 type="{index}"/>
+						<s:HGroup>
+							<zk:institutionalInformation id="zk"/>
+						</s:HGroup>
+					</s:VGroup>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		<mx:TabNavigator id="zgTab" width="100%">
+			<s:NavigatorContent width="100%" label="整改结果">
+				<s:HGroup enabled="{!status}">
+					<s:VGroup id="zgVgroup" width="100%" height="100%">
+						<mx:Grid>
+							<mx:GridRow width="100%" height="100%" paddingBottom="5" paddingLeft="5"
+										verticalAlign="middle">
+								<mx:GridItem styleName="myGrid">
+									<s:Label text="整改意见"/><s:TextArea id="zgyj" y="37" width="184"
+																	  height="77"/>			
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+							<zk:institutionalInformation id="zg"/>
+					</s:VGroup>  
+				</s:HGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		</s:VGroup> 
+	</s:HGroup>  
+	</s:Scroller>
+</s:TitleWindow>

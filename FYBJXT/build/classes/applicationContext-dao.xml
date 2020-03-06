@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:aop="http://www.springframework.org/schema/aop"
+     xmlns:tx="http://www.springframework.org/schema/tx"
+     xsi:schemaLocation="
+     http://www.springframework.org/schema/beans 
+     http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+     http://www.springframework.org/schema/tx 
+     http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+     http://www.springframework.org/schema/context
+     http://www.springframework.org/schema/context/spring-context-3.0.xsd
+     http://www.springframework.org/schema/aop 
+     http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
+
+     <context:annotation-config/>
+      
+     <bean id="systemDao" class="com.xyw.sys.dao.impl.SystemDaoImpl" scope="prototype"/>
+     <bean id="systemParametersDao" class="com.xyw.sys.dao.impl.SystemParametersDaoImpl" scope="prototype"/>
+     <bean id="birthDao" class="com.xyw.medical.birth.certificate.dao.impl.BirthCertificateDaoImpl" scope="prototype"/>
+     <bean id="certificateApplyDao" class="com.xyw.medical.birth.certificateApply.dao.impl.CertificateApplyDaoImpl" scope="prototype"/>
+     <bean id="governmentDao" class="com.xyw.medical.xzjgwh.dao.impl.GovernmentDaoImpl" scope="prototype"/>
+     <bean id="certificateRegistDao" class="com.xyw.medical.birth.certificateRegist.dao.impl.CertificateRegistDaoImpl" scope="prototype"/>
+     <bean id="certificateOutRegistDao" class="com.xyw.medical.birth.certificateOutRegist.dao.impl.CertificateOutRegistDaoImpl" scope="prototype"/>
+     <bean id="abandonCertificateDao" class="com.xyw.medical.birth.certificateAbandon.dao.impl.AbandonCertificateDaoImpl" scope="prototype"/>
+     <bean id="medicalDao" class="com.xyw.medical.yljggl.dao.impl.MedicalDaoImpl" scope="prototype"/>
+     <bean id="certificateRemainDao" class="com.xyw.medical.birth.certificateRemain.dao.impl.CertificateRemainDaoImpl" scope="prototype"></bean>
+     <bean id="reissueBirthCertificateDJBDao" class="com.xyw.medical.birth.certificateDJB.dao.impl.ReissueBirthCertificateDJBDaoImpl"/>
+     <bean id="deliveryDao" class="com.xyw.medical.birth.deliveryRegist.dao.impl.DeliveryDaoImpl" scope="prototype"/>
+	 <bean id="DJBDao" class="com.xyw.medical.birth.certificateDJB.dao.impl.BirthCertificateDJBDaoImpl" scope="prototype"/>
+	 <bean id="csyxzmDao" class="com.xyw.ws.dao.impl.CsyxzmDaoImpl" scope="prototype"/>
+<!--	 <bean id="uploadBirthCertificateDao" class="com.xyw.medical.birth.upload.dao.impl.UploadBirthCertificateDaoImpl" scope="prototype"/>-->
+<!--	 <bean id="uploadCertificateApplyDao" class="com.xyw.medical.birth.upload.dao.impl.UploadCertificateApplyDaoImpl" scope="prototype"/>-->
+<!--	 <bean id="uploadCertificateRegistDao" class="com.xyw.medical.birth.upload.dao.impl.UploadCertificateRegistDaoImpl" scope="prototype"/>-->
+	<!--  <bean id="uploadCertificateAbandonDao" class="com.xyw.medical.birth.upload.dao.impl.UploadCertificateAbandonDaoImpl" scope="prototype"/> -->
+	 <bean id="certificateConditionDao" class="com.xyw.medical.birth.certificateCondition.dao.impl.CertificateConditionDaoImpl" scope="prototype"/>
+	 <bean id="SignerDao" class="com.xyw.medical.qfrwh.dao.impl.SignerDaoImpl" scope="prototype"/>
+	 <bean id="jsywhDao" class="com.xyw.medical.jsywh.dao.impl.JsywhDaoImpl" scope="prototype"/>
+	 <bean id="childDeathReportDao" class="com.xyw.medical.birth.childDeathReport.dao.impl.ChildDeathReportDaoImpl" scope="prototype"/>
+ 	 <bean id="d607Dao" class="com.xyw.medical.birth.qzjd.dao.impl.D607DaoImpl" scope="prototype"/>
+	 <bean id="uploadDao" class="com.xyw.client.upload.dao.impl.UploadDaoImpl" scope="prototype"/>
+	 <bean id="fybjUploadDao" class="com.xyw.client.fybj.upload.dao.impl.FybjUploadDaoImpl" scope="prototype"/>
+	 <bean id="remoteInvokeTools" class="com.xyw.client.henan.util.RemoteInvokeTools" scope="prototype"/>
+	 <bean id="remoteInvokeTools_ve601" class="com.xyw.client.fybj.upload.util.RemoteInvokeTools_ve601" scope="prototype"/>
+	 <bean id="d306Dao" class="com.xyw.medical.birth.hfsqb.dao.impl.D306DaoImpl" scope="prototype"/>
+	 <bean id="d307Dao" class="com.xyw.medical.birth.jgwsfsqb.dao.impl.D307DaoImpl" scope="prototype"/>
+ 	 <bean id="csqxrDao" class="com.xyw.medical.birth.csqxr.dao.impl.CsqxrDaoImpl" scope="prototype"/>
+     <bean id="f301Dao" class="com.xyw.medical.fnbj.fnbjdj.dao.impl.F301DaoImpl" scope="prototype"/>
+     <bean id="perinatalHealthDao" class="com.xyw.medical.fnbj.wcbj.dao.impl.PerinatalHealthDaoImpl" scope="prototype"/>
+     <bean id="maternalCheckDao" class="com.xyw.medical.fnbj.fnjc.dao.impl.MaternalCheckDaoImpl" scope="prototype"/>
+     <bean id="f304Dao" class="com.xyw.medical.fnbj.birthcard.dao.impl.F304DaoImpl" scope="prototype"/>
+     <bean id="pregnancyDurDao" class="com.xyw.medical.fnbj.fnyqsfdj.dao.impl.PregnancyDurDaoImpl" scope="prototype"/>
+     <bean id="prenatalEduDao" class="com.xyw.medical.fnbj.fnsydj.dao.impl.PrenatalEduDaoImpl" scope="prototype"/>
+     <bean id="e301Dao" class="com.xyw.medical.etbj.etbjdj.dao.impl.E301DaoImpl" scope="prototype"/>
+	 <bean id="e302Dao" class="com.xyw.medical.etbj.screening.dao.impl.E302DaoImpl" scope="prototype"/>
+     <bean id="childrenCheckDao" class="com.xyw.medical.etbj.trexx.dao.impl.ChildrenCheckDaoImpl" scope="prototype"/>
+     <bean id="e304Dao" class="com.xyw.medical.etbj.etjcdj.dao.impl.E304DaoImpl" scope="prototype"/>
+     <bean id="e305Dao" class="com.xyw.medical.etbj.etsfdj.dao.impl.E305DaoImpl" scope="prototype"/>
+     <bean id="f307Dao" class="com.xyw.medical.fnbj.fnbjfs.dao.impl.F307DaoImpl" scope="prototype"/>
+     <bean id="f308Dao" class="com.xyw.medical.fnbj.fngw.dao.impl.F308DaoImpl" scope="prototype"/>
+     <bean id="f309Dao" class="com.xyw.medical.fnbj.fngwfxpg.dao.impl.F309DaoImpl" scope="prototype"/>
+     <bean id="f310Dao" class="com.xyw.medical.fnbj.fngwzz.dao.impl.F310DaoImpl" scope="prototype"/>
+     <bean id="f401Dao" class="com.xyw.medical.fnbj.fnbjhqtj.dao.impl.F401DaoImpl" scope="prototype"/>
+     <bean id="fA401Dao" class="com.xyw.medical.fnbj.fnbjhqtjzzjd.dao.impl.FA401DaoImpl" scope="prototype"/>
+     <bean id="f501Dao" class="com.xyw.medical.fnbj.fnbjcssq.dao.impl.F501DaoImpl" scope="prototype"/>
+     <bean id="f502Dao" class="com.xyw.medical.fnbj.fnbjcsbg.dao.impl.F502DaoImpl" scope="prototype"/>
+     <bean id="f503Dao" class="com.xyw.medical.fnbj.fnbjcssf.dao.impl.F503DaoImpl" scope="prototype"/>
+     <bean id="f504Dao" class="com.xyw.medical.fnbj.fncszk.dao.impl.F504DaoImpl" scope="prototype"/>
+     <bean id="f601Dao" class="com.xyw.medical.fnbj.fnbjxqsq.dao.impl.F601DaoImpl" scope="prototype"/>
+     <bean id="f602Dao" class="com.xyw.medical.fnbj.fnbjxqbg.dao.impl.F602DaoImpl" scope="prototype"/>
+     <bean id="f603Dao" class="com.xyw.medical.fnbj.fnbjxqsf.dao.impl.F603DaoImpl" scope="prototype"/>
+     <bean id="f604Dao" class="com.xyw.medical.fnbj.fnbjcs_xqsf.dao.impl.F604DaoImpl" scope="prototype"/>
+     <bean id="f606Dao" class="com.xyw.medical.fnbj.fnbjwcdj.dao.impl.F606DaoImpl"></bean>
+     <bean id="l301Dao" class="com.xyw.medical.fnbj.fngjada.dao.impl.L301DaoImpl" scope="prototype"/>
+     <bean id="l302Dao" class="com.xyw.medical.fnbj.fngjadj.dao.impl.L302DaoImpl" scope="prototype"/>
+     <bean id="l303Dao" class="com.xyw.medical.fnbj.fngjatpzk.dao.impl.L303DaoImpl" scope="prototype"/>
+     <bean id="l304Dao" class="com.xyw.medical.fnbj.fngjasf.dao.impl.L304DaoImpl" scope="prototype"/>
+     <bean id="l305Dao" class="com.xyw.medical.fnbj.fnlasz.dao.impl.L305DaoImpl" scope="prototype"/>
+     <bean id="l306Dao" class="com.xyw.medical.fnbj.fnlapic.dao.impl.L306DaoImpl" scope="prototype"/>
+     <bean id="l401Dao" class="com.xyw.medical.fnbj.fnrxada.dao.impl.L401DaoImpl" scope="prototype"/>
+     <bean id="l402Dao" class="com.xyw.medical.fnbj.fnrxajc.dao.impl.L402DaoImpl" scope="prototype"/>
+     <bean id="l403Dao" class="com.xyw.medical.fnbj.fnrxsf.dao.impl.L403DaoImpl" scope="prototype"/>
+     <bean id="e501Dao" class="com.xyw.medical.etbj.hearingScreening.dao.impl.E501DaoImpl" scope="prototype"/>
+     <bean id="e502Dao" class="com.xyw.medical.etbj.reviewHearingScreening.dao.impl.E502DaoImpl" scope="prototype"/>
+     <bean id="e503Dao" class="com.xyw.medical.etbj.hearingDisorder.dao.impl.E503DaoImpl" scope="prototype"/>
+     <bean id="e504Dao" class="com.xyw.medical.etbj.ettlscdjb.dao.impl.E504DaoImpl" scope="prototype"/>
+     <bean id="e505Dao" class="com.xyw.medical.etbj.ettlsc.dao.impl.E505DaoImpl" scope="prototype"/>
+     <bean id="e506Dao" class="com.xyw.medical.etbj.ettlzz.dao.impl.E506DaoImpl" scope="prototype"/>
+     <bean id="e601Dao" class="com.xyw.medical.etbj.etlbsc.dao.impl.E601DaoImpl" scope="prototype"/> 
+     <bean id="e701Dao" class="com.xyw.medical.etbj.etsl.slda.dao.impl.E701DaoImpl"></bean>
+     <bean id="e703Dao" class="com.xyw.medical.etbj.etsl.slzz.dao.impl.E703DaoImpl"></bean>
+     <bean id="e704Dao" class="com.xyw.medical.etbj.etsl.slsf.dao.impl.E704DaoImpl"></bean>
+     <bean id="sw301Dao" class="com.xyw.medical.swjc.etsw.dao.impl.Sw301DaoImpl" scope="prototype"/> 
+     <bean id="sw302Dao" class="com.xyw.medical.swjc.csqxyyjc.dao.impl.Sw302DaoImpl" scope="prototype"/> 
+     <bean id="sw303Dao" class="com.xyw.medical.swjc.csqxrqjc.dao.impl.Sw303DaoImpl" scope="prototype"/> 
+     <bean id="sw304Dao" class="com.xyw.medical.swjc.ycfsw.dao.impl.Sw304DaoImpl" scope="prototype"/> 
+     <bean id="pictureDao" class="com.xyw.medical.loadPicture.dao.impl.PictureDaoImpl" scope="prototype"/>
+     <bean id="rwsDao" class="com.xyw.medical.rws.dao.impl.RwsDaoImpl"></bean>
+     <bean id="statisticalDataDao" class="com.xyw.statistical.echarts.fnbj.pie.common.dao.impl.StatisticalDataDaoImpl" scope="prototype"/>
+     
+     
+</beans>

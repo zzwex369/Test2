@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   width="700" height="400" chromeColor="#429edd" title="出生医学证明文件"
+			   close="removeModifyPasswordWindow(event)"
+			   creationComplete="init()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getHelpArticleA" result="getHelpArticleAHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.AssistRequest;
+			import com.xyw.sys.model.SessionException;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			public var idStr:String = "";
+			public var fileType:String = "";
+			private var csyxzm:Array = new Array();
+			private function init():void
+			{
+				var assitRequest:AssistRequest = new AssistRequest();
+				if(fileType == "province")
+				{
+					assitRequest.path = "policyPaper/province/";
+				}else if(fileType == "city")
+				{
+					assitRequest.path = "policyPaper/city/";
+				}else if(fileType == "county")
+				{
+					assitRequest.path = "policyPaper/county/";
+				}
+				assitRequest.fileName = idStr;
+				this.systemService.getHelpArticleA(assitRequest);
+			}
+			
+			private function getHelpArticleAHandler(event:ResultEvent):void
+			{
+				var noticeResponse:Object = event.result;
+				this.richText.textFlow = TextConverter.importToFlow(noticeResponse.message,TextConverter.TEXT_FIELD_HTML_FORMAT);
+			}
+			
+			
+			private function removeModifyPasswordWindow(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:TextArea id="richText" width="700" height="400" paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10"/>
+</s:TitleWindow>

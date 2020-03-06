@@ -1,0 +1,1645 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   xmlns:skin="com.xyw.sys.custom.skin.*"
+			   width="1270" backgroundColor="white" chromeColor="#5CACEE" close="removeWindow()"
+			   cornerRadius="5" horizontalCenter="0"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="信息修改"
+			   maxHeight="{this.parentApplication.stage.stageHeight-50}"
+			   verticalCenter="0">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="sw302Service" destination="sw302Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="renewSw302" result="renewSw302Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		.label
+		{
+			fontSize:12;
+			paddingTop:5;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.swjc.model.Sw302;
+			import com.xyw.module.swjc.model.Sw303;
+			import com.xyw.module.swjc.model.Sw304;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.core.Container;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var count:int=7;
+			private var sw30229Arr:Array;
+			private var vSw302:Object;
+			private var systemUser:SystemUser = null;
+			private var sw30229Location:Array=new Array(12);
+			private var sw302:Sw302=new Sw302();
+			
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			
+			
+			
+			/**
+			 *
+			 */
+			private function removeWindow(isRefresh:Boolean=false):void
+			{
+				if(isRefresh)
+				{
+					var index:Object =this.owner;
+					index.refresh();
+				}
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+			private function getComboBoxData(sql:String,flag:String,showPrompt:Boolean=true):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql =sql ;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			public function creationCompleteHandler(vSw302:Object):void
+			{
+				this.vSw302=vSw302;
+				this.systemUser = this.parentApplication.systemUser;
+				getComboBoxData("select t.d101_01, t.d101_02 from D101 t where t.D101_01 = " +
+					this.systemUser.institutionCode +" or t.D101_01 = "+vSw302.sw30282
+					,"D101",false);
+				
+				getComboBoxData("select s_01,s_02 from S301_01 ","S301_01");
+				
+				getComboBoxData("select s_01,s_02 from S301_04 ","S301_04",false);
+				
+				getComboBoxData("select s_01,s_02 from S301_06 ","S301_06",false);
+				
+				getComboBoxData("select s_01,s_02 from S601_01" ,"S601_01");
+				
+				getComboBoxData("select * from SW304_02" ,"SW304_02",false);
+				
+				getComboBoxData("select * from S601_10" ,"S601_10",false);
+				
+			}
+			
+			
+			
+			/**
+			 *
+			 */
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+					this.SW302_82.dataProvider = comboBoxDataList;
+					this.SW302_82.selectedIndex = 0;	
+				}else if(flag=="S301_01")
+				{
+					SW302_20.dataProvider=comboBoxDataList;
+					SW302_20.selectedIndex=0;
+				}else if(flag=="S301_04")
+				{
+					SW302_12.dataProvider=comboBoxDataList;
+					SW302_12.selectedIndex=0;
+				}else if(flag=="S301_06")
+				{
+					SW302_08.dataProvider=comboBoxDataList;
+					SW302_08.selectedIndex=0;
+					
+				}else if(flag=="S601_01")
+				{
+					SW302_19.dataProvider=comboBoxDataList;
+					SW302_19.selectedIndex=0;
+					
+				}else if(flag=="SW304_02")
+				{
+					SW302_18.dataProvider=comboBoxDataList;
+					SW302_18.selectedIndex=4;
+					
+				}else if(flag=="S601_10")
+				{
+					SW302_24.dataProvider=comboBoxDataList;
+					SW302_24.selectedIndex=0;
+					
+				}
+				--count;
+				if(!count)
+					putSw302();
+			}
+			
+			/**
+			 *
+			 */
+			private function doSW30229Val(gridArr:Array):void
+			{
+				sw30229Arr=vSw302.sw30229.split(',');
+				for(var i:int=0;i<gridArr.length;i++)
+				{
+					setSW30229Val(gridArr[i]);
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function setSW30229Val(id:Object):void
+			{
+				for(var i:uint=0;i<id.numElements;i++)
+				{	
+					var child:Object=id.getElementAt(i);
+					if (child is Container && Container(child).getChildren()) 
+						setSW30229Val(child); 
+					else if (child is CheckBox&&child.id)
+					{
+						for(var j:int=0;j<sw30229Arr.length;j++)
+						{
+							if(child.automationName==sw30229Arr[j]||!sw30229Arr[j])
+							{
+								child.selected=sw30229Arr[j]?true:false;
+								sw30229Arr.splice(j,1);
+								j--;
+								break;
+							}					
+						}
+					}
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function putSw302():void
+			{
+				doSW30229Val([grid1,grid2]);
+				SW302_06.text=vSw302.sw30206;
+				SW302_07.text=vSw302.sw30207;
+				SW302_09.text=vSw302.sw30209;
+				SW302_10.text=vSw302.sw30210;
+				SW302_11.text=vSw302.sw30211;
+				SW302_15.text=vSw302.sw30215;
+				SW302_16.text=vSw302.sw30216;
+				SW302_22.text=vSw302.sw30222;
+				SW302_23.text=vSw302.sw30223;
+				SW302_42.text=vSw302.sw30242;
+				SW302_43.text=vSw302.sw30243;
+				SW302_44.text=vSw302.sw30244;
+				SW302_47.text=vSw302.sw30247;
+				SW302_49.text=vSw302.sw30249;
+				SW302_51.text=vSw302.sw30251;
+				SW302_53.text=vSw302.sw30253;
+				SW302_55.text=vSw302.sw30255;
+				SW302_57.text=vSw302.sw30257;
+				SW302_58.text=vSw302.sw30258;
+				SW302_60.text=vSw302.sw30260;
+				SW302_62.text=vSw302.sw30262;
+				SW302_64.text=vSw302.sw30264;
+				SW302_66.text=vSw302.sw30266;
+				SW302_67.text=vSw302.sw30267;
+				SW302_68.text=vSw302.sw30268;
+				SW302_69.text=vSw302.sw30269;
+				SW302_70.text=vSw302.sw30270;
+				SW302_71.text=vSw302.sw30271;
+				SW302_72.text=vSw302.sw30272;
+				SW302_73.text=vSw302.sw30273;
+				SW302_74.text=vSw302.sw30274;
+				SW302_75.text=vSw302.sw30275;
+				SW302_76.text=vSw302.sw30276;
+				SW302_77.text=vSw302.sw30277;
+				SW302_79.text=vSw302.sw30279;
+				SW302_80.text=vSw302.sw30280;
+				SW302_83.text=vSw302.sw30283;
+				SW302_84.text=vSw302.sw30284;
+				
+				CompMethod.setRadioButtonSelect([SW302_17],vSw302.sw30217);
+				CompMethod.setRadioButtonSelect([SW302_25],vSw302.sw30225);
+				CompMethod.setRadioButtonSelect([SW302_26],vSw302.sw30226);
+				CompMethod.setRadioButtonSelect([SW302_27_1,SW302_27_2],vSw302.sw30227);
+				CompMethod.setRadioButtonSelect([SW302_28],vSw302.sw30228);
+				CompMethod.setRadioButtonSelect([SW302_45],vSw302.sw30245);
+				CompMethod.setRadioButtonSelect([SW302_46],vSw302.sw30246);
+				CompMethod.setRadioButtonSelect([SW302_48],vSw302.sw30248);
+				CompMethod.setRadioButtonSelect([SW302_50],vSw302.sw30250);
+				CompMethod.setRadioButtonSelect([SW302_52],vSw302.sw30252);
+				CompMethod.setRadioButtonSelect([SW302_54],vSw302.sw30254);
+				CompMethod.setRadioButtonSelect([SW302_56],vSw302.sw30256);
+				CompMethod.setRadioButtonSelect([SW302_59],vSw302.sw30259);
+				CompMethod.setRadioButtonSelect([SW302_61],vSw302.sw30261);
+				CompMethod.setRadioButtonSelect([SW302_63],vSw302.sw30263);
+				CompMethod.setRadioButtonSelect([SW302_65],vSw302.sw30265);
+				CompMethod.setRadioButtonSelect([SW302_78],vSw302.sw30278);
+				
+				
+				CompMethod.setCheckBoxAutomationName([SW302_30],vSw302.sw30230);
+				CompMethod.setCheckBoxAutomationName([SW302_31],vSw302.sw30231);
+				CompMethod.setCheckBoxAutomationName([SW302_32],vSw302.sw30232);
+				CompMethod.setCheckBoxAutomationName([SW302_33],vSw302.sw30233)
+				CompMethod.setCheckBoxAutomationName([SW302_34],vSw302.sw30234);
+				CompMethod.setCheckBoxAutomationName([SW302_35],vSw302.sw30235)
+				CompMethod.setCheckBoxAutomationName([SW302_36],vSw302.sw30236);
+				CompMethod.setCheckBoxAutomationName([SW302_37],vSw302.sw30237)
+				CompMethod.setCheckBoxAutomationName([SW302_38],vSw302.sw30238);
+				CompMethod.setCheckBoxAutomationName([SW302_39],vSw302.sw30239)
+				CompMethod.setCheckBoxAutomationName([SW302_40],vSw302.sw30240);
+				CompMethod.setCheckBoxAutomationName([SW302_41],vSw302.sw30241)
+				
+				SW302_08.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(SW302_08.dataProvider),vSw302.sw30208);
+				SW302_12.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(SW302_12.dataProvider),vSw302.sw30212);
+				SW302_18.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(SW302_18.dataProvider),vSw302.sw30218);
+				SW302_19.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(SW302_19.dataProvider),vSw302.sw30219);
+				SW302_20.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(SW302_20.dataProvider),vSw302.sw30220);
+				SW302_24.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(SW302_24.dataProvider),vSw302.sw30224);
+				SW302_82.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(SW302_82.dataProvider),vSw302.sw30282);
+
+				if(vSw302.sw30221)
+				{
+					SW302_21_1.text=DateField.dateToString(vSw302.sw30221,'YYYY-MM-DD');
+					SW302_21_2.text=vSw302.sw30221.hours;
+					SW302_21_3.text=vSw302.sw30221.minutes;
+				}
+			
+				
+				SW302_81.text=DateField.dateToString(vSw302.sw30281,'YYYY-MM-DD');
+				
+
+				
+			}
+			
+			/**
+			 *设置户口地址 
+			 */
+			private function SW302_13_clickHandler(event:MouseEvent):void
+			{
+				
+				SW302_14.setAreaCode(SW302_13.getAreaCode());
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function clearText(idEles:*):void
+			{
+				if(idEles is Array)
+				{
+					for(var i:String in idEles)
+					{
+						doClearText(idEles[i]);
+					}
+				}else
+					doClearText(idEles);
+			}
+			
+			/**
+			 *
+			 */
+			private function doClearText(id:Object):void
+			{
+				id.text='';
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function getRadioButtonVal():void
+			{
+				
+				sw30229Location[0]=CompMethod.getCheckBoxAutomationName([SW302_30]);
+				sw30229Location[1]=CompMethod.getCheckBoxAutomationName([SW302_31]);
+				sw30229Location[2]=CompMethod.getCheckBoxAutomationName([SW302_32]);
+				sw30229Location[3]=CompMethod.getCheckBoxAutomationName([SW302_33]);
+				sw30229Location[4]=CompMethod.getCheckBoxAutomationName([SW302_34]);
+				sw30229Location[5]=CompMethod.getCheckBoxAutomationName([SW302_35]);
+				sw30229Location[6]=CompMethod.getCheckBoxAutomationName([SW302_36]);
+				sw30229Location[7]=CompMethod.getCheckBoxAutomationName([SW302_37]);
+				sw30229Location[8]=CompMethod.getCheckBoxAutomationName([SW302_38]);
+				sw30229Location[9]=CompMethod.getCheckBoxAutomationName([SW302_39]);
+				sw30229Location[10]=CompMethod.getCheckBoxAutomationName([SW302_40]);
+				sw30229Location[11]=CompMethod.getCheckBoxAutomationName([SW302_41]);
+				
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function getSW30229Val(id:Object):void
+			{
+				for(var i:uint=0;i<id.numElements;i++)
+				{	
+					var child:Object=id.getElementAt(i);
+					if (child is Container && Container(child).getChildren()) 
+						getSW30229Val(child); 
+					else if (child is CheckBox&&child.id)
+					{
+						if(child.selected)					
+							sw302.sw30229+=child.automationName+',';
+					}
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function getGridID(gridArr:Array):void
+			{
+				for(var i:int=0;i<gridArr.length;i++)
+				{
+					getSW30229Val(gridArr[i]);
+				}
+			}
+			/**
+			 *
+			 */
+			private function validate():void
+			{
+				sw302.sw30229='';
+				getGridID([grid1,grid2]);
+				getRadioButtonVal();
+				
+				if(!SW302_06.text)
+				{
+					Alert.show("请输入住院号","系统提示");
+					return;
+				}
+				if(!SW302_07.text)
+				{
+					Alert.show("请输入母亲姓名","系统提示");
+					return;
+				}
+				if(!SW302_09.text)
+				{
+					Alert.show("请输入孕产妇证件号码","系统提示");
+					return;
+				}
+				if(!SW302_08.selectedIndex)
+				{
+					var patternMonther:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+					if(!patternMonther.test(StringUtil.trim(SW302_09.text)))
+					{
+						Alert.show("孕产妇身份证号码有误!","系统提示");
+						return;
+					}
+				}
+				if(!SW302_10.text)
+				{
+					Alert.show("请输入孕产妇年龄","系统提示");
+					return;
+				}
+				if(!SW302_11.text)
+				{
+					Alert.show("请输入孕产妇联系方式","系统提示");
+					return;
+				}
+				if(!SW302_19.selectedIndex)
+				{
+					Alert.show("请输入孕产妇文化程度","系统提示");
+					return;
+				}
+				
+				if(!CompMethod.validateAreaCode(SW302_13.getAreaCode(),'4113'))
+				{
+					Alert.show("现地址选择到最下级","系统提示");
+					return ;
+				}
+				if(!CompMethod.validateAreaCode(SW302_14.getAreaCode(),"4113",true))
+				{
+					Alert.show("户口地址请选择到乡镇","系统提示");
+					return ;
+				}
+				if(!SW302_15.text)
+				{
+					Alert.show("请输入孕次","系统提示");
+					return;
+				}
+				if(!SW302_16.text)
+				{
+					Alert.show("请输入产次","系统提示");
+					return;
+				}
+				if(isNaN(Number(SW302_22.text))||!SW302_22.text)
+				{
+					Alert.show("请输入正确的胎龄","系统提示");
+					return;
+				}
+				if(!SW302_25_2.selected)//非死胎死产
+				{
+					
+					if(!SW302_20.selectedIndex)
+					{
+						Alert.show("请选择性别 ","系统提示");
+						return;
+					}
+					if(isNaN(Number(SW302_23.text)))
+					{
+						Alert.show("请输入正确的出生体重kg","系统提示");
+						return;
+					}
+					
+					if(!SW302_21_1.text)
+					{
+						Alert.show("请输入出生时间","系统提示");
+						return;
+					}
+					var hour:Number=Number(SW302_21_2.text);
+					if(isNaN(hour))
+					{
+						Alert.show("请输入出生时间(时)","系统提示");
+						return;
+					}
+					if(hour<0||hour>23)
+					{
+						Alert.show("出生时间(时)范围在0-23之间","系统提示");
+						return;
+					}
+					var min:Number=Number(SW302_21_3.text);
+					if(isNaN(min))
+					{
+						Alert.show("请输入出生时间（分）","系统提示");
+						return;
+					}
+					if(min<0||min>59)
+					{
+						Alert.show("出生时间(分)范围在0-23之间","系统提示");
+						return;
+					}
+				}
+				
+				if(SW302_83.enabled&&!SW302_83.text)
+				{
+					Alert.show("请输入产前孕周","系统提示");
+					return;
+				}
+				if(!sw302.sw30229)
+				{
+					Alert.show("请选择出生缺陷","系统提示");
+					return;
+				}
+				if(SW302_30.enabled&&!sw30229Location[0][0])
+				{
+					Alert.show("请选择腭裂位置","系统提示");
+					return;
+				}
+				if(SW302_31.enabled&&!sw30229Location[1][0])
+				{
+					Alert.show("请选择唇裂位置","系统提示");
+					return;
+				}
+				if(SW302_32.enabled&&!sw30229Location[2][0])
+				{
+					Alert.show("请选择唇裂合并腭裂位置","系统提示");
+					return;
+				}
+				if(SW302_33.enabled&&!sw30229Location[3][0])
+				{
+					Alert.show("请选择小耳（包括无耳）位置","系统提示");
+					return;
+				}
+				if(SW302_34.enabled&&!sw30229Location[4][0])
+				{
+					Alert.show("请选择外耳其他畸形（小耳，无耳除外）位置","系统提示");
+					return;
+				}
+				if(SW302_35.enabled&&!sw30229Location[5][0])
+				{
+					Alert.show("请选择马蹄内翻足位置","系统提示");
+					return;
+				}
+				if(SW302_36.enabled&&!sw30229Location[6][0])
+				{
+					Alert.show("请选择多指位置","系统提示");
+					return;
+				}
+				if(SW302_37.enabled&&!sw30229Location[7][0])
+				{
+					Alert.show("请选择多趾位置","系统提示");
+					return;
+				}
+				if(SW302_38.enabled&&!sw30229Location[8][0])
+				{
+					Alert.show("请选择并指位置","系统提示");
+					return;
+				}
+				if(SW302_39.enabled&&!sw30229Location[9][0])
+				{
+					Alert.show("请选择并趾位置","系统提示");
+					return;
+				}
+				if(SW302_40.enabled&&!sw30229Location[10][0])
+				{
+					Alert.show("请选择上肢体短缩位置","系统提示");
+					return;
+				}
+				if(SW302_41.enabled&&!sw30229Location[11][0])
+				{
+					Alert.show("请选择下肢体短缩位置","系统提示");
+					return;
+				}
+				
+				
+				if(SW302_42.enabled&&!SW302_42.text)
+				{
+					Alert.show("请输入先天性心脏病类型","系统提示");
+					return;
+				}
+				if(SW302_43.enabled&&!SW302_43.text)
+				{
+					Alert.show("请输入出生缺陷诊断其他","系统提示");
+					return;
+				}
+				if(SW302_47.enabled&&!SW302_47.text)
+				{
+					Alert.show("请输入病毒感染类型","系统提示");
+					return;
+				}
+				if(SW302_51.enabled&&!SW302_51.text)
+				{
+					Alert.show("请输入磺胺类名称","系统提示");
+					return;
+				}
+				if(SW302_53.enabled&&!SW302_53.text)
+				{
+					Alert.show("请输入抗生素名称","系统提示");
+					return;
+				}
+				
+				if(SW302_55.enabled&&!SW302_55.text)
+				{
+					Alert.show("请输入避孕药名称","系统提示");
+					return;
+				}
+				if(SW302_57.enabled&&!SW302_57.text)
+				{
+					Alert.show("请输入镇静药名称","系统提示");
+					return;
+				}
+				if(SW302_60.enabled&&!SW302_60.text)
+				{
+					Alert.show("请输入饮酒剂量","系统提示");
+					return;
+				}
+				if(SW302_62.enabled&&!SW302_62.text)
+				{
+					Alert.show("请输入农药名称","系统提示");
+					return;
+				}
+				if(SW302_64.enabled&&!SW302_64.text)
+				{
+					Alert.show("请输入射线类型","系统提示");
+					return;
+				}
+				if(SW302_66.enabled&&!SW302_66.text)
+				{
+					Alert.show("请输入化学制剂名称","系统提示");
+					return;
+				}
+				if(SW302_79.enabled&&!SW302_79.text)
+				{
+					Alert.show("请输入近亲婚配史关系","系统提示");
+					return;
+				}
+				if(SW302_43.enabled&&!SW302_43.text)
+				{
+					Alert.show("请输入病毒感染类型","系统提示");
+					return;
+				}
+				if(!SW302_80.text)
+				{
+					Alert.show("请输入录入人员","系统提示");
+					return;
+				}
+				if(!SW302_84.text)
+				{
+					Alert.show("请输入第几子","系统提示");
+					return;
+				}
+				saveSw302();
+			}
+			
+			/**
+			 *
+			 */
+			private function saveSw302():void
+			{
+				saveSW302.enabled=false;
+				sw302.sw30201=vSw302.sw30201;
+				sw302.sw30202=vSw302.sw30202;
+				sw302.sw30203=vSw302.sw30203;
+				sw302.sw30204=vSw302.sw30204;
+				sw302.sw30205=vSw302.sw30205;
+				sw302.sw30206=StringUtil.trim(SW302_06.text);
+				sw302.sw30207=StringUtil.trim(SW302_07.text);
+				sw302.sw30208=SW302_08.selectedItem.data;
+				sw302.sw30209=StringUtil.trim(SW302_09.text);
+				sw302.sw30210=StringUtil.trim(SW302_10.text);
+				sw302.sw30211=StringUtil.trim(SW302_11.text);
+				sw302.sw30212=SW302_12.selectedItem.data;
+				sw302.sw30213=SW302_13.getAreaCode();
+				sw302.sw30214=SW302_14.getAreaCode();
+				sw302.sw30215=StringUtil.trim(SW302_15.text);
+				sw302.sw30216=StringUtil.trim(SW302_16.text);
+				sw302.sw30217=CompMethod.getRadioButtonValue([SW302_17]);
+				sw302.sw30218=SW302_18.selectedItem.data;
+				sw302.sw30219=SW302_19.selectedItem.data;
+				sw302.sw30220=SW302_20.selectedItem.data;
+				
+				if(!SW302_25_2.selected)
+				{
+					sw302.sw30221=DateField.stringToDate(SW302_21_1.text,'YYYY-MM-DD');
+					sw302.sw30221.hours=Number(SW302_21_2.text);
+					sw302.sw30221.minutes=Number(SW302_21_3.text);
+					sw302.sw30223=StringUtil.trim(SW302_23.text);
+					
+				}
+				sw302.sw30222=StringUtil.trim(SW302_22.text);
+				sw302.sw30224=SW302_24.selectedItem.data;;
+				sw302.sw30225=CompMethod.getRadioButtonValue([SW302_25]);
+				sw302.sw30226=CompMethod.getRadioButtonValue([SW302_26]);
+				sw302.sw30227=CompMethod.getRadioButtonValue([SW302_27_1,SW302_27_2]);
+				sw302.sw30228=CompMethod.getRadioButtonValue([SW302_28]);
+				sw302.sw30230=sw30229Location[0][1];
+				sw302.sw30231=sw30229Location[1][1];
+				sw302.sw30232=sw30229Location[2][1];
+				sw302.sw30233=sw30229Location[3][1];
+				sw302.sw30234=sw30229Location[4][1];
+				sw302.sw30235=sw30229Location[5][1];
+				sw302.sw30236=sw30229Location[6][1];
+				sw302.sw30237=sw30229Location[7][1];
+				sw302.sw30238=sw30229Location[8][1];
+				sw302.sw30239=sw30229Location[9][1];
+				sw302.sw30240=sw30229Location[10][1];
+				sw302.sw30241=sw30229Location[11][1];
+				sw302.sw30242=StringUtil.trim(SW302_42.text);
+				sw302.sw30243=StringUtil.trim(SW302_43.text);
+				sw302.sw30244=StringUtil.trim(SW302_44.text);
+				sw302.sw30245=CompMethod.getRadioButtonValue([SW302_45]);
+				sw302.sw30246=CompMethod.getRadioButtonValue([SW302_46]);
+				sw302.sw30247=StringUtil.trim(SW302_47.text);
+				sw302.sw30248=CompMethod.getRadioButtonValue([SW302_48]);
+				sw302.sw30249=StringUtil.trim(SW302_49.text);
+				sw302.sw30250=CompMethod.getRadioButtonValue([SW302_50]);
+				sw302.sw30251=StringUtil.trim(SW302_51.text);
+				sw302.sw30252=CompMethod.getRadioButtonValue([SW302_52]);
+				sw302.sw30253=StringUtil.trim(SW302_53.text);
+				sw302.sw30254=CompMethod.getRadioButtonValue([SW302_54]);
+				sw302.sw30255=StringUtil.trim(SW302_55.text);
+				sw302.sw30256=CompMethod.getRadioButtonValue([SW302_56]);
+				sw302.sw30257=StringUtil.trim(SW302_57.text);
+				sw302.sw30258=StringUtil.trim(SW302_58.text);
+				sw302.sw30259=CompMethod.getRadioButtonValue([SW302_59]);
+				sw302.sw30260=StringUtil.trim(SW302_60.text);
+				sw302.sw30261=CompMethod.getRadioButtonValue([SW302_61]);
+				sw302.sw30262=StringUtil.trim(SW302_62.text);
+				sw302.sw30263=CompMethod.getRadioButtonValue([SW302_63]);
+				sw302.sw30264=StringUtil.trim(SW302_64.text);
+				sw302.sw30265=CompMethod.getRadioButtonValue([SW302_65]);
+				sw302.sw30266=StringUtil.trim(SW302_66.text);
+				sw302.sw30267=StringUtil.trim(SW302_67.text);
+				sw302.sw30268=StringUtil.trim(SW302_68.text);
+				sw302.sw30269=StringUtil.trim(SW302_69.text);
+				sw302.sw30270=StringUtil.trim(SW302_70.text);
+				sw302.sw30271=StringUtil.trim(SW302_71.text);
+				sw302.sw30272=StringUtil.trim(SW302_72.text);
+				sw302.sw30273=StringUtil.trim(SW302_73.text);
+				sw302.sw30274=StringUtil.trim(SW302_74.text);
+				sw302.sw30275=StringUtil.trim(SW302_75.text);
+				sw302.sw30276=StringUtil.trim(SW302_76.text);
+				sw302.sw30277=StringUtil.trim(SW302_77.text);
+				sw302.sw30278=CompMethod.getRadioButtonValue([SW302_78]);
+				sw302.sw30279=StringUtil.trim(SW302_79.text);
+				sw302.sw30280=StringUtil.trim(SW302_80.text);
+				sw302.sw30281=DateField.stringToDate(SW302_81.text,'YYYY-MM-DD');
+				sw302.sw30282=SW302_82.selectedItem.data;
+				sw302.sw30283=StringUtil.trim(SW302_83.text);
+				sw302.sw30284=StringUtil.trim(SW302_84.text);
+				
+				sw302Service.renewSw302(sw302);
+			}
+			
+			/**
+			 *
+			 */
+			private function renewSw302Handler(event:ResultEvent):void
+			{
+				var sw302Response:Object =  event.result;
+				if(!sw302Response.state) {
+					saveSW302.enabled=true;
+					Alert.show(sw302Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show("修改成功！ ","系统提示",1,this,
+					function ():void
+					{
+						removeWindow(true);
+					}
+				);
+			}
+			
+			private function checkBox_changeHandler(event:Event,ids:*):void
+			{
+				var selected:Boolean=CheckBox(event.target).selected;
+				if(!selected)
+				{
+					if(ids is HGroup)
+						CompMethod._walk(ids);
+					else
+						clearText(ids);
+				}
+			}
+			
+			
+			private function setAreaCode_creationCompleteHandler(event:FlexEvent,areaCode:String):void
+			{
+				event.target.setAreaCode(areaCode);
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller x="1" y="-1" width="100%"  horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto" height="100%" chromeColor="#ffffff">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" height="100%">
+			<mx:TabNavigator width="1230"  creationPolicy="all">
+				<s:NavigatorContent width="100%" label="基本信息">
+					<mx:Grid paddingBottom="10" paddingLeft="8" >
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="label" text="孕产妇姓名"/>
+								<s:TextInput id="SW302_07" width="130" />
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="证件类型" />
+								<s:DropDownList id="SW302_08" width="130"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="年        龄"/>
+								<s:TextInput id="SW302_10" width="130" maxChars="2" restrict="0-9"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15"  text="民        族" />
+								<s:DropDownList id="SW302_12" width="130"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="母   亲   身    份    证  号"/>
+								<s:TextInput id="SW302_09" width="145" restrict="0-9X"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label styleName="label"  text="联 系  方 式"/>
+								<s:TextInput id="SW302_11" width="130" restrict="0-9"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="孕        次"/>
+								<s:TextInput id="SW302_15" width="130" restrict="0-9"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="产        次"/>
+								<s:TextInput id="SW302_16" width="130" restrict="0-9"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="文化程度"/>
+								<s:DropDownList id="SW302_19" width="130"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="家庭年人均收入（元） " />
+								<s:DropDownList id="SW302_18" width="145"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow >
+							<mx:GridItem>
+								<s:Label styleName="label" text="住     院   号"/>
+								<s:TextInput id="SW302_06" width="130"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+							
+							<mx:GridItem colSpan="4" id="SW302_17">
+								<s:Label styleName="label" text="常住地"  paddingLeft="15"/>
+								<s:RadioButton buttonMode="true" label="城镇" groupName="SW302_17" value="1"  selected="true" />
+								<s:RadioButton buttonMode="true" label="乡村" groupName="SW302_17" value="2"  />
+								
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						
+						
+						
+						<mx:GridRow>
+							<mx:GridItem colSpan="5">
+								<s:Label styleName="label" width="57" text="现住址"/>
+								<component:AreaComboBoxVillageAuto id="SW302_13" width="948" buttonMode="true"
+																   creationComplete="setAreaCode_creationCompleteHandler(event,vSw302.sw30213)"/>
+								<s:Label styleName="must" text="*"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem colSpan="5">
+								<s:Label styleName="label" width="57" text="户口地址"/>
+								<component:AreaComboBoxVillageAuto id="SW302_14" width="948" buttonMode="true"
+																   creationComplete="setAreaCode_creationCompleteHandler(event,vSw302.sw30214)"/>
+								<s:Label styleName="must" text="*"/>
+								<s:Button label="同现住址" click="SW302_13_clickHandler(event)" buttonMode="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+					</mx:Grid>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator width="1230" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="缺陷儿情况">
+					<s:VGroup  width="100%">
+						<mx:Grid paddingBottom="3" paddingLeft="8">
+							<mx:GridRow>
+								
+								<mx:GridItem>
+									<s:Label styleName="label" text="性别" />
+									<s:DropDownList id="SW302_20" width="130"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="label" paddingLeft="15" text="出生体重"/>
+									<s:BorderContainer width="130" height="23">
+										<s:HGroup verticalAlign="middle">
+											<s:TextInput id="SW302_23" width="100" borderVisible="false" maxChars="3" 
+														 textAlign="right" restrict="0-9|."/>
+											<s:Label styleName="label" text="kg"/>
+										</s:HGroup>
+									</s:BorderContainer>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="label" paddingLeft="15" text="胎龄"/>
+									<s:TextInput id="SW302_22" width="130" restrict="0-9" maxChars="2"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="label" paddingLeft="15" text="出生时间" />
+									<component:CustomRangeDateField  id="SW302_21_1" width="130" />
+									<s:TextInput id="SW302_21_2" maxChars="2" restrict="0-9" width="30"/><s:Label styleName="label" text="时"/>
+									<s:TextInput id="SW302_21_3" maxChars="2" restrict="0-9" width="30"/><s:Label styleName="label" text="分"/>
+								</mx:GridItem>
+								
+								
+								<mx:GridItem>
+									<s:Label styleName="label" paddingLeft="15" text="第几子"/>
+									<s:TextInput id="SW302_84" width="100" restrict="0-9" maxChars="2" text="1"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								
+								
+								
+							</mx:GridRow>
+							<mx:GridRow>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" text="胎数" />
+									<s:DropDownList id="SW302_24" width="130"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								
+								
+								<mx:GridItem  paddingLeft="15" id="SW302_25">
+									<s:Label styleName="label" text="结局"/>
+									<s:RadioButton buttonMode="true" label="存活" groupName="SW302_25" value="1"  selected="true" />
+									<s:RadioButton buttonMode="true" label="死胎死产" groupName="SW302_25" value="2" id="SW302_25_2"/>
+									<s:RadioButton buttonMode="true" label="7天内死亡" groupName="SW302_25" value="3" />
+								</mx:GridItem>
+								
+								<mx:GridItem  id="SW302_26">
+									<s:Label styleName="label" paddingLeft="15"   text="产前诊断为出生缺陷后治疗性引产"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_26"
+												   value="1"  selected="true" />
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_26" value="2"/>
+									
+								</mx:GridItem>
+								<mx:GridItem colSpan="2" id="SW302_27_1">
+									<s:Label styleName="label" paddingLeft="15"   text="诊断依据 "/>
+									<s:RadioButton buttonMode="true" label="临床" groupName="SW302_27" value="1" selected="true" />
+									<s:RadioButton buttonMode="true" label="超声" groupName="SW302_27" value="2"/>
+									<s:RadioButton buttonMode="true" label="尸解" groupName="SW302_27" value="3"/>
+									<s:RadioButton buttonMode="true" label="生化检查AFP" groupName="SW302_27" value="4"/>
+									<s:RadioButton buttonMode="true" label="生化检查HCG" groupName="SW302_27" value="5"/>
+									
+									
+								</mx:GridItem>
+								
+							</mx:GridRow>
+						</mx:Grid>  
+						<mx:Grid paddingBottom="3" paddingLeft="8">
+							<mx:GridRow>
+								
+								<mx:GridItem id="SW302_27_2">
+									<s:Label styleName="label"   text="诊断依据 "/>
+									<s:RadioButton buttonMode="true" label="生化检查其他" groupName="SW302_27" value="6"/>
+									<s:RadioButton buttonMode="true" label="染色体" groupName="SW302_27" value="7"/>
+									<s:RadioButton buttonMode="true" label="其他" groupName="SW302_27" value="8"/>
+								</mx:GridItem>
+								
+								<mx:GridItem  id="SW302_28">
+									<s:Label styleName="label" paddingLeft="15" text="畸形诊断时间"/>
+									<s:RadioButton buttonMode="true" label="产前" groupName="SW302_28" value="1"  selected="true"
+												   id="SW302_28_1"/>
+									<s:RadioButton buttonMode="true" label="产后七天内" groupName="SW302_28" value="2"
+												   change="clearText(SW302_83)"/>
+								</mx:GridItem>
+								
+								
+								<mx:GridItem>
+									<s:Label styleName="label" paddingLeft="15" text="产前孕周"/>
+									<s:TextInput id="SW302_83" width="130" restrict="0-9" maxChars="2" 
+												 enabled="{SW302_28_1.selected}"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								
+								
+							</mx:GridRow>
+							
+						</mx:Grid>  
+						
+					</s:VGroup>
+					
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator width="1230" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="出生缺陷诊断">
+					<s:VGroup gap="0">
+						<mx:Grid paddingBottom="10" paddingLeft="8" id="grid1">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_01" automationName="01" label="无脑畸形"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_02" automationName="02"  label="脊柱裂"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_03" automationName="03"  label="脑膨出"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_04" automationName="04" label="先天性脑积水"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_10" automationName="10"  label="食道闭锁或狭窄"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_11" automationName="11" label="直肠肛门闭锁或狭窄"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_12" automationName="12"  label="尿道下裂"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_13" automationName="13"  label="膀胱外翻"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_21" automationName="21"  label="先天性膈疝"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_22" automationName="22"  label="脐膨出"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_23" automationName="23"  label="腹裂"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_24" automationName="24" label="联体双胎"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:CheckBox buttonMode="true" id="SW302_29_25" automationName="25"  label="唐氏综合征"/>
+								</mx:GridItem>
+								
+								
+							</mx:GridRow>
+						</mx:Grid>  
+						
+						<mx:Grid paddingBottom="10" paddingLeft="8" id="grid2" >
+							<mx:GridRow>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_05" automationName="05"  label="腭裂"
+												change="checkBox_changeHandler(event,SW302_30)"/>
+									
+									<s:HGroup verticalAlign="bottom" id="SW302_30" enabled="{SW302_29_05.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="2" label="中"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+								</mx:GridItem>
+								
+								
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_06" automationName="06"  label="唇裂"
+												change="checkBox_changeHandler(event,SW302_31)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_31" enabled="{SW302_29_06.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="2" label="中"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_07" automationName="07"  label="唇裂合并腭裂"
+												change="checkBox_changeHandler(event,SW302_32)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_32" enabled="{SW302_29_07.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="2" label="中"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_08" automationName="08" label="小耳（包括无耳）"
+												change="checkBox_changeHandler(event,SW302_33)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_33" enabled="{SW302_29_08.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_09" automationName="09"  label="外耳其他畸形（小耳，无耳除外）"
+												change="checkBox_changeHandler(event,SW302_34)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_34" enabled="{SW302_29_09.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+								</mx:GridItem>
+								
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_14" automationName="14"  label="马蹄内翻足"
+												change="checkBox_changeHandler(event,SW302_35)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_35" enabled="{SW302_29_14.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_15" automationName="15"  label="多指"
+												change="checkBox_changeHandler(event,SW302_36)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_36" enabled="{SW302_29_15.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_16" automationName="16"  label="多趾"
+												change="checkBox_changeHandler(event,SW302_37)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_37" enabled="{SW302_29_16.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_17" automationName="17"  label="并指"
+												change="checkBox_changeHandler(event,SW302_38)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_38" enabled="{SW302_29_17.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_18" automationName="18"  label="并趾"
+												change="checkBox_changeHandler(event,SW302_39)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_39" enabled="{SW302_29_18.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+									
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							
+							<mx:GridRow>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_19" automationName="19"  label="上肢体短缩"
+												change="checkBox_changeHandler(event,SW302_40)"/>
+									
+									<s:HGroup verticalAlign="bottom" id="SW302_40" enabled="{SW302_29_19.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+									
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:CheckBox buttonMode="true" id="SW302_29_20" automationName="20"  label="下肢体短缩"
+												change="checkBox_changeHandler(event,SW302_41)"/>
+									<s:HGroup verticalAlign="bottom" id="SW302_41" enabled="{SW302_29_20.selected}">
+										<s:Label styleName="label" text="("/>
+										<s:CheckBox buttonMode="true"  automationName="1" label="左"/>
+										<s:CheckBox buttonMode="true"  automationName="3" label="右"/>
+										<s:Label styleName="label" text=")"/>
+									</s:HGroup>
+									
+									
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							
+							<mx:GridRow>
+								<mx:GridItem colSpan="5">
+									<s:CheckBox buttonMode="true" id="SW302_29_26" automationName="26"  label="先天性心脏病"
+												change="checkBox_changeHandler(event,SW302_42)"/>
+									<s:Label styleName="label" text="    （写明类型）   "/>
+									<s:TextInput width="100%" id="SW302_42" enabled="{SW302_29_26.selected}"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem colSpan="5">
+									<s:CheckBox buttonMode="true" id="SW302_29_27" automationName="27"  label="其他"
+												change="checkBox_changeHandler(event,SW302_43)"/>
+									<s:Label styleName="label" text="（写明类型并详细描述）"/>
+									<s:TextInput width="100%" id="SW302_43" enabled="{SW302_29_27.selected}"/>
+									
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem colSpan="5">
+									
+									<s:Label styleName="label" text="备注"/>
+									<s:TextInput width="100%" id="SW302_44"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+						</mx:Grid>  
+						
+					</s:VGroup>	
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			
+			<mx:TabNavigator width="1230" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="孕早期情况">
+					<s:VGroup width="100%" height="100%" gap="0">
+						<mx:Grid paddingBottom="5" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem >
+									<s:Label styleName="label" text="患病" fontSize="14"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem id="SW302_45">
+									<s:Label styleName="label" paddingLeft="15"   text="发烧（》38℃）"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_45" value="2" selected="true" />
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_45"
+												   value="1"   />
+									
+								</mx:GridItem>
+								
+								<mx:GridItem id="SW302_46">
+									<s:Label styleName="label" paddingLeft="15"   text="病毒感染"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_46" value="2" 
+												   change="clearText(SW302_47)" selected="true"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_46"
+												   value="1"    id="SW302_46_1"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="病毒感染类型"/>
+									<s:TextInput width="254" id="SW302_47" enabled="{SW302_46_1.selected}"/>
+								</mx:GridItem>
+								
+								
+								<mx:GridItem id="SW302_48">
+									<s:Label styleName="label" paddingLeft="15"   text="糖尿病"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_48" value="2" selected="true"  />
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_48" value="1"   />
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="其他"/>
+									<s:TextInput width="343" id="SW302_49"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+							
+						</mx:Grid>  
+						
+						<mx:Grid paddingBottom="5" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem >
+									<s:Label styleName="label" text="服药" fontSize="14"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem id="SW302_50">
+									<s:Label styleName="label" paddingLeft="15"   text="磺胺类"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_50" value="2" 
+												   selected="true"  change="clearText(SW302_51)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_50"
+												   value="1"   id="SW302_50_1"/>
+									
+								</mx:GridItem>
+								
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="磺胺类名称"/>
+									<s:TextInput width="100%" id="SW302_51" enabled="{SW302_50_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem id="SW302_52">
+									<s:Label styleName="label" paddingLeft="15"   text="抗生素"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_52" value="2"
+												   selected="true" change="clearText(SW302_53)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_52"
+												   value="1"   id="SW302_52_1"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="label" paddingLeft="15"   text="抗生素名称"/>
+									<s:TextInput width="100%" id="SW302_53" enabled="{SW302_52_1.selected}"/>
+								</mx:GridItem>
+								
+								
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem id="SW302_54">
+									<s:Label styleName="label" paddingLeft="15"   text="避孕药"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_54" value="2"  
+												   selected="true" change="clearText(SW302_55)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_54"
+												   value="1"   id="SW302_54_1"/>
+									
+								</mx:GridItem>
+								
+								
+								<mx:GridItem>
+									<s:Label styleName="label" paddingLeft="15"   text="避孕药名称"/>
+									<s:TextInput width="100%" id="SW302_55" enabled="{SW302_54_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem id="SW302_56">
+									<s:Label styleName="label" paddingLeft="15"   text="镇静药"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_56" value="2" 
+												   selected="true"  change="clearText(SW302_57)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_56"
+												   value="1"  id="SW302_56_1"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="镇静药名称"/>
+									<s:TextInput width="100%" id="SW302_57" enabled="{SW302_56_1.selected}"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+							
+							<mx:GridRow>
+								
+								<mx:GridItem colSpan="4">
+									<s:Label styleName="label" paddingLeft="15"   text="其他"/>
+									<s:TextInput width="100%" id="SW302_58"/>
+								</mx:GridItem>
+								
+								
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem >
+									<s:Label styleName="label" text="接触其他有害因素" fontSize="14"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem id="SW302_59">
+									<s:Label styleName="label" paddingLeft="15"   text="饮酒"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_59" value="2" 
+												   selected="true"  change="clearText(SW302_60)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_59"
+												   value="1"   id="SW302_59_1"/>
+									
+								</mx:GridItem>
+								
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="饮酒剂量"/>
+									<s:TextInput width="100%" id="SW302_60" enabled="{SW302_59_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem id="SW302_61">
+									<s:Label styleName="label" paddingLeft="15"   text="农药"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_61" value="2"
+												   selected="true"  change="clearText(SW302_62)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_61"
+												   value="1"    id="SW302_61_1"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="农药名称"/>
+									<s:TextInput width="100%" id="SW302_62" enabled="{SW302_61_1.selected}"/>
+								</mx:GridItem>
+								
+								
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem id="SW302_63">
+									<s:Label styleName="label" paddingLeft="15"   text="射线"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_63" value="2" 
+												   selected="true" change="clearText(SW302_64)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_63"
+												   value="1"    id="SW302_63_1"/>
+									
+								</mx:GridItem>
+								
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="射线类型"/>
+									<s:TextInput width="370" id="SW302_64" enabled="{SW302_63_1.selected}"/>
+								</mx:GridItem>
+								
+								<mx:GridItem id="SW302_65">
+									<s:Label styleName="label" paddingLeft="15"   text="化学制剂"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_65" value="2"  
+												   selected="true"  change="clearText(SW302_66)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_65"
+												   value="1"  id="SW302_65_1"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"   text="化学制剂名称"/>
+									<s:TextInput width="390" id="SW302_66" enabled="{SW302_65_1.selected}"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+							
+							<mx:GridRow>
+								
+								<mx:GridItem colSpan="4">
+									<s:Label styleName="label" paddingLeft="15"   text="接触其他有害因素其他"/>
+									<s:TextInput width="100%" id="SW302_67"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+						</mx:Grid>  
+					</s:VGroup>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator width="1230" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="家庭史">
+					<s:VGroup width="100%" height="100%" gap="0">
+						<mx:Grid paddingBottom="5" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem >
+									<s:Label styleName="label" text="产妇异常生育史" fontSize="14"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="死胎"/>
+									<s:BorderContainer width="130" height="23">
+										<s:HGroup verticalAlign="middle">
+											<s:TextInput id="SW302_68" width="100" borderVisible="false" maxChars="2" 
+														 textAlign="right" restrict="0-9"/>
+											<s:Label styleName="label" text="例"/>
+										</s:HGroup>
+									</s:BorderContainer>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="自然流产"/>
+									<s:BorderContainer width="130" height="23">
+										<s:HGroup verticalAlign="middle">
+											<s:TextInput id="SW302_69" width="100" borderVisible="false" maxChars="2" 
+														 textAlign="right" restrict="0-9"/>
+											<s:Label styleName="label" text="例"/>
+										</s:HGroup>
+									</s:BorderContainer>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="缺陷儿"/>
+									<s:BorderContainer width="130" height="23">
+										<s:HGroup verticalAlign="middle">
+											<s:TextInput id="SW302_70" width="100" borderVisible="false" maxChars="2" 
+														 textAlign="right" restrict="0-9"/>
+											<s:Label styleName="label" text="例"/>
+										</s:HGroup>
+									</s:BorderContainer>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="缺陷名称"/>
+									<s:TextInput width="552" id="SW302_71"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+						</mx:Grid>  
+						
+						<mx:Grid paddingBottom="5" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem >
+									<s:Label styleName="label" text="家庭遗传史" fontSize="14"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="缺陷名称"/>
+									<s:TextInput width="150" id="SW302_72"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="与缺陷儿亲缘关系"/>
+									<s:TextInput width="150" id="SW302_73"/>
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="缺陷名称"/>
+									<s:TextInput width="150" id="SW302_74"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="与缺陷儿亲缘关系"/>
+									<s:TextInput width="150" id="SW302_75"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="缺陷名称"/>
+									<s:TextInput width="150" id="SW302_76"/>
+									
+								</mx:GridItem>
+								
+								<mx:GridItem >
+									<s:Label styleName="label" paddingLeft="15"  text="与缺陷儿亲缘关系"/>
+									<s:TextInput width="150" id="SW302_77"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem >
+									<s:Label styleName="label" text="近亲婚配史" fontSize="14"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								
+								<mx:GridItem  colSpan="4" id="SW302_78">
+									<s:Label styleName="label" paddingLeft="15"   text="近亲婚配史"/>
+									<s:RadioButton buttonMode="true" label="否" groupName="SW302_78" value="2" selected="true" change="clearText(SW302_79)"/>
+									<s:RadioButton buttonMode="true" label="是" groupName="SW302_78"
+												   value="1"   id="SW302_78_1" />
+									
+									<s:Label styleName="label" paddingLeft="15"  text="关系"/>
+									<s:TextInput width="150" id="SW302_79" enabled="{SW302_78_1.selected}"/>
+									
+								</mx:GridItem>
+								
+							</mx:GridRow>
+						</mx:Grid> 
+					</s:VGroup>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator width="1230" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="录入信息">			
+					<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label styleName="label" text="录入单位"/><s:DropDownList width="130" id="SW302_82"  enabled="false"/>
+							<s:Label styleName="label" text="录入人员"/><component:FindSelectedItemComboBox editable="true" height="21" 
+																					  width="130" id="SW302_80"/>
+							<s:Label styleName="label" text="录入时间"/>
+							<component:CustomRangeDateField  id="SW302_81" isSelectNow="true" width="130" enabled="false"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<s:HGroup width="1230" horizontalAlign="center" paddingBottom="10" verticalAlign="middle">
+				<s:Button id="saveSW302" label="保存" click="validate()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>

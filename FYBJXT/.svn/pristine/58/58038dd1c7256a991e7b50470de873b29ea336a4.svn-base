@@ -1,0 +1,290 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow"
+			   title="图片查询" backgroundColor="#FFFFFF"
+			   chromeColor="#5CACEE"  cornerRadius="5"
+			   width="1024" height="300" 
+			   creationComplete="init()" close="removeWindow()">
+	<fx:Declarations>
+		<s:RemoteObject id="pictureService" destination="pictureService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryVPicture" result="queryVPictureHandler(event)" fault="method1_faultHandler(event)"/>
+			<s:method name="queryVPictureByte" result="queryVPictureByteHandler(event)" fault="queryVPictureBytefaultHandler(event)"/>
+			<s:method name="delbyId" result="delbyIdHandler(event)" fault="delbyIdfaultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.uploadPictures.model.PictureMessage;
+			import com.xyw.uploadPictures.model.PictureRequest;
+			import com.xyw.uploadPictures.model.VPicture;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.Request;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			public var f50201:String;
+			public var pic10:String;
+			private var vpicture:VPicture;
+			private var bitmapData:BitmapData; 
+			private var picRequest:PictureRequest;
+			private var fileName:String="";
+			private var picmessage:PictureMessage;
+			public var loader:Loader;
+			public function init():void {
+			 	try{ 
+					loader = new Loader();
+					picRequest= new PictureRequest();
+					picRequest.pic02=f50201;
+					picRequest.pic10=pic10;
+					picRequest.parameterPageindex = 1;
+					picRequest.parameterPagesize = 6;
+					this.pictureService.queryVPicture(picRequest); 
+					this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE, onSelected);
+				 }catch(error:Error){
+					this.removeWindow();
+					Alert.show("网络繁忙，请重试!","系统提示");
+				} 
+			}
+			
+			public function queryVPictureHandler(event:ResultEvent):void {
+				var picResponse:Object = event.result;
+				var rowCount:Number = picResponse.rowCount;
+				if(picResponse.status){
+					this.pagerBar.pageSize = 6;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = picResponse.vp;;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				}else{
+					Alert.show(picResponse.message,"系统提示");
+				}
+			}
+			private function pagerFunction(currentPageIndex:int, pageSize:int):void{
+				picRequest= new PictureRequest();
+				picRequest.pic02=f50201;
+				picRequest.pic10=pic10;
+				picRequest.parameterPageindex = currentPageIndex;
+				picRequest.parameterPagesize = pageSize;
+				this.pictureService.queryVPicture(picRequest); 
+			}
+			public function refresh():void
+			{
+				picRequest= new PictureRequest();
+				picRequest.pic02=f50201;
+				picRequest.pic10=pic10;
+				picRequest.parameterPageindex = this.pagerBar.currentPageIndex;
+				picRequest.parameterPagesize = 6;
+				this.pictureService.queryVPicture(picRequest); 
+			}
+			public function method1_faultHandler(event:FaultEvent):void
+				{
+				Alert.show(event.fault.message);
+			}
+			private function onSelected(event:Event):void{
+				this.vpicture = DataGrid(event.target).selectedItem as VPicture;
+			}
+			
+			public function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			/*----------------去掉图片后缀类型-----------------*/
+			private function subName(vp:VPicture, column:GridColumn):String{
+				var columnDataField:String = column.dataField;
+				if("pic04" == columnDataField){
+					var pic04Str:String= vp.pic04;
+					var lastName:int=pic04Str.lastIndexOf('.');
+					var pic04Str_:String=pic04Str.substring(0,lastName);
+					return pic04Str_;
+				}
+				return null;
+			}
+			/*----------------查看显示图片------------------*/
+			private function imgLoad(event:MouseEvent):void
+			{	
+				if(this.vpicture == null){
+					Alert.show("请选择要操作的行!", "系统提示");
+					return;
+				}
+				if(down==event.target)
+				{
+					fileName=vpicture.pic04
+				}
+				this.pictureService.queryVPictureByte(this.vpicture);
+			}
+			/*------------------返回选中图片二进制信息-----------------------------*/
+			private function queryVPictureByteHandler(event:ResultEvent):void {
+				picmessage=event.result as PictureMessage;
+				if(!picmessage.status){
+					Alert.show(picmessage.message,"系统提示");
+					return;
+				}
+				if(fileName=="")
+				{
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE,loaderCompleteHandler); 
+					loader.loadBytes(picmessage.imageByte);
+				}else
+				{
+					Alert.show("是否下载图片","系统提示",3,this,downPic);
+				}
+			}
+		 	private function downPic(event:CloseEvent):void
+			{ 
+				if(event.detail==Alert.YES)
+				{
+					var file:FileReference=new FileReference();
+					file.save(picmessage.imageByte,fileName);
+					configureListeners(file);
+				}else
+				{
+					fileName="";
+				}
+			} 
+			
+			private function configureListeners(dispatcher:IEventDispatcher):void
+			{
+				dispatcher.addEventListener(Event.CANCEL, cancelHandler);
+				dispatcher.addEventListener(Event.COMPLETE, completeHandler);
+				dispatcher.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+				dispatcher.addEventListener(Event.OPEN, openHandler);
+				dispatcher.addEventListener(ProgressEvent.PROGRESS, progressHandler);
+				dispatcher.addEventListener(SecurityErrorEvent.SECURITY_ERROR, securityErrorHandler);
+			}
+			private function removeconfigureListeners(dispatcher:IEventDispatcher):void
+			{
+				dispatcher.removeEventListener(Event.CANCEL, cancelHandler);
+				dispatcher.removeEventListener(Event.COMPLETE, completeHandler);
+				dispatcher.removeEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+				dispatcher.removeEventListener(Event.OPEN, openHandler);
+				dispatcher.removeEventListener(ProgressEvent.PROGRESS, progressHandler);
+				dispatcher.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, securityErrorHandler);
+			}
+			private function cancelHandler(event:Event):void {
+				trace("cancelHandler: " + event);
+				fileName="";
+			}
+			
+			private function completeHandler(event:Event):void {
+				trace("completeHandler: " + event);
+				Alert.show("completeHandler: " + event);
+			}
+			
+			private function ioErrorHandler(event:IOErrorEvent):void {
+				trace("ioErrorHandler: " + event);
+				fileName="";
+			}
+			
+			private function openHandler(event:Event):void {
+				trace("openHandler: " + event);
+				fileName="";
+			}
+			
+			private function progressHandler(event:ProgressEvent):void {
+				var file:FileReference = FileReference(event.target);
+				trace("progressHandler name=" + file.name + " bytesLoaded=" + event.bytesLoaded + " bytesTotal=" + event.bytesTotal);
+				if(event.bytesLoaded==event.bytesTotal)
+				{
+					removeconfigureListeners(file);
+					fileName="";
+					Alert.show("下载成功","系统提示");
+				}
+				
+			}
+			
+			private function securityErrorHandler(event:SecurityErrorEvent):void {
+				trace("securityErrorHandler: " + event);
+				fileName="";
+			}
+			/*---------------得到图片的字符数组并将其转换为图片----------------------*/
+			private function loaderCompleteHandler(e:Event):void   
+			{   
+				//得到图片
+				var bitmap:Bitmap = Bitmap(loader.content);   
+				bitmapData = bitmap.bitmapData;
+				var imgwindow:ImageWindow = new ImageWindow();
+				imgwindow.owner = this;
+				PopUpManager.addPopUp(imgwindow,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - imgwindow.width) / 2 ;
+				var y:Number = (this.parentApplication.mdiCanvas.height - imgwindow.height) / 2;
+				imgwindow.move(x, y);		
+				imgwindow.imageSource= new Bitmap(bitmapData,"auto",true);
+				imgwindow.init();
+			}   
+			/*------------------删除图片---------------------*/
+			private function delImage(event:MouseEvent):void
+			{
+				if(this.vpicture == null){
+					Alert.show("请选择要操作的行!", "系统提示");
+					return;
+				}
+				Alert.yesLabel="确定";
+				Alert.noLabel="取消";
+				Alert.show("是否确定删除图片？","系统提示",3,this,delFunction);
+			}
+			private function delFunction(e:CloseEvent):void
+			{
+				if(e.detail==Alert.NO)return;
+				this.pictureService.delbyId(this.vpicture);
+				refresh();
+				
+			}
+			/*------------------返回删除图片信息-------------------------*/
+			private function delbyIdHandler(event:ResultEvent):void
+			{
+				var picmessage:PictureMessage=event.result as PictureMessage;
+				if(picmessage.status==false){
+					Alert.show(picmessage.message,"系统提示");
+					return;
+				}
+				Alert.show(picmessage.message,"系统提示");
+				refresh();
+			}
+			private function queryVPictureBytefaultHandler(event:FaultEvent):void {
+				Alert.show(event.fault.message);
+			} 
+			/*---------------返回删除图片异常信息-----------------*/
+			private function delbyIdfaultHandler(event:FaultEvent):void
+			{
+				Alert.show(event.fault.message);
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+		<s:VGroup paddingBottom="5"   width="100%" height="100%" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF" verticalAlign="middle" horizontalAlign="center">
+			<s:DataGrid id="certificateDataGrid" alternatingRowColors="[#FFFFFF,#EEEEEE]"  editable="true" rowHeight="25" width="100%" height="193" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin" >
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn dataField="pic01" headerText="主键" visible="false"/>
+						<s:GridColumn dataField="pic02" headerText="主键2" visible="false"/>
+						<s:GridColumn editable="false"  headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn dataField="pic04" headerText="图片名称" width="200" labelFunction="subName"/>
+						<s:GridColumn dataField="pic05Str" headerText="上传图片时间" width="140"/>
+						<s:GridColumn dataField="pic07Zh" headerText="所属单位" width="175"/>
+						<s:GridColumn dataField="pic08Zh" headerText="所属地区" width="175"/>
+						<s:GridColumn dataField="pic10Zh" headerText="图片类型" width="200"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>		
+			<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="10" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+				<component:PagerBar id="pagerBar" contentBackgroundColor="#FFFFFF" enabled="false"/>
+			</s:HGroup>
+		</s:VGroup>		
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			<s:Button  label="下载图片"  buttonMode="true" click="imgLoad(event)"  id="down" />
+			<s:Button label="预览图片" click="imgLoad(event);" buttonMode="true"/>
+			<s:Button label="删除图片" click="delImage(event);" buttonMode="true"/>
+			<s:Button label="关闭" click="removeWindow();" buttonMode="true"/>
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:TitleWindow>

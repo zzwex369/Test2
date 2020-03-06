@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e505Service" destination="e505Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryE505ById" result="queryE505ByIdHandler(event)"/>
+			<s:method name="queryE505AndE504" result="queryE505AndE504Handler(event)"/>
+			<s:method name="deleteE505" result="deleteHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="e504Service" destination="e504Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			
+			<s:method name="deleteE504" result="deleteHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.etbj.model.E504;
+			import com.xyw.module.msss.etbj.model.E504Request;
+			import com.xyw.module.msss.etbj.model.E505;
+			import com.xyw.module.msss.etbj.model.E505Request;
+			import com.xyw.module.msss.etbj.model.VE504;
+			import com.xyw.module.msss.etbj.model.VE505;
+			import com.xyw.module.msss.etbj.model.VE505AndVE504;
+			import com.xyw.module.msss.etbj.tl.ettlscdjbcx.ve504Window;
+			import com.xyw.module.msss.etbj.tl.ettlscdjbcx.ve505Window;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import org.hamcrest.object.nullValue;
+			
+			import spark.components.TitleWindow;
+			import spark.events.GridSelectionEvent;
+			public var systemUser:SystemUser =null;
+			private var e505Request:E505Request = null;
+			private var ve505AndVe504:Object;
+			private var e50526:String;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void{
+				this.systemUser = this.parentApplication.systemUser;
+				this.e505Data.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve505AndVe504= DataGrid(event.target).selectedItem;
+			}
+			
+			private function querye505():void{
+				_query(1);
+
+			}
+			
+			
+			private function queryE505AndE504Handler(event:ResultEvent):void{
+				this.e505Data.dataProvider=null;
+				var e505Response:Object = event.result;
+				if(e505Response.errorMessage==null){
+					var ve505AndVE504s:ArrayCollection =e505Response.ve505AndVE504s;
+					var rowCount:Number = e505Response.rowCount;
+					this.e505Data.dataProvider=ve505AndVE504s;
+					this.pagerBar.pageSize = 20;
+					this.pagerBar.dataGrid = this.e505Data;  
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = ve505AndVE504s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.ve505AndVe504 = null;
+				}else{
+					Alert.show(e505Response.errorMessage,"系统提示");
+				}
+			}
+			
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{	
+				_query(currentPageIndex,pageSize);
+
+			}
+			
+			public function refresh():void
+			{
+				_query(this.pagerBar.currentPageIndex);
+			}
+			
+			private function delete505():void{
+				if(!this.ve505AndVe504){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				
+				
+				/* if((ve505AndVe504.e50599!='3'&&ve505AndVe504.e50599!="")
+					||ve505AndVe504.e50499!='3')
+				{
+					Alert.show("只有未上传至省平台的信息才能删除！","系统提示");
+					return;
+				} */
+				
+				
+				Alert.show('确认删除信息？','删除检查信息',1|2,this,deleteValidate);
+			}
+			
+			
+			private function deleteValidate(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+					if(ve505AndVe504.e50501=="0")//档案
+					{
+						
+						if(ve505AndVe504.e50499=='1')
+						{
+							Alert.show("只有未上传至省平台的信息才能删除！","系统提示");
+							return;
+						}
+						
+						var e504Request:E504Request =new E504Request();
+						e504Request.e50401=ve505AndVe504.e50401
+						this.e504Service.deleteE504(e504Request);
+						
+					}else{
+						
+						if(ve505AndVe504.e50599=='1')
+						{
+							Alert.show("只有未上传至省平台的信息才能删除！","系统提示");
+							return;
+						}
+						
+						var ve505:VE505=new VE505();
+						ve505.e50501=ve505AndVe504.e50501;
+						ve505.e50502=ve505AndVe504.e50401;
+						ve505.e50526=ve505AndVe504.e50526;
+						e505Request.ve505 =ve505;
+						this.e505Service.deleteE505(e505Request);
+					}
+				}
+			}
+			
+			
+			
+			private function deleteHandler(event:ResultEvent):void
+			{
+				var deleteObj:Object = event.result;
+				if(deleteObj.errorMessage!=null){
+					Alert.show(deleteObj.errorMessage,"系统提示");
+					return;
+				}
+				refresh();
+				Alert.show("删除成功！","系统提示");
+			}
+			
+			private function _query(currentPageIndex:int, pageSize:int=20):void
+			{
+				this.initQueryParam();
+				e505Request.parameterPageindex = currentPageIndex;
+				e505Request.parameterPagesize = pageSize;
+				this.e505Service.queryE505AndE504(e505Request);
+			}
+			
+			private function initQueryParam():void{
+				var map:Object=new Object();
+				var E504_57_:String;
+				e505Request = new E505Request();
+				try{	
+					var type:String = this.E504_57.getLastSelectedInstitution();
+					E504_57_ = this.E504_57.getLastSelectedInstitutionCode();
+					
+					E504_57_ = type == "8"?E504_57_:E504_57_.substring(0,Number(type));
+
+					if(getText()){
+						e505Request.flag="false";//有值标志
+						map.e504=getText();
+					}else{
+						e505Request.flag="true";
+						e505Request.timeStr = this.timeStart.selectedDate;
+						e505Request.timeEnd = this.timeEnd.selectedDate;
+						map.timeType=CompMethod.getRadioButtonValue(time);
+						map.payType=CompMethod.getRadioButtonValue(E504_19);
+						map.result=CompMethod.getRadioButtonValue(E505_25);
+						map.checkType=CompMethod.getRadioButtonValue(E505_26);
+						map.addType=CompMethod.getRadioButtonValue(address);
+						map.address=addr.getAreaCode();
+						map.referral=null;
+					
+					}
+						map.institutionCode=E504_57_;
+					
+					e505Request.map=map;
+				}catch(error:Error) {		
+					Alert.show("查询条件异常");
+				}
+			}
+			
+			
+			/**
+			 * 得到输入框内容
+			 */
+			private function getText():E504
+			{
+				var e504:E504;
+				var name:String = StringUtil.trim(this.E504_06.text);
+				var card:String = StringUtil.trim(this.E504_07.text);
+				var tel:String = StringUtil.trim(this.E504_10.text);
+				if(name||card||tel)
+				{
+					
+					e504= new E504();
+					e504.e50406=name;
+					e504.e50407=card;
+					e504.e50410=tel;
+					
+				}
+				return e504;
+			}
+			
+			
+			private function printbgd():void
+			{
+				if(!ve505AndVe504){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				if(!ve505AndVe504.e50501)
+				{
+					Alert.show("不能选择档案打印报告单，请选择筛查信息");
+					return;
+				}
+				var url:String = this.parentApplication.contextRoot + "/print_new/etbj/printtlbgd/tlbgd.jsp?e50501="+ve505AndVe504.e50501;
+				navigateToURL(new URLRequest(url), null);
+				
+			}
+			
+			
+		
+			
+			
+			private function queryE505ByIdHandler(event:ResultEvent):void{
+				var e505Response:Object = event.result;
+				if(!e505Response.state){
+					Alert.show(e505Response.promptMessage,"系统提示");
+					return;
+				}else 
+				{
+					if(!e50526)//修改档案
+						update504(e505Response._ve504);
+					else if(e50526=="0")
+						update505(getVe505(),e50526);
+				}
+				
+			}
+			
+			/**
+			 * 得到对象赋值
+			 */
+			private function getVe505():VE505
+			{
+				var ve505:VE505=new VE505();
+				ve505.e50501=ve505AndVe504.e50501;
+				ve505.e50502=ve505AndVe504.e50401;
+				ve505.e50503=ve505AndVe504.e50503;
+				ve505.e50504=ve505AndVe504.e50504;
+				ve505.e50505=ve505AndVe504.e50505;
+				ve505.e50506=ve505AndVe504.e50506;
+				ve505.e50507=ve505AndVe504.e50507;
+				ve505.e50508=ve505AndVe504.e50508;
+				ve505.e50509=ve505AndVe504.e50509;
+				ve505.e50510=ve505AndVe504.e50510;
+				ve505.e50511=ve505AndVe504.e50511;
+				ve505.e50512=ve505AndVe504.e50512;
+				ve505.e50513=ve505AndVe504.e50513;
+				ve505.e50514=ve505AndVe504.e50514;
+				ve505.e50515=ve505AndVe504.e50515;
+				ve505.e50516=ve505AndVe504.e50516;
+				ve505.e50517=ve505AndVe504.e50517;
+				ve505.e50518=ve505AndVe504.e50518;
+				ve505.e50519=ve505AndVe504.e50519;
+				ve505.e50520=ve505AndVe504.e50520;
+				ve505.e50521=ve505AndVe504.e50521;
+				ve505.e50522=ve505AndVe504.e50522;
+				ve505.e50523=ve505AndVe504.e50523;
+				ve505.e50524=ve505AndVe504.e50524;
+				ve505.e50525=ve505AndVe504.e50525;
+				ve505.e50526=ve505AndVe504.e50526;
+				ve505.e50527=ve505AndVe504.e50527;
+				ve505.e50528=ve505AndVe504.e50528;
+				ve505.e50529=ve505AndVe504.e50529;
+				ve505.e50530=ve505AndVe504.e50530;
+				ve505.e50531=ve505AndVe504.e50531;
+				ve505.e50532=ve505AndVe504.e50532;
+				return ve505;
+			}
+			
+			/**
+			 * 修改检查信息
+			 */
+			private function update505(ve505:VE505,e50526:String,renew:Boolean=true):void{
+				
+				
+				var ve505Modify:ve505Window = new ve505Window();
+				ve505Modify.ve505= ve505;
+				ve505Modify.e50526=e50526;
+				ve505Modify.renew=renew;
+				CompMethod.popUpTitleWindow(ve505Modify,this);
+			}
+			
+			/**
+			 * 修改复筛
+			 */
+			private function update():void{
+				
+				if(!ve505AndVe504){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				 e50526=ve505AndVe504.e50526;
+				if(e50526=="1")
+					update505(getVe505(),e50526);
+				else 
+				{
+					var e505:E505=new E505();
+					e505.e50501=ve505AndVe504.e50501;
+					e505.e50502=ve505AndVe504.e50401;
+					e505.e50526=e50526?"1":"0";
+					e505Service.queryE505ById(e505);
+				}
+				
+			}
+			
+			/**
+			 * 修改档案
+			 */
+			private function update504(ve504:VE504):void{
+				
+				var ve504Modify:ve504Window = new ve504Window();
+				ve504Modify.ve504 = ve504;
+				CompMethod.popUpTitleWindow(ve504Modify,this);
+			}
+			
+			
+			private function setE50526(item:Object,column:GridColumn):String
+			{
+				var label:String;
+				var value:String=item[column.dataField];
+				var e50525:String=item["e50525"];
+				if(!value)
+					label="待初筛";
+				else if(value=="0")
+				{
+					label=e50525=="1"?"初筛未通过":"初筛通过";
+					
+				}else if(value=="1")
+				{
+					label=e50525=="1"?"复筛未通过":"复筛通过";
+					
+				}
+					return label;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" >
+		
+	<mx:TabNavigator id="seleall" width="100%" chromeColor="#ffffff"
+					 creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="检查机构"/>
+					<component:InstitutionComboBox id="E504_57" width="1003"/>
+				</s:HGroup>
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label  text="日期查询"/>
+					<s:HGroup height="100%" gap="35" paddingLeft="10" id="time">
+						<s:RadioButton buttonMode="true" label="录入时间(档案)" value="to_char(E504_59,'yyyy-mm-dd')" groupName="time" selected="true"/>
+						<s:RadioButton buttonMode="true" label="筛查日期" value="to_char(E505_29,'yyyy-mm-dd')" groupName="time" id="E505_29"/>
+						
+					</s:HGroup>  
+					
+					<component:CustomRangeDateField isSelectFirst="true" id="timeStart" width="130" />
+					<s:Label text="至"/>
+					<component:CustomRangeDateField isSelectNow="true"  id="timeEnd" width="130" />
+				</s:HGroup>
+				
+				<s:HGroup width="100%" gap="20" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:HGroup  verticalAlign="baseline" >
+						<s:Label  text="收费方式"/>
+						<s:HGroup  gap="40" id="E504_19" paddingLeft="10">
+							<s:RadioButton buttonMode="true" label="全部" value="" groupName="E504_19" selected="true"/>
+							<s:RadioButton buttonMode="true" label="免费" value="E504_19='1'" groupName="E504_19"/>
+							<s:RadioButton buttonMode="true" label="自费"  value="E504_19='2'" groupName="E504_19"/>
+						</s:HGroup>  
+					</s:HGroup>  
+					
+					<s:HGroup  verticalAlign="middle">
+						<s:Label  text="筛查状态"/>
+						<s:HGroup width="100%" height="100%" gap="40" paddingLeft="10" id="E505_26">
+							<s:RadioButton buttonMode="true" label="全部" value="" groupName="E505_26" selected="true" />
+							<s:RadioButton buttonMode="true" label="初筛" value="E505_26 ='0' " groupName="E505_26"/>
+							<s:RadioButton buttonMode="true" label="复筛" value="E505_26 ='1' " groupName="E505_26"/>
+						</s:HGroup>  
+					</s:HGroup>  
+					
+					<s:HGroup width="100%" verticalAlign="middle">
+						<s:Label  text="筛查结果"/>
+						<s:HGroup width="100%" height="100%" gap="40" paddingLeft="10" id="E505_25">
+							<s:RadioButton buttonMode="true" label="全部" value="" groupName="E505_25" selected="true" />
+							<s:RadioButton buttonMode="true" label="通过" value="E505_25 ='2' " groupName="E505_25"/>
+							<s:RadioButton buttonMode="true" label="不通过" value="E505_25 ='1' " groupName="E505_25"/>
+						</s:HGroup>  
+					</s:HGroup>  
+					
+				</s:HGroup>  
+				
+				
+				
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+
+					<s:Label  text="地址查询"/>
+					<s:HGroup width="100%" height="100%" gap="5" paddingLeft="10" id="address">
+						<s:RadioButton buttonMode="true" label="未选择" value="" groupName="address" selected="true"/>
+						<s:RadioButton buttonMode="true" label="现在住址" value="E504_09" groupName="address" />
+						<s:RadioButton buttonMode="true" label="户口地址"  value="E504_61" groupName="address" />
+						<component:AreaComboBoxVillageAuto id="addr" width="844" buttonMode="true" table="D201_MS" 
+														   areaCode="{this.parentApplication.systemUser.areaCode}"/>
+					</s:HGroup>  
+				</s:HGroup>
+			
+				
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label width="50" text="姓名"/>
+					<s:TextInput id="E504_06"/>
+					<s:Label  text="手机号"/>
+					<s:TextInput id="E504_10"/>
+					<s:Label  text="身份证号"/>
+					<s:TextInput width="200" id="E504_07"/>
+					<s:Label color="#F80F0F" fontSize="16" fontStyle="italic" fontWeight="normal"
+							 lineThrough="false" text="输入信息则只与检查机构有效！" textAlign="center"
+							 textDecoration="underline" paddingTop="4"/>
+				</s:HGroup>  
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+
+					<s:Button label="查询" click="querye505()"/>
+					<s:Button label="修改" click="update()"/>
+					<s:Button label="删除" click="delete505()"/>
+					<s:Button label="打印报告单" click="printbgd()"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="e505Data" width="100%" height="340"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22" textAlign="center">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e50401" headerText="主键"/>
+						<s:GridColumn  width="60" editable="false" headerText="序号"
+									   itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+					
+						<s:GridColumn  width="150" dataField="e50406" headerText="母亲姓名"/>
+						<s:GridColumn  width="150" dataField="e50407" headerText="身份证号"/>
+						<s:GridColumn  width="150" dataField="e50526" headerText="筛查结果" labelFunction="setE50526"/>
+						<s:GridColumn  width="100" dataField="e50415Zh" headerText="新生儿性别 "/>
+						<s:GridColumn  width="200" dataField="e50457Zh" headerText="新生儿出生医院 "/>
+						<s:GridColumn  width="250" dataField="e50409Zh" headerText="现住址"/>
+						<s:GridColumn  width="250" dataField="e50461Zh" headerText="户口地址"/>
+						<s:GridColumn  width="100" dataField="e50459Str" headerText="录入日期"/>
+						<s:GridColumn width="250" dataField="e50457Zh" headerText="录入医院"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+		</s:VGroup>	
+	</s:Scroller>
+	</s:VGroup>  
+</s:Module>

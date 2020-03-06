@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e505Service" destination="e505Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryE505AndE504" result="queryE505AndE504Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="e506Service" destination="e506Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="delByE506Id" result="delByE506IdE506Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.etbj.tl.ettlscdjbcx.ve505Window;
+			import com.xyw.module.msss.etbj.model.E504;
+			import com.xyw.module.msss.etbj.model.E505;
+			import com.xyw.module.msss.etbj.model.E505Request;
+			import com.xyw.module.msss.etbj.model.VE505;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.components.TitleWindow;
+			import spark.events.GridSelectionEvent;
+			public var systemUser:SystemUser =null;
+			private var e505Request:E505Request = null;
+			[Bindable]
+			private var ve505AndVe504:Object;
+			
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void{
+				this.systemUser = this.parentApplication.systemUser;
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.e505Data.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+				this.timeStart.selectedDate =DateFormatter.parseDateString(dateStr);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve505AndVe504= DataGrid(event.target).selectedItem;
+			}
+			
+			
+			private function _query(currentPageIndex:int, pageSize:int=20):void
+			{
+				this.initQueryParam();
+				e505Request.parameterPageindex = currentPageIndex;
+				e505Request.parameterPagesize = pageSize;
+				this.e505Service.queryE505AndE504(e505Request);
+			}
+			
+			private function querye505():void{
+				_query(1);
+			}
+			
+			private function queryE505AndE504Handler(event:ResultEvent):void{
+				var e505Response:Object = event.result;
+				if(e505Response.errorMessage==null){
+					var ve505AndVE504s:ArrayCollection =e505Response.ve505AndVE504s;
+					var rowCount:Number = e505Response.rowCount;
+					this.e505Data.dataProvider=ve505AndVE504s;
+					this.pagerBar.pageSize = 20;
+					this.pagerBar.dataGrid = this.e505Data;  
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = ve505AndVE504s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.ve505AndVe504 = null;
+				}else{
+					Alert.show(e505Response.errorMessage,"系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			private function delete506():void{
+				
+				Alert.show('确认删除信息？','删除检查信息',1|2,this,deleteValidate);
+			}
+			
+			private function deleteValidate(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+					this.e506Service.delByE506Id(ve505AndVe504.e50401);
+				}
+			}
+			
+			private function delByE506IdE506Handler(event:ResultEvent):void{
+				var e506Response:Object = event.result;
+				if(e506Response.errorMessage){
+					Alert.show(e506Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show("删除成功！","系统提示");
+				refresh();
+			}
+			
+			public function refresh():void
+			{
+		
+				_query(this.pagerBar.currentPageIndex);
+
+			}
+			
+			private function initQueryParam():void{
+				var E504_57_:String;
+				var map:Object=new Object();
+				e505Request = new E505Request();
+				try{	
+					var type:String = this.E504_57.getLastSelectedInstitution();
+					E504_57_ = this.E504_57.getLastSelectedInstitutionCode();
+					
+					if(this.systemUser.institutionType == "1")
+					{	
+						E504_57_= this.systemUser.institutionCode;
+						
+					}else if(type!="8"){
+						E504_57_ = E504_57_.substring(0,Number(type));
+					}
+					
+					if(getText()){
+						e505Request.flag="false";//有值标志
+						map.e504=getText();
+					}else{
+						e505Request.flag="true";
+						e505Request.timeStr = this.timeStart.selectedDate;
+						e505Request.timeEnd = this.timeEnd.selectedDate;
+						map.timeType=null;
+						map.payType=null;
+						map.addType=null;
+						map.address=null;
+						map.checkType="E505_26 ='1' and E505_25 ='1' ";//复筛未通过
+						map.referral=getRadioButtonValue(E505_33,E505_33.numElements);
+
+					}
+					map.institutionCode=E504_57_;
+					e505Request.map=map;
+				}catch(error:Error) {		
+					Alert.show("查询条件异常");
+				}
+			}
+			
+			
+			private function update506():void{
+				popUpTitleWindow(true);
+			}
+			
+			
+			
+			
+			
+			private function printbgd():void
+			{
+				
+				var url:String = this.parentApplication.contextRoot + 
+						"/print_new/etbj/printtlzzd/tlzzd.jsp?e50502="+ve505AndVe504.e50401;
+				navigateToURL(new URLRequest(url));
+				
+			}
+		
+			
+			private function getRadioButtonValue(id:Object,end:int,start:int=0):String
+			{
+				var radioButton:RadioButton;
+				var value:String;
+				for(var i:int =start;i<end;i++)
+				{
+					radioButton=id.getElementAt(i) as RadioButton;
+					if(radioButton.selected)
+					{
+						value=radioButton.value.toString();
+						break;
+					}
+				}
+				return value;
+			}
+			
+			/**
+			 * 得到输入框内容
+			 */
+			private function getText():E504
+			{
+				var e504:E504;
+				var name:String = StringUtil.trim(this.E504_06.text);
+				var card:String = StringUtil.trim(this.E504_07.text);
+				var tel:String = StringUtil.trim(this.E504_10.text);
+				if(name||card||tel)
+				{
+					
+					e504= new E504();
+					e504.e50406=name;
+					e504.e50407=card;
+					e504.e50410=tel;
+					
+				}
+				return e504;
+			}
+			
+			private function isReferral(item:Object, column:GridColumn):String
+			{
+				return item[column.dataField]?"是":"否";
+			}
+			
+			private function setStrDate(item:Object, column:GridColumn):String
+			{
+				return DateField.dateToString(item[column.dataField],"YYYY-MM-DD");
+			}
+			
+			private function saveE506():void
+			{
+				popUpTitleWindow();
+			}
+			
+			private function popUpTitleWindow(modify:Boolean=false):void
+			{
+				var window:e506Window=new e506Window();
+				window.modify=modify;
+				window.ve505AndVe504=this.ve505AndVe504;
+				CompMethod.popUpTitleWindow(window,this);
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup>
+		
+
+	<mx:TabNavigator id="seleall" width="1200"  chromeColor="#ffffff"
+					 creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label  text="转诊登记"/>
+					<s:HGroup width="100%" height="100%" gap="40" paddingLeft="10" id="E505_33">
+						<s:RadioButton buttonMode="true" label="全部" value="" groupName="E505_33"  />
+						<s:RadioButton buttonMode="true" label="未登记" value="E505_33 is null " groupName="E505_33" selected="true"/>
+						<s:RadioButton buttonMode="true" label="已登记" value="E505_33 is not null " groupName="E505_33"/>
+					</s:HGroup>  
+				</s:HGroup>
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="检查机构"/><!--<s:DropDownList id="d304_45" width="150"/>-->
+					<component:InstitutionComboBox id="E504_57"/>
+				</s:HGroup>
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="检查时间"/>
+					<component:CustomRangeDateField  isSelectFirst="true" id="timeStart" width="130" />
+
+					<s:Label text="至"/>
+					<component:CustomRangeDateField isSelectNow="true"  id="timeEnd"  width="130" />
+
+					
+				</s:HGroup>
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label width="50" text="姓名"/>
+					<s:TextInput id="E504_06"/>
+					<s:Label  text="手机号"/>
+					<s:TextInput id="E504_10"/>
+					<s:Label  text="身份证号"/>
+					<s:TextInput width="200" id="E504_07"/>
+					<s:Label color="#F80F0F" fontSize="16" fontStyle="italic" fontWeight="normal"
+							 lineThrough="false" text="输入信息则只与检查机构有效！" textAlign="center"
+							 textDecoration="underline" paddingTop="4"/>
+				</s:HGroup>  
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					
+					<s:Button label="查询" click="querye505()"/>
+					<s:Button label="登记转诊" click="saveE506()"  enabled="{ve505AndVe504&amp;&amp;!ve505AndVe504.e50533}"/>
+					<s:Button label="修改转诊" click="update506()" enabled="{ve505AndVe504&amp;&amp;ve505AndVe504.e50533}"/>
+					<s:Button label="删除转诊" click="delete506()" enabled="{ve505AndVe504&amp;&amp;ve505AndVe504.e50533}"/>
+					<s:Button label="打印转诊单" click="printbgd()" enabled="{ve505AndVe504&amp;&amp;ve505AndVe504.e50533}"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		
+	</mx:TabNavigator>
+	<s:Scroller  width="1200" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="e505Data" width="100%" height="340"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="false" rowHeight="22" textAlign="center">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e50401" headerText="主键"/>
+						<s:GridColumn  width="60" editable="false" headerText="序号"
+									   itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="100" dataField="e50504Zh" headerText="婴儿性别"/>
+						<s:GridColumn width="130" dataField="e50506" headerText="母亲姓名" editable="true"/>
+						<s:GridColumn width="170" dataField="e50407" headerText="证件号码" editable="true"/>
+						<s:GridColumn width="100" dataField="e50533" headerText="是否转诊" labelFunction="isReferral"/>
+						<s:GridColumn width="100" dataField="e50533" headerText="转诊时间" labelFunction="setStrDate"/>
+
+						<s:GridColumn width="150" dataField="e50509Zh" headerText="检查方式"/>
+						<s:GridColumn width="150" dataField="e50525Zh" headerText="筛查结果"/>
+						<s:GridColumn width="100" dataField="e50529Str" headerText="筛查日期"/>
+						<s:GridColumn width="200" dataField="e50528Zh" headerText="单位名称"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+		</s:VGroup>	
+	</s:Scroller>
+	</s:VGroup>
+</s:Module>

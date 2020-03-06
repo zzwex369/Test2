@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  width="100%" height="100%">
+	<fx:Declarations>
+		<s:RemoteObject id="e601Service" destination="e601Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryRevocationE601" result="queryRevocationE601Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.etbj.lb.etlbsccx.title;
+			import com.xyw.module.msss.etbj.model.E601;
+			import com.xyw.module.msss.etbj.model.E601Request;
+			import com.xyw.module.msss.etbj.model.VE601;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.controls.ProgressBar;
+			import mx.controls.Tree;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ModuleEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.modules.IModuleInfo;
+			import mx.modules.ModuleManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.components.BorderContainer;
+			import spark.events.GridSelectionEvent;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var ve601:Object = null;
+			public var e601:E601 = null;
+			public var e601Request:E601Request=null;
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+				initializeComboBox();
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve601= DataGrid(event.target).selectedItem;
+			}
+			
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select * from Z601_05 t"
+				comboBoxDataRequest.flag = "Z601_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "Z601_05")
+				{
+					this.E601_36.dataProvider = comboBoxDataList;
+					this.E601_36.selectedIndex = 3;	
+				}
+			}
+			
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():Boolean
+			{
+				e601=new E601();
+				e601Request = new E601Request();
+				try{	
+					e601.e60136= E601_36.selectedItem.data;
+					var type:String = this.E601_29.getLastSelectedInstitution();
+					var e60129:String = this.E601_29.getLastSelectedInstitutionCode();
+					
+					e601.e60129= type == "8"?e60129:e60129.substring(0,Number(type));	
+
+					if(!getTextInput())
+					{
+						e601Request.timeStr = DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+						e601Request.timeEnd = DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+					
+					}		
+					e601Request.e601=e601;
+				}catch(error:Error) {		
+					Alert.show("查询条件异常");
+					return false;
+				}
+				return true;
+			}
+			
+			private function getTextInput():Boolean
+			{
+				var flag:Boolean=false;
+				var e60103:String=StringUtil.trim(this.E601_03.text);
+				var e60104:String=StringUtil.trim(this.E601_04.text);
+				var e60109:String=StringUtil.trim(this.E601_09.text);
+				if(e60103||e60104||e60109)
+				{
+					flag=true;
+					e601.e60103 = e60103;
+					e601.e60104 = e60104;
+					e601.e60109 = e60109;
+				}
+				return flag;
+			}
+			
+			//读卡
+			protected function readCard(event:MouseEvent):void
+			{
+				try
+				{
+						var array:Array =CompMethod.readCard();
+						if(array)
+						{
+							if(CompMethod.sex("女",array[1]))
+							{
+							
+								this.E601_03.text = array[0];//姓名
+								this.E601_04.text = array[5];//身份证号
+								queryE601();
+							}
+						
+						}else
+							Alert.show("读卡失败！");
+					
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			public function queryE601():void
+			{
+				query(1);
+			}
+			
+			
+			private function queryRevocationE601Handler(event:ResultEvent):void{
+				var e601Response:Object = event.result;
+				var ve601s:ArrayCollection =e601Response.ve601s;
+				var rowCount:Number = e601Response.rowCount;
+				this.certificateDataGrid.dataProvider=ve601s;
+				this.pagerBar.pageSize = 20;
+				this.pagerBar.dataGrid = this.certificateDataGrid;  
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = ve601s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}
+			}
+			
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				query(currentPageIndex);
+
+			}
+			
+			
+			public function refresh():void
+			{
+				query(this.pagerBar.currentPageIndex);
+			}
+			
+			private function query(pageIndex:int,pageSize:int=20):void
+			{
+				this.initQueryParam();
+				e601Request.parameterPageindex =pageIndex;
+				e601Request.parameterPagesize = pageSize;
+				this.e601Service.queryRevocationE601(e601Request);
+			}
+			private function updateE601():void
+			{
+				if(!ve601)
+				{
+					Alert.show("请选择一条数据","系统提示");
+					return;
+				}
+				var window:title = new title();
+				window.ve601 = this.ve601;
+				window.modify=false;
+				CompMethod.popUpTitleWindow(window,this);
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+	<s:VGroup>
+		<mx:TabNavigator id="tab" width="100%" height="117" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent width="100%" label="综合查询" buttonMode="true">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="采血医院"/>
+						<component:InstitutionComboBox id="E601_29" width="100%" buttonMode="true"/>
+					</s:HGroup>
+					
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="母亲姓名"/><s:TextInput id="E601_03"/>
+						<s:Label text="证件号码"/><s:TextInput id="E601_04" width="140"/>
+						<s:Label text="联系电话"/><s:TextInput id="E601_09" />
+						<s:Button id="duka1" label="读卡" click="readCard(event)"  enabled="{systemUser.duka=='1'}" buttonMode="true"/>
+						
+					</s:HGroup>
+					
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="标本状态"/><s:DropDownList width="130" id="E601_36" enabled="false"/>
+						<s:Label text="登记时间"/>
+					
+						<component:CustomRangeDateField id="timeStart" isSelectFirst="true" width="130" />
+
+						<s:Label width="50" text="至" textAlign="center"/>
+						
+						<component:CustomRangeDateField id="timeEnd" isSelectNow="true" width="130" />
+
+						<s:Button label="查询" click="queryE601()" buttonMode="true" />
+						<s:Button label="重采样本" click="updateE601()" buttonMode="true" />
+					</s:HGroup>
+					
+				
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:Scroller width="100%" height="680" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+			<s:VGroup width="100%" paddingBottom="10">
+				<s:DataGrid id="certificateDataGrid" width="100%" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22">
+					<s:columns>     
+						<s:ArrayList>
+							<s:GridColumn visible="false" dataField="e60101" headerText="主键"/>
+							<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+							<s:GridColumn width="100" dataField="e60103" headerText="母亲姓名"/>
+							<s:GridColumn width="140" dataField="e60104" headerText="身份证号"/>
+							<s:GridColumn width="117" dataField="e60109" headerText="联系电话"/>
+							<s:GridColumn width="100" dataField="e60116" headerText="婴儿姓名"/>
+							<s:GridColumn width="100" dataField="e60118Str" headerText="出生日期"/>
+							<s:GridColumn width="100" dataField="e60129Zh" headerText="采血医院"/>
+							<s:GridColumn width="80" dataField="e60126Str" headerText="采血时间"/>
+							<s:GridColumn width="100" dataField="e60136Zh" headerText="样本状态"/>
+							<s:GridColumn width="100" dataField="e60145Str" headerText="退回时间"/>
+							<s:GridColumn dataField="e60144" headerText="退回原因"/>
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid> 
+				<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+			</s:VGroup>	
+		</s:Scroller>
+	</s:VGroup>
+	</s:Scroller>
+</s:Module>

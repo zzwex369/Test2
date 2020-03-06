@@ -1,0 +1,3152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:fngjeda="com.xyw.module.msss.la.fngjadacx.*"
+		  xmlns:fnrxa="com.xyw.module.msss.la.fnrxajc.component.*"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l402Service" destination="l402Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL402" result="saveL402Handler(event)"/>
+			<s:method name="queryByL402" result="queryByL402Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l301Service" destination="l301Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryL301" result="queryL301Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:Parallel id="parallel" target="{vgroupDataGrid}">
+			<!--<s:Resize widthTo="500" duration="1000"/>-->
+			<!--模糊-->
+			<!--<mx:Blur duration="1000" 
+			blurXFrom="10.0" blurXTo="0.0" 
+			blurYFrom="10.0" blurYTo="0.0"/>-->
+			<!--正常-->
+			<!--<mx:Blur duration="1000"
+			blurXFrom="0.0" blurXTo="10.0" 
+			blurYFrom="0.0" blurYTo="10.0"/>-->
+			<s:Resize widthTo="1135"/>
+		</s:Parallel>
+		<s:GlowFilter id="glow1" color="#de7800"/>
+		<s:AnimateFilter id="effect1" bitmapFilter="{glow1}" duration="2000" repeatBehavior="reverse"
+						 repeatCount="0" target="{lbl}">
+			<s:SimpleMotionPath property="blurX" valueFrom="0" valueTo="20"/>
+			<s:SimpleMotionPath property="blurY" valueFrom="0" valueTo="20"/>
+		</s:AnimateFilter>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		
+		s|TextInput
+		{
+			fontFamily:"微软雅黑";
+		}
+		
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.fngjadacx.finishCaseWindow;
+			import com.xyw.module.msss.la.model.L301;
+			import com.xyw.module.msss.la.model.L301Request;
+			import com.xyw.module.msss.la.model.L402;
+			import com.xyw.module.msss.la.model.L402Request;
+			import com.xyw.module.msss.la.model.L402Response;
+			import com.xyw.module.msss.la.model.VL401;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.LoadPicWindow2;
+			import com.xyw.sys.event.CustomDataEvent;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.controls.ToolTip;
+			import mx.core.Container;
+			import mx.core.IVisualElement;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			[Bindable]
+			private var systemUser:SystemUser;
+			[Bindable]
+			private var vl301:Object=null;
+			private var l402:L402=null;
+			[Bindable]
+			private var resL402:Object=null;//返回的保存成功的检查对象
+			[Bindable]
+			private var oldId:String;//返回的结案成功对象的ID
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var l402Request:L402Request;
+			[Bindable]
+			private var l402Response:Object;
+			private var l301:L301=null;
+			private var l301Request:L301Request=null;
+			[Bindable]
+			private var _disabledRanges:Array=null;
+			private var addVgroupDataGrid:Array=new Array();//存储查询列表，1vgroup高度 （包含节点高度）2 nav高度，3tab高度  4.查询节点
+			private var picData:ArrayCollection=new ArrayCollection();
+			private function init():void
+			{
+				systemUser=this.parentApplication.systemUser;
+				ToolTipManager.showDelay=0;
+				//date.time=dateTime;
+			}
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=true):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.sql = sql;
+				comboBoxDataRequest.flag = flag;
+				comboBoxDataRequest.showPrompt = showPrompt;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function rxcc_enterStateHandler(event:FlexEvent):void
+			{
+				_initializeComboBox("select * from  LA403_06 t","LA403_06");
+				
+			}
+			
+			
+			private function vgroupbs_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				_initializeComboBox("select * from  LA302_03 t","LA302_03");
+				
+			}
+			
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+			   if(flag == "LA302_03")
+			   {
+					L402_23.dataProvider=comboBoxDataList;
+					L402_25.dataProvider=comboBoxDataList;
+					L402_23.selectedIndex=0;
+					L402_25.selectedIndex=0;
+				}
+				else if(flag == "LA403_06")
+				{
+					
+					L402_52.dataProvider=comboBoxDataList;
+					L402_52.selectedIndex=0;
+					L402_70.dataProvider=comboBoxDataList;
+					L402_70.selectedIndex=0;
+				}
+			}
+			
+			
+			public function getVl301(_vl301:Object):void
+			{
+				if(_vl301!=null)
+				{
+					this.vl301=_vl301;
+					l402Service.queryByL402(vl301.l30101); 
+				}
+			}
+			
+			/*******************病史情况*****************/
+			private function savebs():void
+			{
+				l402=new L402();
+				l402.l402159=CompMethod.getRadioButtonValue([L402_159]);
+				
+				if(isNaN(Number(L402_155.text)))
+				{
+					Alert.show("请输入正确的产次","系统提示");
+					return;
+				}
+				if(isNaN(Number(L402_156.text)))
+				{
+					Alert.show("请输入正确的孕次","系统提示");
+					return;
+				}
+				
+				if(isNaN(Number(L402_157.text)))
+				{
+					Alert.show("请输入正确的身高","系统提示");
+					return;
+				}
+				
+				if(isNaN(Number(L402_158.text)))
+				{
+					Alert.show("请输入正确的体重","系统提示");
+					return;
+				}
+				
+				
+				if(!L402_06.text)
+				{
+					Alert.show("请输入初潮年龄","系统提示");
+					return;
+				}
+				if(L402_160.enabled&&!L402_160.text)
+				{
+					Alert.show("请输入无月经说明","系统提示");
+					return;
+				} 
+				
+				if(L402_07.enabled&&!L402_07.text)
+				{
+					Alert.show("请选择末次月经","系统提示");
+					return;
+				} 
+				
+				if(L402_09.enabled&&!L402_09.text)
+				{
+					Alert.show("请输入绝经年龄","系统提示");
+					return;
+				}
+				
+			 	
+				if(L402_10_02.selected)
+				{
+					if(StringUtil.trim(L402_11.text)=="")
+					{
+						Alert.show("请输入初产年龄","系统提示");
+						return;
+					}
+					if(L402_12_01.selected==false&&L402_12_02.selected==false)
+					{
+						Alert.show("请选择是否哺乳","系统提示");
+						return;
+					}
+				}
+				if(L402_13_02.selected)
+				{
+					if(StringUtil.trim(L402_14.text)=="")
+					{
+						Alert.show("请输入最近一次检查时间","系统提示");
+						return;
+					} 
+					if(L402_15_01.selected==false&&L402_15_02.selected==false
+						&&L402_15_03.selected==false&&L402_15_04.selected==false
+						&&L402_15_09.selected==false)
+					{
+						Alert.show("请选择检查内容","系统提示");
+						return;
+					}
+					if(L402_15_09.selected==true&&StringUtil.trim(L402_16.text)=="")
+					{
+						Alert.show("请输入其他检查内容","系统提示");
+						return;
+					} 
+					
+				}
+				/* if(L402_17_02.selected)
+				{
+				if(StringUtil.trim(L402_18.text)=="")
+				{
+				Alert.show("请输入次数","系统提示");
+				return;
+				}
+				}
+				
+				if(L402_20_02.selected)
+				{
+				if(StringUtil.trim(L402_21.text)=="")
+				{
+				Alert.show("请输入用药时间","系统提示");
+				return;
+				}
+				} */
+				if(L402_22_02.selected)
+				{
+					if(L402_23.selectedIndex==0)
+					{
+						Alert.show("请选择患病家属与自己的关系","系统提示");
+						return;
+					}
+				}
+				if(L402_24_02.selected)
+				{
+					if(L402_25.selectedIndex==0)
+					{
+						Alert.show("请选择患病家属与自己的关系","系统提示");
+						return;
+					}
+				}
+				if(StringUtil.trim(check1.checker.text)=="")
+				{
+					Alert.show("请输入检查人员","系统提示");
+					return;
+				}
+				_savebs();
+			}
+			/*******************病史情况*****************/
+			private function _savebs():void
+			{
+				this.mouseChildren=false;	
+				
+				l402Request=new L402Request();
+				l402.l40202=vl301.l30101;
+				l402.l40203=vl301.l30102;
+				l402.l40204=vl301.l30104;
+				l402.l40205=vl301.l30116;
+				l402.l40206=Number(StringUtil.trim(L402_06.text));
+				l402.l40207=DateField.stringToDate(L402_07.text,'YYYY-MM-DD');
+				l402.l40208=CompMethod.getRadioButtonValue(L402_08);		
+				l402.l40209=Number(StringUtil.trim(L402_09.text));
+				l402.l40210=(L402_10_01.selected==true?"2":"1");
+				l402.l40211=StringUtil.trim(L402_11.text);
+				l402.l40212=(L402_12_01.selected==true?"2":"1");
+				l402.l40213=(L402_13_01.selected==true?"2":"1");
+				l402.l40214=StringUtil.trim(L402_14.text);
+				l402.l40215=(L402_15_01.selected==true?"1,":"0,");
+				l402.l40215+=(L402_15_02.selected==true?"2,":"0,");
+				l402.l40215+=(L402_15_03.selected==true?"3,":"0,");
+				l402.l40215+=(L402_15_04.selected==true?"4,":"0,");
+				l402.l40215+=(L402_15_09.selected==true?"9":"0");
+				l402.l40216=StringUtil.trim(L402_16.text);
+				l402.l40217=(L402_17_01.selected)==true?"0":"1";
+				l402.l40218=Number(StringUtil.trim(L402_18.text));
+				l402.l40219=CompMethod.getRadioButtonValue([L402_19]);
+				l402.l40220=(L402_20_01.selected==true?"0":"1");
+				l402.l40221=Number(StringUtil.trim(L402_21.text));
+				l402.l40222=(L402_22_01.selected==true?"0":"1");
+				l402.l40223=L402_23.selectedItem.data;
+				l402.l40224=(L402_24_01.selected==true?"0":"1");
+				l402.l40225=L402_25.selectedItem.data;
+				l402.l402123=check1.institutionCode.selectedItem.data;
+				l402.l402124=StringUtil.trim(check1.checker.text);
+				l402.l402125=DateField.stringToDate(check1.nowDate.text,"YYYY-MM-DD");
+				
+				l402.l402155=Number(L402_155.text).toString();
+				l402.l402156=Number(L402_156.text).toString();
+				l402.l402157=Number(L402_157.text).toString();
+				l402.l402158=Number(L402_158.text).toString();
+				l402.l402160=StringUtil.trim(L402_160.text);
+
+
+				l402Request.flag="0";
+				l402Request.l402=l402;
+				l402Service.saveL402(l402Request);
+			}
+			/*******************乳腺触诊*****************/
+			private function saverxcz():void
+			{
+				if(L402_26_02.selected)
+				{
+					if(L402_27_01.selected==false&&L402_27_02.selected==false)
+					{
+						Alert.show("请选择左乳症状类型","系统提示");
+						return;
+					}
+					if(L402_27_01.selected==true&&L402_28_01.selected==false&&L402_28_02.selected==false)
+					{
+						Alert.show("请选择左乳乳腺疼痛类型","系统提示");
+						return;
+					}
+					if(L402_27_02.selected==true&&L402_29_01.selected==false&&L402_29_02.selected==false&&L402_29_03.selected==false)
+					{
+						Alert.show("请选择左乳乳头溢液类型","系统提示");
+						return;
+					}
+				}
+				if(L402_34_02.selected)
+				{
+					if(L402_35_01.selected==false&&L402_35_02.selected==false)
+					{
+						Alert.show("请选择右乳症状类型","系统提示");
+						return;
+					}
+					if(L402_35_01.selected==true&&L402_36_01.selected==false&&L402_36_02.selected==false)
+					{
+						Alert.show("请选择右乳乳腺疼痛类型","系统提示");
+						return;
+					}
+					if(L402_35_02.selected==true&&L402_37_01.selected==false&&L402_37_02.selected==false&&L402_37_03.selected==false)
+					{
+						Alert.show("请选择右乳乳头溢液类型","系统提示");
+						return;
+					}
+				}
+				/* if(L402_30_03.selected)
+				{
+				if(StringUtil.trim(L402_31.text)=="")
+				{
+				Alert.show("请输入左乳最大径","系统提示");
+				return;
+				}
+				}
+				if(L402_30_04.selected)
+				{
+				if(StringUtil.trim(L402_32.text)=="")
+				{
+				Alert.show("请输入左乳皮肤改变详细信息","系统提示");
+				return;
+				}
+				}
+				if(L402_30_06.selected)
+				{
+				if(StringUtil.trim(L402_33.text)=="")
+				{
+				Alert.show("请输入左乳其他描述","系统提示");
+				return;
+				}
+				}
+				if(L402_38_03.selected)
+				{
+				if(StringUtil.trim(L402_39.text)=="")
+				{
+				Alert.show("请输入右乳最大径","系统提示");
+				return;
+				}
+				}
+				if(L402_38_04.selected)
+				{
+				if(StringUtil.trim(L402_40.text)=="")
+				{
+				Alert.show("请输入右乳皮肤改变详细信息","系统提示");
+				return;
+				}
+				}
+				if(L402_38_06.selected)
+				{
+				if(StringUtil.trim(L402_41.text)=="")
+				{
+				Alert.show("请输入右乳其他描述","系统提示");
+				return;
+				}
+				} */
+				
+				
+				var l40230Arr:Array=CompMethod.getCheckBoxAutomationName(
+					[zrtz1,zrtz2,zrtz3,zrtz4,zrtz5,zrtz6]);
+				if(!l40230Arr[0])
+				{
+					Alert.show("请选择左乳体征","系统提示");
+					return;
+				}
+				
+				var l40238Arr:Array=CompMethod.getCheckBoxAutomationName(
+					[yrtz1,yrtz2,yrtz3,yrtz4,yrtz5,yrtz6]);
+				if(!l40238Arr[0])
+				{
+					Alert.show("请选择右乳体征","系统提示");
+					return;
+				}
+				
+				if(L402_42_02.selected&&!L402_43.text)
+				{
+					
+					Alert.show("请输入良性病变说明","系统提示");
+					return;
+				}//179  180
+				var l402179Arr:Array=CompMethod.getCheckBoxAutomationName(L402_179);
+				if(L402_179.enabled&&!l402179Arr[0])
+				{
+					Alert.show("请选择良性病变位置","系统提示");
+					return;
+				}
+				
+				var l402180Arr:Array=CompMethod.getCheckBoxAutomationName(L402_180);
+				if(L402_180.enabled&&!l402180Arr[0])
+				{
+					Alert.show("请选择可疑恶性位置","系统提示");
+					return;
+				}
+				if(StringUtil.trim(check2.checker.text)=="")
+				{
+					Alert.show("请输入检查人员","系统提示");
+					return;
+				}
+				_saverxcz([l40230Arr[1],l40238Arr[1],l402179Arr[1],l402180Arr[1]]);
+			}
+			/*******************乳腺触诊*****************/
+			private function _saverxcz(arr:Array):void
+			{	
+				this.mouseChildren=false;	
+				l402=new L402();
+				l402Request=new L402Request();
+				l402.l40202=vl301.l30101;
+				l402.l40226=(L402_26_01.selected)==true?"0":"1";
+				if(L402_27_01.selected)
+				{
+					l402.l40228=(L402_28_01.selected==true?"1":"2");
+				}
+				if(L402_27_02.selected)
+				{
+					if(L402_29_01.selected)l402.l40229="1";
+					if(L402_29_02.selected)l402.l40229="2";
+					if(L402_29_03.selected)l402.l40229="9";
+				}
+				l402.l40230=arr[0];
+				
+				l402.l40231=Number(StringUtil.trim(L402_31.text));
+				
+				l402.l40232=StringUtil.trim(L402_32.text);
+				
+				l402.l40233=StringUtil.trim(L402_33.text);
+				
+				l402.l40234=(L402_34_01.selected==true?"0":"1");
+				if(L402_35_01.selected)
+				{
+					l402.l40236=(L402_36_01.selected==true?"1":"2");
+				}
+				if(L402_35_02.selected)
+				{
+					if(L402_37_01.selected)l402.l40237="1";
+					if(L402_37_02.selected)l402.l40237="2";
+					if(L402_37_03.selected)l402.l40237="9";
+				}
+				l402.l40238=arr[1];
+				l402.l40227=CompMethod.getCheckBoxAutomationName([L402_27_1,L402_27_2])[1];
+				l402.l40235=CompMethod.getCheckBoxAutomationName([L402_35_1,L402_35_2])[1];
+				
+				l402.l40239=Number(StringUtil.trim(L402_39.text));
+				
+				l402.l40240=StringUtil.trim(L402_40.text);
+				
+				l402.l40241=StringUtil.trim(L402_41.text);
+			
+				if(L402_42_01.selected)l402.l40242="1";
+				if(L402_42_03.selected)l402.l40242="3";
+				if(L402_42_02.selected)
+				{
+					l402.l40242="2";
+					l402.l40243=StringUtil.trim(L402_43.text);
+				}
+				
+				
+				l402.l402179=arr[2];
+				l402.l402180=arr[3];
+				l402.l40244=check2.institutionCode.selectedItem.data;
+				l402.l40245=StringUtil.trim(check2.checker.text);
+				l402.l40246=DateField.stringToDate(check2.nowDate.text,"YYYY-MM-DD");;
+				l402Request.flag="1";
+				l402Request.l402=l402;
+				l402Service.saveL402(l402Request);
+			}
+			/*******************乳腺彩色超声检查*****************/
+			private function saverxcc():void
+			{
+				/* if(!picData.length)
+				{
+				Alert.show("请上传图片","系统提示");
+				return ;
+				} */
+				
+				if(L402_47_02.selected)
+				{
+					if(L402_48_01.selected==false&&L402_48_02.selected==false)
+					{
+						Alert.show("请选择左乳囊肿","系统提示");
+						return;
+					}
+				}
+				if(L402_49_02.selected)
+				{
+					if(L402_50_01.selected==false&&L402_50_02.selected==false)
+					{
+						Alert.show("请选择左乳实性肿块类型","系统提示");
+						return;
+					}
+					/*if(StringUtil.trim(L402_51.text)=="")
+					{
+					Alert.show("请输入左乳实性肿块部位","系统提示");
+					return;
+					}
+					if(StringUtil.trim(L402_52.text)=="")
+					{
+					Alert.show("请输入左乳实性肿块象限法（可触及者）","系统提示");
+					return;
+					}
+					if(StringUtil.trim(L402_53.text)=="")
+					{
+					Alert.show("请输入左乳实性肿块时钟法（不可触及者）","系统提示");
+					return;
+					}
+					if(StringUtil.trim(L402_54_01.text)==""||StringUtil.trim(L402_54_02.text)=="")
+					{
+					Alert.show("请输入左乳实性肿块大小","系统提示");
+					return;
+					}
+					if(L402_55_01.selected==false&&L402_55_02.selected==false
+					&&L402_55_03.selected==false&&L402_55_04.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块形态","系统提示");
+					return;
+					}
+					if(L402_56_01.selected==false&&L402_56_02.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块方向","系统提示");
+					return;
+					}
+					if(L402_57_01.selected==false&&L402_57_02.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块边界","系统提示");
+					return;
+					}
+					if(L402_58_01.selected==false&&L402_58_02.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块边缘","系统提示");
+					return;
+					}
+					if(L402_59_01.selected==false&&L402_59_02.selected==false
+					&&L402_59_03.selected==false&&L402_59_04.selected==false
+					&&L402_59_05.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块内部回声","系统提示");
+					return;
+					}
+					if(L402_60_01.selected==false&&L402_60_02.selected==false
+					&&L402_60_03.selected==false&&L402_60_04.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块后方回声","系统提示");
+					return;
+					}
+					if(L402_61_01.selected==false&&L402_61_02.selected==false
+					&&L402_61_03.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块钙化灶","系统提示");
+					return;
+					}
+					if(L402_62_01.selected==false&&L402_62_02.selected==false
+					&&L402_62_03.selected==false)
+					{
+					Alert.show("请选择左乳实性肿块血流","系统提示");
+					return;
+					} */
+				}
+				if(L402_64_01.selected==false&&L402_64_02.selected==false&&L402_64_03.selected==false
+					&&L402_64_04.selected==false&&L402_64_05.selected==false&&L402_64_06.selected==false)
+				{
+					Alert.show("请选择左乳分级","系统提示");
+					return;
+				}
+				/* if(StringUtil.trim(L402_63.text)=="")
+				{
+				Alert.show("请输入左乳详情描述","系统提示");
+				return;
+				} */
+				if(L402_65_02.selected)
+				{
+					if(L402_66_01.selected==false&&L402_66_02.selected==false)
+					{
+						Alert.show("请选择右乳囊肿","系统提示");
+						return;
+					}
+				}
+				if(L402_67_02.selected)
+				{
+					if(L402_68_01.selected==false&&L402_68_02.selected==false)
+					{
+						Alert.show("请选择右乳实性肿块类型","系统提示");
+						return;
+					}
+					/* if(StringUtil.trim(L402_69.text)=="")
+					{
+					Alert.show("请输入右乳实性肿块部位","系统提示");
+					return;
+					}
+					if(StringUtil.trim(L402_70.text)=="")
+					{
+					Alert.show("请输入右乳实性肿块象限法（可触及者）","系统提示");
+					return;
+					}
+					if(StringUtil.trim(L402_71.text)=="")
+					{
+					Alert.show("请输入右乳实性肿块时钟法（不可触及者）","系统提示");
+					return;
+					}
+					if(StringUtil.trim(L402_72_01.text)==""||StringUtil.trim(L402_72_02.text)=="")
+					{
+					Alert.show("请输入右乳实性肿块大小","系统提示");
+					return;
+					}
+					if(L402_73_01.selected==false&&L402_73_02.selected==false
+					&&L402_73_03.selected==false&&L402_73_04.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块形态","系统提示");
+					return;
+					}
+					if(L402_74_01.selected==false&&L402_74_02.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块方向","系统提示");
+					return;
+					}
+					if(L402_75_01.selected==false&&L402_75_02.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块边界","系统提示");
+					return;
+					}
+					if(L402_76_01.selected==false&&L402_76_02.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块边缘","系统提示");
+					return;
+					}
+					if(L402_77_01.selected==false&&L402_77_02.selected==false
+					&&L402_77_03.selected==false&&L402_77_04.selected==false
+					&&L402_77_05.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块内部回声","系统提示");
+					return;
+					}
+					if(L402_78_01.selected==false&&L402_78_02.selected==false
+					&&L402_78_03.selected==false&&L402_78_04.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块后方回声","系统提示");
+					return;
+					}
+					if(L402_79_01.selected==false&&L402_79_02.selected==false
+					&&L402_79_03.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块钙化灶","系统提示");
+					return;
+					}
+					if(L402_80_01.selected==false&&L402_80_02.selected==false
+					&&L402_80_03.selected==false)
+					{
+					Alert.show("请选择右乳实性肿块血流","系统提示");
+					return;
+					} */
+				}
+				if(L402_82_01.selected==false&&L402_82_02.selected==false&&L402_82_03.selected==false
+					&&L402_82_04.selected==false&&L402_82_05.selected==false&&L402_82_06.selected==false)
+				{
+					Alert.show("请选择右乳分级","系统提示");
+					return;
+				}
+				/* if(StringUtil.trim(L402_81.text)=="")
+				{
+				Alert.show("请输入右乳详情描述","系统提示");
+				return;
+				} */
+				
+				/* if(L402_161.enabled&&!L402_161.text)
+				{
+					Alert.show("请输入彩超建议其他说明","系统提示");
+					return;
+				} */
+				
+				if(StringUtil.trim(check3.checker.text)=="")
+				{
+					Alert.show("请输入检查人员信息","系统提示");
+					return;
+				}
+				_saverxcc();
+			}
+			/*******************乳腺彩色超声检查*****************/
+			private function _saverxcc():void
+			{
+				this.mouseChildren=false;	
+				l402=new L402();
+				l402Request=new L402Request();
+				l402.l40202=vl301.l30101
+				if(L402_47_01.selected)l402.l40247="0";
+				if(L402_47_02.selected)
+				{
+					l402.l40247="1";
+					l402.l40248=(L402_48_01.selected==true?"1":"2");
+				}
+				if(L402_49_01.selected)l402.l40249="0";
+				if(L402_49_02.selected)
+				{
+					l402.l40249="1";
+					l402.l40250=(L402_50_01.selected==true?"1":"2");
+					l402.l40251=StringUtil.trim(L402_51.text);
+					l402.l40252=L402_52.selectedItem.data;
+					l402.l40253=StringUtil.trim(L402_53.text);
+					l402.l40254=StringUtil.trim(L402_54_01.text)+","+StringUtil.trim(L402_54_02.text);
+					if(L402_55_01.selected)l402.l40255="1";
+					if(L402_55_02.selected)l402.l40255="2";
+					if(L402_55_03.selected)l402.l40255="3";
+					if(L402_55_04.selected)l402.l40255="4";
+					if(L402_56_01.selected)l402.l40256="1";
+					if(L402_56_02.selected)l402.l40256="2";
+					if(L402_57_01.selected)l402.l40257="1";
+					if(L402_57_02.selected)l402.l40257="2";
+					if(L402_58_01.selected)l402.l40258="1";
+					if(L402_58_02.selected)l402.l40258="2";
+					if(L402_59_01.selected)l402.l40259="1";
+					if(L402_59_02.selected)l402.l40259="2";
+					if(L402_59_03.selected)l402.l40259="3";
+					if(L402_59_04.selected)l402.l40259="4";
+					if(L402_59_05.selected)l402.l40259="5";
+					if(L402_59_06.selected)l402.l40259="6";
+					if(L402_60_01.selected)l402.l40260="1";
+					if(L402_60_02.selected)l402.l40260="2";
+					if(L402_60_03.selected)l402.l40260="3";
+					if(L402_60_04.selected)l402.l40260="4";
+					if(L402_61_01.selected)l402.l40261="1";
+					if(L402_61_02.selected)l402.l40261="2";
+					if(L402_61_03.selected)l402.l40261="3";
+					if(L402_62_01.selected)l402.l40262="1";
+					if(L402_62_02.selected)l402.l40262="2";
+					if(L402_62_03.selected)l402.l40262="3";
+				}
+				l402.l40263=StringUtil.trim(L402_63.text);
+				if(L402_64_01.selected)l402.l40264="1";
+				if(L402_64_02.selected)l402.l40264="2";
+				if(L402_64_03.selected)l402.l40264="3";
+				if(L402_64_04.selected)l402.l40264="4";
+				if(L402_64_05.selected)l402.l40264="5";
+				if(L402_64_06.selected)l402.l40264="6";
+				if(L402_65_01.selected)l402.l40265="0";
+				
+				
+				
+				if(L402_65_02.selected)
+				{
+					l402.l40265="1";
+					l402.l40266=(L402_66_01.selected==true?"1":"2");
+				}
+				if(L402_67_01.selected)l402.l40267="0";
+				if(L402_67_02.selected)
+				{
+					l402.l40267="1";
+					l402.l40268=(L402_68_01.selected==true?"1":"2");
+					l402.l40269=StringUtil.trim(L402_69.text);
+					l402.l40270=L402_70.selectedItem.data;
+					l402.l40271=StringUtil.trim(L402_71.text);
+					l402.l40272=StringUtil.trim(L402_72_01.text)+","+StringUtil.trim(L402_72_02.text);
+					if(L402_73_01.selected)l402.l40273="1";
+					if(L402_73_02.selected)l402.l40273="2";
+					if(L402_73_03.selected)l402.l40273="3";
+					if(L402_73_04.selected)l402.l40273="4";
+					if(L402_74_01.selected)l402.l40274="1";
+					if(L402_74_02.selected)l402.l40274="2";
+					if(L402_75_01.selected)l402.l40275="1";
+					if(L402_75_02.selected)l402.l40275="2";
+					if(L402_76_01.selected)l402.l40276="1";
+					if(L402_76_02.selected)l402.l40276="2";
+					if(L402_77_01.selected)l402.l40277="1";
+					if(L402_77_02.selected)l402.l40277="2";
+					if(L402_77_03.selected)l402.l40277="3";
+					if(L402_77_04.selected)l402.l40277="4";
+					if(L402_77_05.selected)l402.l40277="5";
+					if(L402_77_06.selected)l402.l40277="6";
+					if(L402_78_01.selected)l402.l40278="1";
+					if(L402_78_02.selected)l402.l40278="2";
+					if(L402_78_03.selected)l402.l40278="3";
+					if(L402_78_04.selected)l402.l40278="4";
+					if(L402_79_01.selected)l402.l40279="1";
+					if(L402_79_02.selected)l402.l40279="2";
+					if(L402_79_03.selected)l402.l40279="3";
+					if(L402_80_01.selected)l402.l40280="1";
+					if(L402_80_02.selected)l402.l40280="2";
+					if(L402_80_03.selected)l402.l40280="3";
+				}
+				l402.l40281=StringUtil.trim(L402_81.text);
+				if(L402_82_01.selected)l402.l40282="1";
+				if(L402_82_02.selected)l402.l40282="2";
+				if(L402_82_03.selected)l402.l40282="3";
+				if(L402_82_04.selected)l402.l40282="4";
+				if(L402_82_05.selected)l402.l40282="5";
+				if(L402_82_06.selected)l402.l40282="6";
+			
+				l402.l40284=check3.institutionCode.selectedItem.data;
+				l402.l40285=StringUtil.trim(check3.checker.text);
+				l402.l40286=DateField.stringToDate(check3.nowDate.text,"YYYY-MM-DD");;
+				
+				
+				l402Request.flag="2";
+				var l40264:Number=Number(l402.l40264);
+				var l40282:Number=Number(l402.l40282);
+				var count:Number=picData.length?picData.length:0;
+				/* if(l40264>3&&l40282>3)
+				{
+					if(count<6)
+					{
+						Alert.show("图片数量不符合要求，应上传6张，实为"+count+"张","系统提示");
+						return;
+					}
+				}else if(l40264>3||l40282>3)
+				{
+					if(count<3)
+					{
+						Alert.show("图片数量不符合要求，应上传3张，实为"+count+"张","系统提示");
+						return;
+					}
+				} */
+				l402Request.picList=picData;
+				l402Request.l402=l402;
+				l402Service.saveL402(l402Request);
+			}
+			
+			
+		
+			
+			
+			
+			private function saveL402Handler(event:ResultEvent):void
+			{
+				this.mouseChildren=true;	
+				var l402Response:Object=event.result;
+				if(l402Response.state)
+				{
+					if(picData.length)
+						picData=new ArrayCollection();
+					resL402=l402Response.l402;
+					Alert.show(l402Response.promptMessage,"系统提示",1,this,closeHander);
+					
+				}else
+					Alert.show(l402Response.errorMessage,"系统提示");
+			}
+			
+			
+			private function closeHander(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var selectIndex:int=1+(tab.selectedIndex);
+					if(selectIndex==7)
+						selectIndex=0;
+					tab.selectedIndex=selectIndex;
+					this.currentState=this.states[selectIndex].name;
+					
+					l402Service.queryByL402(vl301.l30101);
+				}
+			}
+			
+			private function queryByL402Handler(event:ResultEvent):void
+			{
+				l402Response=event.result;
+				if(l402Response.state)
+				{
+					resL402=l402Response.l402;	
+					getL402Registration(resL402,"red");
+					/* 	if(tab.selectedIndex==0)
+					{
+					Alert.show("已经登记过病史信息无法再次登记","系统提示");
+					vgroupbs.enabled=false;
+					} */
+				}
+				else 
+				{
+					resL402=new L402();				
+				}
+			}
+			private function bsCompleteHandler(event:FlexEvent):void
+			{
+				check1.institution.text="登记机构";
+				check1.Checkname.text="登记人员";
+				check1.time.text="登记时间";
+				check1.nowDate.enabled=false;
+				check1._initializeComboBox("1");
+				this._disabledRanges=check1.nowDate.disabledRanges;
+			}
+			
+			private function L402_13_01_clickHandler(event:MouseEvent):void
+			{
+				CompMethod._walk(L402_15HGroup);
+				L402_14.text="";
+				L402_16.text="";
+			}
+			private function L402_17_01_clickHandler(event:MouseEvent):void
+			{
+				L402_18.text="";
+				CompMethod._walk(L402_19);
+			}
+			
+			private function L402_10_01_clickHandler():void
+			{
+				L402_11.text="";
+				L402_12_01.selected=false;
+				L402_12_02.selected=false;
+			}
+			
+			private function L402_26_01_clickHandler(event:MouseEvent):void
+			{
+				CompMethod._walk(zrxczzzygrid1);
+				CompMethod._walk(zrxczzzygrid2);	
+			}
+			
+			private function L402_34_01_clickHandler(event:MouseEvent):void
+			{
+				CompMethod._walk(yrxczzzygrid1);
+				CompMethod._walk(yrxczzzygrid2);	
+				
+			}
+			
+			private function L402_30_01_clickHandler(event:MouseEvent):void
+			{
+				L402_31.text="";
+				L402_32.text="";
+				L402_33.text="";
+			}
+			
+			private function L402_38_01_clickHandler(event:MouseEvent):void
+			{		
+				L402_39.text="";
+				L402_40.text="";
+				L402_41.text="";
+			}
+			
+			private function L402_49_01_clickHandler(event:MouseEvent):void
+			{
+				CompMethod._walk(zrxczsxzky);	
+				CompMethod._walk(zrxczsxzkbw);	
+				CompMethod._walk(zrxczsxzkdx);	
+				CompMethod._walk(zrxczsxzkxt);	
+				CompMethod._walk(zrxczsxzkfx);	
+				CompMethod._walk(zrxczsxzkbj);	
+				CompMethod._walk(zrxczsxzkby);	
+				CompMethod._walk(zrxczsxzknbhs);	
+				CompMethod._walk(zrxczsxzkhfhs);	
+				CompMethod._walk(zrxczsxzkghz);	
+				CompMethod._walk(zrxczsxzkxl);	
+			}
+			
+			private function L402_67_01_clickHandler(event:MouseEvent):void
+			{
+				CompMethod._walk(yrxczsxzky);	
+				CompMethod._walk(yrxczsxzkbw);	
+				CompMethod._walk(yrxczsxzkdx);	
+				CompMethod._walk(yrxczsxzkxt);	
+				CompMethod._walk(yrxczsxzkfx);	
+				CompMethod._walk(yrxczsxzkbj);	
+				CompMethod._walk(yrxczsxzkby);	
+				CompMethod._walk(yrxczsxzknbhs);	
+				CompMethod._walk(yrxczsxzkhfhs);	
+				CompMethod._walk(yrxczsxzkghz);	
+				CompMethod._walk(yrxczsxzkxl);	
+			}
+			
+			
+			
+			
+		
+			
+			
+			
+			
+			private function L402_47_01_clickHandler(event:MouseEvent):void
+			{
+				L402_48_01.selected=false;
+				L402_48_02.selected=false;
+			}
+			
+			private function L402_65_01_clickHandler(event:MouseEvent):void
+			{
+				L402_66_01.selected=false;
+				L402_66_02.selected=false;
+				
+			}
+			
+			/* private function L402_06_focusInHandler():void
+			{
+			if(l402Response.state)
+			{
+			Alert.show("已经登记过病史信息无法再次登记","系统提示");
+			vgroupbs.enabled=false;
+			}			
+			} */
+			
+			private function tab_changeHandler(event:IndexChangedEvent):void
+			{
+				var i:int=TabNavigator(event.target).selectedIndex;
+				this.currentState=this.states[i].name;
+
+				
+			}
+			
+			
+			
+			public function queryL301():void
+			{
+				_query(1,10);
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				_query(pagerBar.currentPageIndex,10);
+			}
+			
+			
+			private function _query(currentPageIndex:int,pageSize:int):void
+			{
+				setHeight(addVgroupDataGrid[0],addVgroupDataGrid[1],addVgroupDataGrid[2]);
+				vgroup.addElement(addVgroupDataGrid[3]);
+				parallel.play();
+				this.initQueryParam();
+				l301Request.parameterPageindex=currentPageIndex;
+				l301Request.parameterPagesize=pageSize;
+				this.l301Service.queryL301(l301Request);	
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():Boolean
+			{
+				var boolean:Boolean=true;
+				l301=new L301();
+				l301Request = new L301Request();
+				
+				var l30102:String=StringUtil.trim(L301_02.text);
+				var l30104:String=StringUtil.trim(L301_04.text);
+				var l30110:String=StringUtil.trim(L301_10.text);
+				try{
+					
+					if(l30102||l30104||l30110)
+					{
+						l301.l30102=l30102;
+						l301.l30104=l30104;
+						l301.l30110=l30110;
+					}else
+					{
+						
+						l301Request.timeStr=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+						l301Request.timeEnd=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+						
+						var type:String = L301_17.getLastSelectedInstitution();
+						var l301_17:String = L301_17.getLastSelectedInstitutionCode();
+						l301.l30117 = (type == "8")?l301_17:l301_17.substring(0,Number(type));
+					}
+					l301.l30138="is null ";
+					l301Request.l301=l301;
+					
+				}catch(e:Error)
+				{
+					Alert.show("查询异常","系统提示");
+				}
+				return boolean;
+			}
+			
+			public function queryL301Handler(event:ResultEvent):void
+			{
+				var l301Response:Object = event.result;
+				var vl301s:ArrayCollection =l301Response.vl301s;
+				var rowCount:Number = l301Response.rowCount;
+				certificateDataGrid.dataProvider=vl301s;
+				pagerBar.dataGrid = certificateDataGrid;  
+				pagerBar.rowCount = rowCount;
+				pagerBar.resultData = vl301s;
+				pagerBar.dataBind();
+				pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					pagerBar.enabled = true;
+				}
+				if(!l301Response.state)
+				{
+					Alert.show(l301Response.errorMessage,"系统提示");
+					return;
+				}
+			}
+			
+			
+			private function onSelected(event:Event):void
+			{
+				setTabChildColor("black",new Array(5),true)
+				this.vl301 = DataGrid(event.target).selectedItem;
+				if(this.systemUser.institutionCode!=vl301.l30117)
+					Alert.show("该档案不是本单位录入，由"+vl301.l30124+"录入，是否继续登记检查信息？","系统提示",3,this,
+						function(event:CloseEvent):void
+						{
+							if(event.detail==Alert.YES)
+								register();
+							else
+								vl301=certificateDataGrid.selectedItem=null;
+					});
+				else
+					register();
+			}
+			
+			/**
+			 *登记检查
+			 */
+			private function register():void
+			{
+				this.getVl301(vl301);
+				vgroup_creationCompleteHandler(null);
+			}
+			
+			protected function vgroup_creationCompleteHandler(event:FlexEvent):void
+			{
+				vgroupDataGrid.width=500;
+				addVgroupDataGrid.push(vgroup.height);
+				addVgroupDataGrid.push(navigatorContent.height);
+				addVgroupDataGrid.push(tabNavigator.height);
+				addVgroupDataGrid.push(vgroupDataGrid);
+				vgroup.removeElement(vgroupDataGrid);
+				callLater(setHeight,new Array(90,90,127));
+				
+			}
+			
+			
+			private function setHeight(vgroupHeight:Number,navigatorContentHeight:Number,tabNavigatorHeight:Number):void
+			{
+				vgroup.height=vgroupHeight;
+				navigatorContent.height=navigatorContentHeight;
+				tabNavigator.height=tabNavigatorHeight;
+			}
+			
+			private function readCard():void
+			{
+				var arr:Array =CompMethod.readCard();
+				if(arr)
+				{
+					if(CompMethod.sex('女',arr[1]))
+					{
+						L301_02.text=arr[0];
+						L301_04.text=arr[5];
+						queryL301();
+					}else
+						Alert.show("请读女性身份证","系统提示");
+				}else
+					Alert.show("读卡失败","系统提示");
+			}
+			
+			
+			private function finishCase():void
+			{
+				if(oldId==resL402.l40202)
+				{
+					Alert.show("不能重复结案","系统提示");
+					return;
+				}
+				//结案前判断
+				else if(!(resL402.l40244&&resL402.l40284))
+				{
+					Alert.show("请先登记乳腺触诊和乳腺彩超检查","系统提示");
+					return;
+					
+				}else if(!resL402.l402165)//初筛临床建议
+				{
+					Alert.show("请先登记初筛临床建议!","系统提示");
+					return;
+				}else if(resL402.l40283=='2'||resL402.l40283=='3')//乳腺X线
+				{
+					if(resL402.l40283=='2'||resL402.l40283=='3')//乳腺X线
+					{
+						if(resL402.l40283=='2')
+						{
+							if(!resL402.l402128)
+							{
+								Alert.show("乳腺彩超建议为乳腺X线检查，请登记乳腺X线检查！","系统提示");
+								return;
+							}else if(resL402.l402102&&!resL402.l402168)//接受 X线检查 验证是否 登记临床建议
+							{
+								Alert.show("乳腺X线检查已登记，请先登记乳腺X线临床建议！","系统提示");
+								return;
+							}
+							
+							
+						}else 
+						{//登记了乳腺x线
+							if(resL402.l402101=='3')
+							{
+								if(!resL402.l402176)
+								{
+									Alert.show("腺X线临床建议为活检，请登记乳腺随访！","系统提示");
+									return;
+								}
+							}
+						}
+					}
+				}else if(this.systemUser.institutionCode!=resL402.l402123)
+				{
+					Alert.show("不是本单位登记的病史是无法结案的！","系统提示");
+					return;
+				}
+				Alert.show("结案之后就无法修改对应检查信息，请确认","系统提示",3,this,popHandler);
+			}
+			
+			private function popHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var window:finishCaseWindow=new finishCaseWindow();
+					window.dataArr=new Array(resL402.l40202,resL402.l40203,resL402.l40204,
+						resL402.l40205,false,true,false);
+					CompMethod.popUpTitleWindow(window,this);
+				}
+			}
+			
+			public function setOldId(id:String):void
+			{
+				vl301=null;
+				this.oldId=id;
+				tab.selectedIndex=0;
+				this.currentState="bs";
+			}
+			//反馈卡
+			public function feedback():void{
+				navigateToURL(new URLRequest(this.parentApplication.contextRoot + "/print_new/ms/la/la.jsp?l40201=" +resL402.l40201),null);
+			}
+			
+			private function setL30134(item:Object, column:GridColumn):String
+			{
+				return item[column.dataField]=="1"?"是":"否";
+			}
+			
+			
+			/**
+			 *去设置选项卡颜色
+			 * flag false 设置指定选项卡颜色
+			 *      true  设置全部选项卡颜色
+			 */
+			private function setTabChildColor(tabColor:String,arr:Object,flag:Boolean=false):void
+			{
+				var i:int=0;
+				for(var k:int=0;k<arr.length;k++)
+				{
+					i=flag?k:Number(arr.getItemAt(k));
+					(tab.getTabAt(i) as mx.controls.Button).setStyle("color",tabColor);
+				}	
+			}
+			
+			/**
+			 *根据l302登记情况 去设置选项卡颜色
+			 */
+			private function getL402Registration(l402:Object,tabColor:String):void
+			{
+				var arr:ArrayCollection=new ArrayCollection();
+				if(l402.l40244)
+					arr.addItem(1);
+				if(l402.l40284)
+					arr.addItem(2);
+				if(l402.l402165)
+					arr.addItem(3);
+				if(l402.l402128)
+					arr.addItem(4);
+				if(l402.l402168)
+					arr.addItem(5);
+				if(l402.l402120)
+					arr.addItem(6);
+				if(l402.l402123)
+					arr.addItem(0);
+				setTabChildColor("red",arr);
+			}
+			
+			private function uploadPic(picType:String,min:int,max:int=10):void
+			{
+				var detailTitleWindow:LoadPicWindow2= new LoadPicWindow2();
+				detailTitleWindow.paramsArr=[this.vl301.l30102,'',min,max];//0.档案人名   1. 类型代码    2 图片数量限制（最少） 3 图片数量限制（最多）
+				detailTitleWindow.picArr=[picType];//图片参数   0 sql条件 不为空可以不写其他 1 缩放比例   2质量参数  3图片格式 
+				CompMethod.popUpTitleWindow(detailTitleWindow,this,true);
+			}
+			/*****************图片放入集合*******************/
+			public function putPictures(arr:ArrayCollection):void
+			{
+				try
+				{
+					picData.addAll(arr);
+					
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("上传图片异常","系统提示");
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function clearRadioORCheck(idArr:Array):void
+			{
+				for(var i:String in idArr)
+				{
+					CompMethod._walk(idArr[i]);
+				}
+			}
+			
+			private function L402_53_changeHandler(event:Event,id:DropDownList):void
+			{
+				if(event.target.text)
+					id.selectedIndex=0;
+				
+			}
+			
+			private function L402_52_changeHandler(event:IndexChangeEvent,id:Object):void
+			{
+				if(event.newIndex)
+					id.text='';
+				
+			}
+			
+			
+			private function changeHandler(event:Event,ids:*):void
+			{
+				var firstEle:Object=ids is Array ?ids[0]:ids;
+				if(firstEle==event.target&&firstEle.selected)
+				{
+					ids.shift();
+					CompMethod.hasNumEles(ids);
+				}else
+				{
+					var select:Boolean=event.target.selected;
+					if(firstEle.selected)
+						firstEle.selected=!firstEle.selected;
+					if(!select)
+					{
+						var row:Object=event.target.parent.parent;
+						CompMethod.hasNumEles(row.getElementAt(row.numElements-1));
+					}
+					
+				}	
+				
+				
+			}
+			
+		
+			
+			
+			private function L402_27_02_changeHandler(event:Event,id:Object):void
+			{
+				if(!event.target.selected)
+					CompMethod.hasNumEles(id);
+				
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="bs"/>
+		<s:State name="rxcz"/>
+		<s:State name="rxcc" enterState="rxcc_enterStateHandler(event)"/>
+		<s:State name="csjy"/>
+		<s:State name="rxxx"/>
+		<s:State name="xxjy"/>
+		<s:State name="rxsf"/>
+	</s:states>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="100%" chromeColor="#ffffff">
+			<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10"
+					  paddingTop="10">
+				<mx:TabNavigator id="tabNavigator" width="1300" height="419">
+					<s:NavigatorContent id="navigatorContent" width="100%" label="档案查询"
+										buttonMode="true">
+						<s:VGroup id="vgroup" width="100%"
+								  creationComplete="vgroup_creationCompleteHandler(event)">
+							
+							<s:HGroup width="100%" paddingBottom="5" paddingLeft="10"
+									  paddingRight="10" verticalAlign="middle">
+								
+								<s:Label id="lbl" color="#FD0909" creationComplete="effect1.play();"
+										 fontSize="16"
+										 text="! 注意：若输入内容，查询不受日期和录入单位条件限制，有读卡功能的直接读卡就可以查询"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" paddingBottom="0" paddingLeft="10"
+									  paddingRight="10" verticalAlign="middle">
+								<s:Label text="录入单位"/>
+								<component:InstitutionComboBox id="L301_17" width="732"
+															   buttonMode="true"/>
+								<s:Button label="反馈卡" buttonMode="true" click="feedback()"
+										  enabled="{resL402}"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" paddingBottom="5" paddingLeft="10"
+									  paddingRight="10" paddingTop="5" verticalAlign="middle">
+								<s:Label text="姓      名"/><s:TextInput id="L301_02"/>
+								<s:Label text="证件号码"/><s:TextInput id="L301_04" width="140"/>
+								<s:Label text="联系方式"/><s:TextInput id="L301_10"/>
+								<s:Label text="登记时间"/>
+								<component:CustomRangeDateField  id="timeStart" isSelectNow="true" width="120"
+																  />
+								<s:Label text="至"/>
+									<component:CustomRangeDateField  id="timeEnd" width="120" isSelectNow="true"
+																	  />
+								<s:Button id="duka1" width="60" label="读卡" buttonMode="true"
+										  click="readCard()" enabled="{systemUser.duka=='1'}"/>
+								<s:Button label="查询" buttonMode="true" click="queryL301()"/>
+								<s:Button label="结案登记" buttonMode="true" click="finishCase()"
+										  enabled="{resL402}"/>
+								  
+							</s:HGroup>
+							
+							
+							<s:VGroup id="vgroupDataGrid" width="500" height="100%" paddingRight="5">
+								<s:DataGrid id="certificateDataGrid" width="100%" height="260"
+											alternatingRowColors="[#FFFFFF,#EEEEEE]"
+											editable="false" rowHeight="22"
+											selectionChange="onSelected(event)">
+									<s:columns>
+										<s:ArrayList>
+											<s:GridColumn width="40" editable="false" headerText="序号"
+														  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+											<s:GridColumn width="180" dataField="l30116"
+														  headerText="档案编号"/>
+											<s:GridColumn width="100" dataField="l30102"
+														  headerText="姓名"/>
+											<s:GridColumn width="140" dataField="l30104"
+														  headerText="证件号码"/>
+											<s:GridColumn width="117" dataField="l30110"
+														  headerText="联系电话"/>
+											<s:GridColumn width="120" dataField="l30134"
+														  headerText="乳腺癌登记"
+														  labelFunction="setL30134"/>
+											<s:GridColumn width="100" dataField="l30105str"
+														  headerText="出生日期"/>
+											<s:GridColumn width="200" dataField="l30117zh"
+														  headerText="录入单位"/>
+											<s:GridColumn width="100" dataField="l30118"
+														  headerText="录入人员"/>
+											<s:GridColumn dataField="l30119str" headerText="录入时间"/>
+										</s:ArrayList>
+									</s:columns>
+								</s:DataGrid>					
+								<component:PagerBar id="pagerBar" enabled="false" isExcel="false"
+													isExcel2="false" isPrinter="false" pageSize="10"/>
+							</s:VGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+			
+			<s:VGroup width="100%" enabled="{vl301!=null}" paddingBottom="20" paddingLeft="10"
+					  paddingRight="10">
+				<mx:TabNavigator id="tab" width="1300" change="tab_changeHandler(event)"
+								 chromeColor="#ffffff" creationPolicy="all">
+					<s:NavigatorContent width="100%" height="100%" label="（一）病史情况"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="病史情况">
+						<s:Scroller includeIn="bs" width="100%" height="100%"
+									creationComplete="vgroupbs_creationCompleteHandler(event)"
+									horizontalScrollPolicy="auto" itemDestructionPolicy="auto"
+									verticalScrollPolicy="auto">
+							<s:VGroup id="vgroupbs" paddingLeft="5">
+								<mx:TabNavigator width="1200" chromeColor="#ffffff"
+												 creationPolicy="all">
+									<s:NavigatorContent width="100%" label="基本信息">			
+										<s:VGroup paddingBottom="2" paddingLeft="10"
+												  paddingRight="10">	
+											<s:HGroup width="100%" height="100%" paddingBottom="5"
+													  verticalAlign="middle">
+												<s:Label text="姓       名"/><s:TextInput width="130"
+																						editable="false"
+																						text="{vl301.l30102}"/>
+												<s:Label width="58" text="证件号码"/><s:TextInput width="130"
+																							  editable="false"
+																							  text="{vl301.l30104}"/>
+												<s:Label width="55" text="档案编号"/><s:TextInput width="325"
+																							  editable="false"
+																							  text="{vl301.l30116}"/>
+											</s:HGroup>
+											<mx:Grid>
+												<mx:GridRow>
+													
+													
+													<mx:GridItem>
+														<s:Label  text="孕       次"/>
+														<s:TextInput id="L402_156" maxChars="2" restrict="0-9"/>
+
+													</mx:GridItem>
+													
+													<mx:GridItem>
+														
+														<s:Label  text="产      次"/>
+														<s:TextInput id="L402_155" maxChars="1" restrict="0-9"/>
+													</mx:GridItem>
+													
+												
+													
+													<mx:GridItem>
+														<s:Label text="身     高" />
+													
+														<s:BorderContainer width="130" height="22"
+																		   >
+															<s:TextInput id="L402_157" width="100" height="20" restrict="0-9."
+																		 borderColor="#FFFFFF" />
+															<s:Label x="105" y="5" text="cm"/>
+														</s:BorderContainer>													</mx:GridItem>
+													<mx:GridItem>
+														<s:Label text="体      重" />
+														<s:BorderContainer width="130" height="22"
+																		  >
+															<s:TextInput id="L402_158" width="100" height="20"  restrict="0-9."
+																		 borderColor="#FFFFFF" />
+															<s:Label x="105" y="5" text="kg"/>
+														</s:BorderContainer>		
+													</mx:GridItem>
+												</mx:GridRow>
+												
+												<mx:GridRow>
+													<mx:GridItem>
+														
+														<s:Label styleName="myStyle" text="月        经"/>
+												
+														<s:HGroup id="L402_159" width="130" gap="50">
+															<s:RadioButton label="有" groupName="L402_159" value="1"
+																		   id="L402_159_1" selected="true" change="CompMethod.hasNumEles([L402_160,L402_09]);L402_08_01.selected=true"/>
+															<s:RadioButton label="无" groupName="L402_159" 
+																		   value="0" id="L402_159_0"/>
+															
+														</s:HGroup>								
+													</mx:GridItem>
+													
+													<mx:GridItem colSpan="3">
+														
+														<s:Label styleName="myStyle" text="说      明" />
+												
+														<s:TextInput id="L402_160" width="100%" enabled="{L402_159_0.selected}"/>					
+													</mx:GridItem>
+
+												</mx:GridRow>
+												
+												
+												<mx:GridRow >
+													<mx:GridItem verticalAlign="middle">
+														<s:Label width="52" styleName="myStyle"
+																 text="初潮年龄"/>
+														<s:BorderContainer width="130" height="22">
+															<s:TextInput id="L402_06" visible="true"
+																		 width="100" height="20"
+																		 borderColor="#FFFFFF"
+																		 maxChars="2" restrict="0-9"/>
+															<s:Label x="105" y="5" text="岁"/>
+														</s:BorderContainer>
+													</mx:GridItem>
+													<mx:GridItem verticalAlign="middle">
+														<s:Label width="52" styleName="myStyle"
+																 text="末次月经"/>
+														<component:CustomRangeDateField  id="L402_07" enabled="{L402_08_01.selected}" />
+
+													</mx:GridItem>
+													<mx:GridItem horizontalAlign="left"
+																 verticalAlign="middle">
+														<s:Label width="52" styleName="myStyle"
+																 text="绝      经"/>
+														<s:HGroup id="L402_08" width="130" gap="50" enabled="{L402_159_0.selected}">
+															<s:RadioButton label="否" change="CompMethod.hasNumEles(L402_09)"
+																		   groupName="L402_08" selected="true" value="2" id="L402_08_01"/>
+															<s:RadioButton id="L402_08_02" label="是" groupName="L402_08"
+																		   value="1" change="CompMethod.hasNumEles(L402_07)"/>
+														</s:HGroup>
+													
+													</mx:GridItem>
+													<mx:GridItem verticalAlign="middle">
+														<s:Label enabled="{L402_08_02.selected}"
+																 styleName="myStyle" text="绝经年龄"/>
+														<s:BorderContainer width="130" height="22"
+																		   enabled="{L402_08_02.selected}">
+															<s:TextInput id="L402_09" visible="true"
+																		 width="100" height="20"
+																		 borderColor="#FFFFFF"
+																		 enabled="{L402_08_02.selected}"
+																		 maxChars="2" restrict="0-9"/>
+															<s:Label x="105" y="5" text="岁"/>
+														</s:BorderContainer>
+													</mx:GridItem>
+												</mx:GridRow>
+												<mx:GridRow paddingBottom="5">
+													<mx:GridItem verticalAlign="middle">
+														<s:Label width="52" styleName="myStyle"
+																 text="是否生产"/>
+														<s:RadioButton id="L402_10_01" width="56"
+																	   label="否" buttonMode="true"
+																	   change="L402_10_01_clickHandler()"
+																	   groupName="bssc"
+																	   selected="true"/>
+														<s:RadioButton id="L402_10_02" label="是"
+																	   buttonMode="true" 
+																	   change="L402_12_02.selected=true"
+																	   groupName="bssc"/>
+													</mx:GridItem>
+													<mx:GridItem enabled="{L402_10_02.selected}"
+																 verticalAlign="middle">
+														<s:Label width="52" styleName="myStyle"
+																 text="初产年龄"/>
+														<s:BorderContainer width="130" height="22">
+															<s:TextInput id="L402_11" visible="true"
+																		 width="100" height="20"
+																		 borderColor="#FFFFFF"
+																		 maxChars="2" restrict="0-9"/>
+															<s:Label x="105"   y="5" text="岁"/>
+														</s:BorderContainer>
+													</mx:GridItem>
+													<mx:GridItem colSpan="2"
+																 enabled="{L402_10_02.selected}"
+																 verticalAlign="middle">
+														<s:Label width="52" styleName="myStyle"
+																 text="是否哺乳"/>
+														<s:HGroup  gap="50" width="130">
+															<s:RadioButton id="L402_12_01" 
+																		   label="否" buttonMode="true"
+																		   groupName="buru"/>
+															<s:RadioButton id="L402_12_02" label="是"
+																		   buttonMode="true"
+																		   groupName="buru"/>
+														</s:HGroup>  
+														
+														
+													</mx:GridItem>
+												</mx:GridRow>
+											</mx:Grid>
+										</s:VGroup>
+									</s:NavigatorContent>
+								</mx:TabNavigator>
+								<mx:TabNavigator width="1200" chromeColor="#ffffff"
+												 creationPolicy="all">
+									<s:NavigatorContent width="100%" label="既往史">			
+										<s:VGroup width="100%" paddingBottom="2" paddingLeft="10"
+												  paddingRight="10">	
+											<s:HGroup width="100%" height="100%" paddingBottom="5"
+													  verticalAlign="middle">
+												<s:Label width="142" text="既往接受过乳腺检查"/>
+												<s:HGroup width="136" height="100%" paddingBottom="3"
+														  verticalAlign="middle">
+													<s:RadioButton id="L402_13_01" width="69"
+																   label="否" buttonMode="true"
+																   click="L402_13_01_clickHandler(event)"
+																   groupName="bsjiancha"
+																   selected="true"/>
+													<s:RadioButton id="L402_13_02" label="是"
+																   buttonMode="true"
+																   groupName="bsjiancha"/>
+												</s:HGroup>
+												<s:Label width="78" text="近期检查时间"/>
+												<s:BorderContainer width="130" height="22"
+																   enabled="{L402_13_02.selected}">
+													<s:TextInput id="L402_14" visible="true"
+																 width="100" height="20"
+																 borderColor="#FFFFFF" maxChars="4"
+																 restrict="0-9"/>
+													<s:Label x="105" y="5" text="年"/>
+												</s:BorderContainer>
+												<s:Label text="检查内容（可多选）"/>
+												<s:HGroup id="L402_15HGroup" width="321"
+														  height="100%"
+														  enabled="{L402_13_02.selected}"
+														  paddingBottom="3" paddingLeft="10"
+														  verticalAlign="middle">
+													<s:CheckBox id="L402_15_01" width="56"
+																label="1.手诊" buttonMode="true"/>
+													<s:CheckBox id="L402_15_02" width="56"
+																label="2.超声" buttonMode="true"/>	
+													<s:CheckBox id="L402_15_03" width="56"
+																label="3.X线" buttonMode="true"/>
+													<s:CheckBox id="L402_15_04" width="56"
+																label="4.不详" buttonMode="true"/>
+													<s:CheckBox id="L402_15_09" width="56"
+																label="5.其他" buttonMode="true"/>
+												</s:HGroup>
+												<s:Label paddingLeft="10" text="其他"/><s:TextInput id="L402_16"
+																								  enabled="{L402_15_09.selected}"/>
+											</s:HGroup>
+											<s:HGroup width="100%" height="100%" paddingBottom="5"
+													  verticalAlign="middle">
+												<s:Label width="143" text="乳腺手术或活检史"/>
+												<s:HGroup width="136" height="100%" paddingBottom="3"
+														  verticalAlign="middle">
+													<s:RadioButton id="L402_17_01" width="69"
+																   label="无" buttonMode="true"
+																   click="L402_17_01_clickHandler(event)"
+																   groupName="bsHPV" selected="true"/>
+													<s:RadioButton id="L402_17_02" width="62"
+																   label="有" buttonMode="true"
+																   groupName="bsHPV"/>
+												</s:HGroup>
+												<s:Label width="78" text="次             数"/>
+												<s:BorderContainer width="130" height="22"
+																   enabled="{L402_17_02.selected}">
+													<s:TextInput id="L402_18" visible="true"
+																 width="100" height="20"
+																 borderColor="#FFFFFF" maxChars="2"
+																 restrict="0-9"/><s:Label x="105"
+																						  y="5"
+																						  text="次"/>
+												</s:BorderContainer>
+												<s:Label width="52" styleName="myStyle" text="病理结果"/>
+												<s:HGroup width="100%" height="100%" id="L402_19">
+													<s:RadioButton  width="56" label="良性"
+																   buttonMode="true" value="1"
+																   enabled="{L402_17_02.selected}"
+																   groupName="L402_19"/>
+													<s:RadioButton label="恶性"
+																   buttonMode="true" value="2"
+																   enabled="{L402_17_02.selected}"
+																   groupName="L402_19"/>
+												</s:HGroup>  
+												
+												
+											</s:HGroup>
+											<s:HGroup width="100%" height="100%" paddingBottom="5"
+													  verticalAlign="middle">
+												<s:Label width="143" text="激素替代治疗史"/>
+												<s:HGroup width="136" height="100%" paddingBottom="3"
+														  verticalAlign="middle">
+													<s:RadioButton id="L402_20_01" width="69"
+																   label="无" buttonMode="true"
+																   click="L402_21.text=''"
+																   groupName="bsCIN" selected="true"/>
+													<s:RadioButton id="L402_20_02" width="62"
+																   label="有" buttonMode="true"
+																   groupName="bsCIN"/>
+												</s:HGroup>
+												<s:Label width="78" text="注明用药时间"/>
+												<s:BorderContainer width="130" height="22"
+																   enabled="{L402_20_02.selected}">
+													<s:TextInput id="L402_21" visible="true"
+																 width="100" height="20"
+																 borderColor="#FFFFFF" maxChars="2"
+																 restrict="0-9"/>
+													<s:Label x="105" y="5" text="年"/>
+												</s:BorderContainer><s:Label text="注：（不足1年按1年计算）"/>
+											</s:HGroup>
+										</s:VGroup>
+									</s:NavigatorContent>
+								</mx:TabNavigator>
+								<mx:TabNavigator width="1200" chromeColor="#ffffff"
+												 creationPolicy="all">
+									<s:NavigatorContent width="100%" label="二级以内亲属乳腺癌或卵巢癌家族史">			
+										<s:VGroup paddingBottom="2" paddingLeft="10"
+												  paddingRight="10">	
+											<s:HGroup width="100%" height="100%" paddingBottom="5"
+													  verticalAlign="middle">
+												<s:Label text="是否有家族乳腺癌"/>
+												<s:HGroup width="100%" height="100%"
+														  paddingBottom="3" verticalAlign="middle">
+													<s:RadioButton id="L402_22_01" width="58"
+																   label="无" buttonMode="true"
+																   click="L402_23.selectedIndex=0"
+																   groupName="rxa" selected="true"/>
+													<s:RadioButton id="L402_22_02" label="有"
+																   buttonMode="true" groupName="rxa"/>
+												</s:HGroup>
+												<s:Label text="患病家属与自己的关系"/><s:DropDownList id="L402_23"
+																							width="130"
+																							enabled="{L402_22_02.selected}"/>
+											</s:HGroup>
+											<s:HGroup width="100%" height="100%" paddingBottom="5"
+													  verticalAlign="middle">
+												<s:Label text="是否有家族卵巢癌"/>
+												<s:HGroup width="100%" height="100%"
+														  paddingBottom="3" verticalAlign="middle">
+													<s:RadioButton id="L402_24_01" width="58"
+																   label="无" buttonMode="true"
+																   click="L402_25.selectedIndex=0"
+																   groupName="lc" selected="true"/>
+													<s:RadioButton id="L402_24_02" label="有"
+																   buttonMode="true" groupName="lc"/>
+												</s:HGroup>
+												<s:Label text="患病家属与自己的关系"/><s:DropDownList id="L402_25"
+																							width="130"
+																							enabled="{L402_24_02.selected}"/>
+											</s:HGroup>
+										</s:VGroup>
+									</s:NavigatorContent>
+								</mx:TabNavigator>
+								<fngjeda:gjajcdj id="check1" width="1200" chromeColor="#ffffff"
+												 creationComplete="bsCompleteHandler(event)"
+												 creationPolicy="all"/>
+								<s:HGroup width="1200" height="30" contentBackgroundColor="#FF0000"
+										  horizontalAlign="center" paddingBottom="20"
+										  paddingLeft="10" paddingTop="10" verticalAlign="middle">
+									<s:Button id="saveBs" label="保存" buttonMode="true"
+											  click="savebs()"/>
+								</s:HGroup>
+							</s:VGroup>
+						</s:Scroller>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（二）乳腺触诊"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="乳腺触诊">
+						<s:Scroller includeIn="rxcz" width="100%" height="100%"
+									horizontalScrollPolicy="auto" itemDestructionPolicy="auto"
+									verticalScrollPolicy="auto">
+							<s:VGroup paddingLeft="5">
+								<mx:TabNavigator width="1250" chromeColor="#ffffff"
+												 creationPolicy="all" paddingBottom="0">
+									<s:NavigatorContent width="100%" label="乳腺触诊">
+										<s:HGroup width="100%" height="100%" gap="0">
+											<s:VGroup width="50%" height="100%">
+												<s:HGroup width="100%" horizontalAlign="center"
+														  verticalAlign="middle">
+													<s:Label fontSize="14" fontWeight="bold"
+															 text="左 乳"/>
+												</s:HGroup>
+												<mx:Grid height="273">
+													<mx:GridRow height="23" borderVisible="true"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="症状"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="6">
+															<s:RadioButton id="L402_26_01" label="无"
+																		   buttonMode="true"
+																		   click="L402_26_01_clickHandler(event)"
+																		   groupName="rxzzwu"
+																		   selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													
+													<mx:GridRow id="zrxczzzygrid1" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem> 
+															<s:RadioButton id="L402_26_02" label="有"
+																		   buttonMode="true"
+																		   groupName="rxzzwu"/>
+														</mx:GridItem>
+														<mx:GridItem id="L402_27_1">
+															<s:CheckBox id="L402_27_01" label="乳腺疼痛"
+																		buttonMode="true" automationName="1"
+																		enabled="{L402_26_02.selected}"
+																		change="L402_27_02_changeHandler(event,[L402_28_01,L402_28_02])"
+																		/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_28_01" label="周期性"
+																		   buttonMode="true"
+																		   enabled="{L402_27_01.selected}"
+																		   groupName="rxzqx"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="3">
+															<s:RadioButton id="L402_28_02" label="非周期性"
+																		   buttonMode="true"
+																		   enabled="{L402_27_01.selected}"
+																		   groupName="rxzqx"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczzzygrid2" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem>
+														</mx:GridItem>
+														<mx:GridItem id="L402_27_2">
+															<s:CheckBox id="L402_27_02" label="乳头溢液"
+																		buttonMode="true"  automationName="2"
+																		enabled="{L402_26_02.selected}"
+																		change="L402_27_02_changeHandler(event,zrxczzzygrid2)"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_29_01" label="血性"
+																		   buttonMode="true"
+																		   enabled="{L402_27_02.selected}"
+																		   groupName="rxrtyy"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_29_02" label="浆液性"
+																		   buttonMode="true"
+																		   enabled="{L402_27_02.selected}"
+																		   groupName="rxrtyy"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_29_03" label="其它"
+																		   buttonMode="true"
+																		   enabled="{L402_27_02.selected}"
+																		   groupName="rxrtyy"/>
+														</mx:GridItem>
+														<mx:GridItem visible="false">
+															<s:Label paddingTop="5" text="其它"/><s:TextInput width="130"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow  height="23" paddingLeft="10" >
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="体征"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="6" id="zrtz1">
+															<s:CheckBox id="L402_30_01" label="未见异常"
+																		buttonMode="true" automationName="1"
+																		change="changeHandler(event,[L402_30_01,zrtz2,zrtz3,zrtz4,zrtz5,zrtz6,L402_31,L402_32,L402_33])"
+																		selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="zrtz2">
+															<s:CheckBox id="L402_30_02" label="乳房肿块或团块"
+																		buttonMode="true" automationName="2"
+																		change="changeHandler(event,L402_30_01)"
+																		/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:Label width="39" paddingTop="5" text="最大径"/>
+															<s:BorderContainer width="130" height="22"
+																			   enabled="{L402_30_02.selected}">
+																<s:TextInput id="L402_31" visible="true"
+																			 width="100" height="20"
+																			 borderColor="#FFFFFF"/>
+																<s:Label x="105" y="5" text="CM"/>
+															</s:BorderContainer>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="zrtz3">
+															<s:CheckBox id="L402_30_03" label="不对称性增厚或结节"
+																		buttonMode="true" automationName="3"
+																		change="changeHandler(event,L402_30_01)"
+																		/>
+														</mx:GridItem>
+														
+													</mx:GridRow>
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="zrtz4">
+															<s:CheckBox id="L402_30_04" label="皮肤改变"
+																		buttonMode="true" automationName="4"
+																		change="changeHandler(event,L402_30_01)"
+																		/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:Label width="39" paddingTop="5" text="详细"/><s:TextInput id="L402_32"
+																													   width="350"
+																													   enabled="{L402_30_04.selected}"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem colSpan="6" id="zrtz5">
+															<s:CheckBox id="L402_30_05" label="腋淋巴结肿大"
+																		buttonMode="true" automationName="5"
+																		change="changeHandler(event,L402_30_01)"
+																		/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow  height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="zrtz6" >
+															<s:CheckBox id="L402_30_06" label="其它"
+																		buttonMode="true" automationName="9"
+																		change="changeHandler(event,L402_30_01)"
+																		/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:Label width="39" paddingTop="5" text="其它"/>
+															<s:TextInput id="L402_33"  width="350" enabled="{L402_30_06.selected}"/>
+														</mx:GridItem>
+													</mx:GridRow>
+												</mx:Grid>
+											</s:VGroup>
+											<s:VGroup width="50%" height="100%">
+												<s:HGroup width="100%" horizontalAlign="center"
+														  verticalAlign="middle">
+													<s:Label fontSize="14" fontWeight="bold"
+															 text="右 乳"/>
+												</s:HGroup>
+												<mx:Grid height="273">
+													<mx:GridRow height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="症状"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="6">
+															<s:RadioButton id="L402_34_01" label="无"
+																		   buttonMode="true"
+																		   click="L402_34_01_clickHandler(event)"
+																		   groupName="rxzzwu1"
+																		   selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													
+													<mx:GridRow id="yrxczzzygrid1" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_34_02" label="有"
+																		   buttonMode="true"
+																		   groupName="rxzzwu1"/>
+														</mx:GridItem>
+														<mx:GridItem id="L402_35_1">
+															<s:CheckBox id="L402_35_01" label="乳腺疼痛"
+																		buttonMode="true"  automationName="1"
+																		enabled="{L402_34_02.selected}"
+																		change="L402_27_02_changeHandler(event,[L402_36_01,L402_36_02])"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_36_01" label="周期性"
+																		   buttonMode="true"
+																		   enabled="{L402_35_01.selected}"
+																		   groupName="rxzqx1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="3">
+															<s:RadioButton id="L402_36_02" label="非周期性"
+																		   buttonMode="true"
+																		   enabled="{L402_35_01.selected}"
+																		   groupName="rxzqx1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczzzygrid2" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem>
+														</mx:GridItem>
+														<mx:GridItem id="L402_35_2">
+															<s:CheckBox id="L402_35_02" label="乳头溢液"
+																		buttonMode="true"  automationName="2"
+																		enabled="{L402_34_02.selected}"
+																		change="L402_27_02_changeHandler(event,yrxczzzygrid2)"/>
+															
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_37_01" label="血性"
+																		   buttonMode="true"
+																		   enabled="{L402_35_02.selected}"
+																		   groupName="rxrtyy1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_37_02" label="浆液性"
+																		   buttonMode="true"
+																		   enabled="{L402_35_02.selected}"
+																		   groupName="rxrtyy1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_37_03" label="其它"
+																		   buttonMode="true"
+																		   enabled="{L402_35_02.selected}"
+																		   groupName="rxrtyy1"/>
+														</mx:GridItem>
+														<mx:GridItem visible="false">
+															<s:Label paddingTop="5" text="其它"/><s:TextInput width="130"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow height="23" paddingLeft="10" >
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="体征"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="6" id="yrtz1">
+															<s:CheckBox id="L402_38_01" label="未见异常"
+																		buttonMode="true" automationName="1"
+																		change="changeHandler(event,[L402_38_01,yrtz2,yrtz3,yrtz4,yrtz5,yrtz6,L402_39,L402_40,L402_41])"
+																		selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="yrtz2">
+															<s:CheckBox id="L402_38_02" label="乳房肿块或团块"
+																		buttonMode="true" automationName="2"
+																		change="changeHandler(event,L402_38_01)"
+																		/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:Label width="39" paddingTop="5" text="最大径"/>
+															<s:BorderContainer width="130" height="22"
+																			   enabled="{L402_38_02.selected}">
+																<s:TextInput id="L402_39" visible="true"
+																			 width="100" height="20"
+																			 borderColor="#FFFFFF"/>
+																<s:Label x="105" y="5" text="CM"/>
+															</s:BorderContainer>
+														</mx:GridItem>
+													</mx:GridRow >
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="yrtz3">
+															<s:CheckBox id="L402_38_03" label="不对称性增厚或结节"
+																		buttonMode="true" automationName="3"
+																		change="changeHandler(event,L402_38_01)"
+																		/>
+														</mx:GridItem>
+														
+													</mx:GridRow>
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="yrtz4">
+															<s:CheckBox id="L402_38_04" label="皮肤改变"
+																		buttonMode="true" automationName="4"
+																		change="changeHandler(event,L402_38_01)"
+																		/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:Label width="39" paddingTop="5" text="详细"/><s:TextInput id="L402_40"
+																													   width="350"
+																													   enabled="{L402_38_04.selected}"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow   height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem colSpan="6" id="yrtz5">
+															<s:CheckBox id="L402_38_05" label="腋淋巴结肿大"
+																		buttonMode="true" automationName="5"
+																		change="changeHandler(event,L402_38_01)"
+																		/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow  height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem id="yrtz6">
+															<s:CheckBox id="L402_38_06" label="其它"
+																		buttonMode="true" automationName="9"
+																		change="changeHandler(event,L402_38_01)"
+																		/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:Label width="39" paddingTop="5" text="其它"/>
+															<s:TextInput id="L402_41" width="350" enabled="{L402_38_06.selected}"/>
+														</mx:GridItem>
+													</mx:GridRow>
+												</mx:Grid>
+											</s:VGroup>  
+										</s:HGroup>  
+									</s:NavigatorContent>
+								</mx:TabNavigator>
+								<mx:TabNavigator width="1250" chromeColor="#ffffff"
+												 creationPolicy="all">
+									<s:NavigatorContent width="100%" label="临床检查结果">
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  paddingLeft="10" verticalAlign="middle">
+											<s:Label text="临床检查结果:"/>
+											<s:HGroup>
+												<s:RadioButton id="L402_42_01" width="108"
+															   label="1.未见异常" buttonMode="true"
+															   change="CompMethod.hasNumEles([L402_179,L402_180,L402_43])"
+															   groupName="rxjieguo" selected="true"/>
+												<s:RadioButton id="L402_42_02" 
+															   label="2.良性病变" buttonMode="true"
+															   groupName="rxjieguo"
+															   change="CompMethod.hasNumEles(L402_180)"/>
+												<s:HGroup verticalAlign="baseline" id="L402_179" enabled="{L402_42_02.selected}" paddingRight="20">
+													<s:Label text="("/>
+													<s:CheckBox automationName="1" label="左" buttonMode="true" />
+													<s:CheckBox automationName="3" label="右" buttonMode="true" />
+													<s:Label text=")"/>
+												</s:HGroup>
+												<s:RadioButton id="L402_42_03" 
+															   label="3.可疑恶性" buttonMode="true"
+															   groupName="rxjieguo"
+															   change="CompMethod.hasNumEles([L402_179,L402_43])"/>
+												<s:HGroup verticalAlign="baseline" id="L402_180" enabled="{L402_42_03.selected}"  paddingRight="20">
+													<s:Label text="("/>
+													<s:CheckBox automationName="1" label="左" buttonMode="true" />
+													<s:CheckBox automationName="3" label="右" buttonMode="true"/>
+													<s:Label text=")"/>
+												</s:HGroup>
+											</s:HGroup>
+											<s:Label text="良性病变详情:"/><s:TextInput id="L402_43"
+																				  width="350"
+																				  enabled="{L402_42_02.selected}"/>
+										</s:HGroup>
+									</s:NavigatorContent>
+								</mx:TabNavigator>
+								<fngjeda:gjajcdj id="check2" width="1250" chromeColor="#ffffff"
+												 creationComplete="check2._initializeComboBox('2');"
+												 creationPolicy="all"/>
+								<s:HGroup width="1200" height="30" contentBackgroundColor="#FF0000"
+										  horizontalAlign="center" paddingBottom="20"
+										  paddingLeft="10" paddingTop="10" verticalAlign="middle">
+									<s:Button id="saveRxcz" label="保存" buttonMode="true"
+											  click="saverxcz()"/>
+								</s:HGroup>
+							</s:VGroup>
+						</s:Scroller>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="(三）乳腺彩色超声检查"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="乳腺彩色超声检查">
+						<s:Scroller includeIn="rxcc" width="100%" height="100%"
+									horizontalScrollPolicy="auto" itemDestructionPolicy="auto"
+									verticalScrollPolicy="auto">
+							<s:VGroup paddingLeft="5">
+								<mx:TabNavigator width="1250" height="545" chromeColor="#ffffff"
+												 creationPolicy="all">
+									<s:NavigatorContent width="100%" label="超声评估 BI-RADS 分级">
+									<s:VGroup>
+										<s:HGroup width="100%" height="100%">
+											<s:VGroup width="600" height="100%">
+												<s:HGroup width="100%" horizontalAlign="center"
+														  verticalAlign="middle">
+													<s:Label fontSize="14" fontWeight="bold"
+															 text="左 乳"/>
+												</s:HGroup>
+												<mx:Grid height="460" horizontalGap="3">
+													<mx:GridRow width="600" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="囊肿"/>
+														</mx:GridItem>
+														<mx:GridItem width="400" colSpan="7">
+															<s:RadioButton id="L402_47_01" label="无"
+																		   buttonMode="true"
+																		   click="L402_47_01_clickHandler(event)"
+																		   groupName="rxcscsjcnz"
+																		   selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxccnzyGrid1" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem width="82">
+															<s:RadioButton id="L402_47_02" label="有"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcnz"/>
+														</mx:GridItem>
+														<mx:GridItem width="82">
+															<s:RadioButton id="L402_48_01"
+																		   label="单纯囊肿"
+																		   buttonMode="true"
+																		   enabled="{L402_47_02.selected}"
+																		   groupName="rxcscsjcnzdc"/>
+														</mx:GridItem>
+														<mx:GridItem width="300" colSpan="5">
+															<s:RadioButton id="L402_48_02"
+																		   label="复杂囊肿"
+																		   buttonMode="true"
+																		   enabled="{L402_47_02.selected}"
+																		   groupName="rxcscsjcnzdc"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="实性肿块"/>
+														</mx:GridItem>
+														<mx:GridItem width="530" colSpan="7">
+															<s:RadioButton id="L402_49_01" label="无"
+																		   buttonMode="true"
+																		   click="L402_49_01_clickHandler(event)"
+																		   groupName="rxcscsjcsxzk"
+																		   selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzky" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_49_02" label="有"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcsxzk"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_50_01" label="单发"
+																		   buttonMode="true"
+																		   enabled="{L402_49_02.selected}"
+																		   groupName="rxcscsjcnzdc1"/>
+														</mx:GridItem>
+														<mx:GridItem width="339" colSpan="5">
+															<s:RadioButton id="L402_50_02" label="多发"
+																		   buttonMode="true"
+																		   enabled="{L402_49_02.selected}"
+																		   groupName="rxcscsjcnzdc1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkbw" height="23"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem colSpan="7">
+															<s:HGroup width="100%" height="100%"
+																	  enabled="{L402_49_02.selected}"
+																	  verticalAlign="middle">
+																<s:Label text="部位"/><s:TextInput id="L402_51"
+																								 width="150"/>
+																<s:Label width="130" text="象限法（可触及者）"/>
+																<s:DropDownList id="L402_52" width="150" change="L402_52_changeHandler(event,L402_53)"/>
+															</s:HGroup>														
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkdx" height="23"
+																paddingLeft="10">
+														<mx:GridItem/>	
+														<mx:GridItem colSpan="7">
+															<s:HGroup width="100%" height="100%"
+																	  enabled="{L402_49_02.selected}"
+																	  verticalAlign="middle">
+																<s:Label paddingTop="5" text="大小"/>
+																<s:BorderContainer width="150"
+																				   height="22">
+																	<s:TextInput id="L402_54_01"
+																				 visible="true"
+																				 width="41"
+																				 height="20"
+																				 borderColor="#FFFFFF"
+																				 maxChars="4"
+																				 restrict="0-9."/>
+																	<s:Label x="47" y="5" text="mm"/>
+																	<s:Label x="75" y="5" text="X"/>
+																	<s:TextInput id="L402_54_02"
+																				 visible="true"
+																				 x="90" width="30"
+																				 height="20"
+																				 borderColor="#FFFFFF"
+																				 maxChars="4"
+																				 restrict="0-9."/>
+																	<s:Label x="123" y="6" text="mm"/>
+																</s:BorderContainer>
+																
+																<s:Label width="130"
+																		 text="时钟法（不可触及者）"/>
+																<s:TextInput 
+																	id="L402_53" width="150" restrict="0-9\-"
+																			 focusOut="L402_53_changeHandler(event,L402_52)"/>
+																<s:Image width="15"  height="15" buttonMode="true" 
+																		 source="@Embed('images/help.png')"
+																		 toolTip="输入数字，多个数字之间用-分隔，例如2或者2-3 说明：【象限法】和【时钟法】二选其一。"/>
+															</s:HGroup>														
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkxt" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="形态："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_55_01"
+																		   label="椭圆形"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_55_02" label="圆形"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_55_03"
+																		   label="不规则"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="3">
+															<s:RadioButton id="L402_55_04"
+																		   label="分叶状"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkfx" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="方向："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_56_01"
+																		   label="纵横比≥1"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfx"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:RadioButton id="L402_56_02"
+																		   label="纵横比＜1"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfx"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkbj" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="边界："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_57_01" label="锐利"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkbj"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:RadioButton id="L402_57_02"
+																		   label="回声晕环"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkbj"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkby" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="边缘："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_58_01" label="清晰"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkby"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:RadioButton id="L402_58_02"
+																		   label="不清晰"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkby"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzknbhs" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="内部回声："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_59_01" label="低"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_59_02" label="等"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_59_03" label="高"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs"/>
+														</mx:GridItem>
+														
+														<mx:GridItem>
+															<s:RadioButton id="L402_59_06" label="混合"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs"/>
+														</mx:GridItem>
+														
+														<mx:GridItem>
+															<s:RadioButton id="L402_59_04" label="均匀"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_59_05"
+																		   label="不均匀"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkhfhs" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="后方回声："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_60_01"
+																		   label="无变化"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_60_02" label="衰减"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_60_03" label="增强"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="2">
+															<s:RadioButton id="L402_60_04"
+																		   label="侧方声影"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkghz" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="钙化灶："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_61_01" label="无"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkghz"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_61_02" label="粗大"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkghz"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="4">
+															<s:RadioButton id="L402_61_03" label="细小"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkghz"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="zrxczsxzkxl" height="23"
+																enabled="{L402_49_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="血 流："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_62_01" label="无"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxl"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_62_02" label="少许"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxl"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="4">
+															<s:RadioButton id="L402_62_03" label="丰富"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxl"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="其他："/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="7">
+															<s:HGroup width="100%" height="100%"
+																	  verticalAlign="middle">
+																<s:Label text="详情描述"/>
+																<s:TextInput id="L402_63" width="473"
+																			 text="无" maxChars="50"/>
+															</s:HGroup>  
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="分级："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_64_01" label="0级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj"/>
+														</mx:GridItem>
+														<mx:GridItem width="34">
+															<s:RadioButton id="L402_64_02" label="1级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_64_03" label="2级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_64_04" label="3级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_64_05" label="4级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj"/>
+														</mx:GridItem>
+														<mx:GridItem width="57">
+															<s:RadioButton id="L402_64_06" label="5级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj"/>
+														</mx:GridItem>
+													</mx:GridRow>
+												</mx:Grid>
+											</s:VGroup>
+											<s:VGroup width="50%" height="100%">
+												<s:HGroup width="100%" horizontalAlign="center"
+														  verticalAlign="middle">
+													<s:Label fontSize="14" fontWeight="bold"
+															 text="右 乳"/>
+												</s:HGroup>
+												<mx:Grid height="460" horizontalGap="3">
+													<mx:GridRow width="600" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="囊肿"/>
+														</mx:GridItem>
+														<mx:GridItem width="400" colSpan="7">
+															<s:RadioButton id="L402_65_01" label="无"
+																		   buttonMode="true"
+																		   click="L402_65_01_clickHandler(event)"
+																		   groupName="rxcscsjcnz1"
+																		   selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxccnzyGrid1" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem width="82">
+															<s:RadioButton id="L402_65_02" label="有"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcnz1"/>
+														</mx:GridItem>
+														<mx:GridItem width="82">
+															<s:RadioButton id="L402_66_01"
+																		   label="单纯囊肿"
+																		   buttonMode="true"
+																		   enabled="{L402_65_02.selected}"
+																		   groupName="rxcscsjcnydc1"/>
+														</mx:GridItem>
+														<mx:GridItem width="300" colSpan="5">
+															<s:RadioButton id="L402_66_02"
+																		   label="复杂囊肿"
+																		   buttonMode="true"
+																		   enabled="{L402_65_02.selected}"
+																		   groupName="rxcscsjcnydc1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="实性肿块"/>
+														</mx:GridItem>
+														<mx:GridItem width="530" colSpan="7">
+															<s:RadioButton id="L402_67_01" label="无"
+																		   buttonMode="true"
+																		   click="L402_67_01_clickHandler(event)"
+																		   groupName="rxcscsjcsxzk1"
+																		   selected="true"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzky" height="23"
+																paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_67_02" label="有"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcsxzk1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_68_01" label="单发"
+																		   buttonMode="true"
+																		   enabled="{L402_67_02.selected}"
+																		   groupName="rxcscsjcnyf1"/>
+														</mx:GridItem>
+														<mx:GridItem width="339" colSpan="5">
+															<s:RadioButton id="L402_68_02" label="多发"
+																		   buttonMode="true"
+																		   enabled="{L402_67_02.selected}"
+																		   groupName="rxcscsjcnyf1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkbw" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem colSpan="7">
+															<s:HGroup width="100%" height="100%"
+																	  verticalAlign="middle">
+																<s:Label text="部位"/><s:TextInput id="L402_69"
+																								 width="150"/>
+																<s:Label width="130" text="象限法（可触及者）"/>
+																<s:DropDownList id="L402_70" width="150" change="L402_52_changeHandler(event,L402_71)"/>
+															</s:HGroup>														
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkdx" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>	
+														<mx:GridItem colSpan="7">
+															<s:HGroup width="100%" height="100%"
+																	  verticalAlign="middle">
+																<s:Label paddingTop="5" text="大小"/>
+																<s:BorderContainer width="150"
+																				   height="22">
+																	<s:TextInput id="L402_72_01"
+																				 visible="true"
+																				 width="41"
+																				 height="20"
+																				 borderColor="#FFFFFF"
+																				 maxChars="4"
+																				 restrict="0-9."/>
+																	<s:Label x="47" y="5" text="mm"/>
+																	<s:Label x="75" y="5" text="X"/>
+																	<s:TextInput id="L402_72_02"
+																				 visible="true"
+																				 x="90" width="30"
+																				 height="20"
+																				 borderColor="#FFFFFF"
+																				 maxChars="4"
+																				 restrict="0-9."/>
+																	<s:Label x="123" y="6" text="mm"/>
+																</s:BorderContainer>
+																
+																<s:Label width="130"
+																		 text="时钟法（不可触及者）"/>
+																<s:TextInput  restrict="0-9\-" id="L402_71"
+																							width="150" focusOut="L402_53_changeHandler(event,L402_70)"/>
+																<s:Image width="15"  height="15" buttonMode="true" 
+																		 source="@Embed('images/help.png')"
+																		 toolTip="输入数字，多个数字之间用-分隔，例如2或者2-3 说明：【象限法】和【时钟法】二选其一。"/>
+															</s:HGroup>														
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkxt" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="形态："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_73_01"
+																		   label="椭圆形"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_73_02" label="圆形"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_73_03"
+																		   label="不规则"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="3">
+															<s:RadioButton id="L402_73_04"
+																		   label="分叶状"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxt1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkfx" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="方向："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_74_01"
+																		   label="纵横比≥1"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfx1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="3">
+															<s:RadioButton id="L402_74_02"
+																		   label="纵横比＜1"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfx1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkbj" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="边界："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_75_01" label="锐利"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkbj1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:RadioButton id="L402_75_02"
+																		   label="回声晕环"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkbj1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkby" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="边缘："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_76_01" label="清晰"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkby1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="5">
+															<s:RadioButton id="L402_76_02"
+																		   label="不清晰"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkby1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzknbhs" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="内部回声："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_77_01" label="低"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_77_02" label="等"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_77_03" label="高"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_77_06" label="混合"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_77_04" label="均匀"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_77_05"
+																		   label="不均匀"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzknbhs1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkhfhs" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="后方回声："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_78_01"
+																		   label="无变化"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_78_02" label="衰减"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_78_03" label="增强"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="3">
+															<s:RadioButton id="L402_78_04"
+																		   label="侧方声影"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkhfhs1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkghz" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="钙化灶："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_79_01" label="无"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkghz1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_79_02" label="粗大"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkghz1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="4">
+															<s:RadioButton id="L402_79_03" label="细小"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkghz1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow id="yrxczsxzkxl" height="23"
+																enabled="{L402_67_02.selected}"
+																paddingLeft="10">
+														<mx:GridItem/>
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="血 流："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_80_01" label="无"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxl1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_80_02" label="少许"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxl1"/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="4">
+															<s:RadioButton id="L402_80_03" label="丰富"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkxl1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="其他："/>
+														</mx:GridItem>
+														<mx:GridItem colSpan="7">
+															<s:HGroup width="100%" height="100%"
+																	  verticalAlign="middle">
+																<s:Label text="详情描述"/>
+																<s:TextInput id="L402_81" width="473" maxChars="50"
+																			 text="无"/>
+															</s:HGroup>  
+														</mx:GridItem>
+													</mx:GridRow>
+													<mx:GridRow height="23" paddingLeft="10">
+														<mx:GridItem verticalAlign="middle">
+															<s:Label text="分级："/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_82_01" label="0级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj1"/>
+														</mx:GridItem>
+														<mx:GridItem width="34">
+															<s:RadioButton id="L402_82_02" label="1级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_82_03" label="2级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_82_04" label="3级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj1"/>
+														</mx:GridItem>
+														<mx:GridItem>
+															<s:RadioButton id="L402_82_05" label="4级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj1"/>
+														</mx:GridItem>
+														<mx:GridItem width="57">
+															<s:RadioButton id="L402_82_06" label="5级"
+																		   buttonMode="true"
+																		   groupName="rxcscsjcxxzkfj1"/>
+														</mx:GridItem>
+													</mx:GridRow>
+												</mx:Grid>
+											</s:VGroup>
+										</s:HGroup>
+										<s:HGroup  width="100%" height="100%" paddingBottom="5">
+											
+											<s:Label width="118" text="图片上传" paddingTop="5" paddingLeft="10"/>	
+											<s:HGroup width="100%" paddingBottom="3"
+													  verticalAlign="middle">
+												<s:Button  buttonMode="true" label="上传" click="uploadPic('2',3,6)" enabled="{resL402.l402152!='1'}"/>
+												<s:Button  buttonMode="true" label="图片标准文件下载" click="CompMethod.downLoadFiles('upload/la/gjrxPic.pptx','两癌图片上传要求')"/>
+												<s:Label   text="信息已经质控，无法上传图片信息！" paddingTop="5" paddingLeft="10" visible="{resL402.l402152=='1'}"/>	
+											</s:HGroup>
+											
+										</s:HGroup> 
+									</s:VGroup>
+									</s:NavigatorContent>
+								</mx:TabNavigator>
+								<fngjeda:gjajcdj id="check3" width="1250" chromeColor="#ffffff"
+												 creationComplete="check3._initializeComboBox('2');"
+												 
+												 creationPolicy="all"/>
+								<s:HGroup width="1200" height="30" contentBackgroundColor="#FF0000"
+										  horizontalAlign="center" paddingBottom="20"
+										  paddingLeft="10" paddingTop="10" verticalAlign="middle">
+									<s:Button id="saveRxcc" label="保存" buttonMode="true"
+											  click="saverxcc()"/>
+								</s:HGroup>
+							</s:VGroup>
+						</s:Scroller>
+					</s:NavigatorContent>
+				
+					<s:NavigatorContent width="100%" height="100%" label="（四）初筛临床建议"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="初筛临床建议">
+						
+							<fnrxa:rxacsjy includeIn="csjy" itemDestructionPolicy="auto"
+											  paddingLeft="5"  state="1" l402="{resL402}"
+										 
+										   saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+
+						
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（五）乳腺X线检查"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="乳腺X线检查">
+						<s:Scroller includeIn="rxxx" width="100%" height="100%"
+									horizontalScrollPolicy="auto" itemDestructionPolicy="auto"
+									verticalScrollPolicy="auto">
+							<fnrxa:rxxx  paddingLeft="5"  state="1" l402="{resL402}"
+										   saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+						</s:Scroller>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（六）乳腺X线临床建议"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="乳腺X线临床建议">
+						<fnrxa:rxaxxjy paddingLeft="5" state="1" l402="{resL402}"
+									   itemDestructionPolicy="auto" includeIn="xxjy"
+									   saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+						
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（七）最终随访结果"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="最终随访结果">
+						<s:Scroller includeIn="rxsf" width="100%" height="100%"
+									horizontalScrollPolicy="auto" itemDestructionPolicy="auto"
+									verticalScrollPolicy="auto">
+							<fnrxa:rxsf
+								paddingLeft="5"  state="1" l402="{resL402}"
+								saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+						</s:Scroller>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin = "com.xyw.sys.custom.skin.*"
+			   title="换发信息确认" horizontalCenter="0" verticalCenter="0" backgroundColor="white"
+			   chromeColor="#5CACEE" close = "removeWindow()" cornerRadius="5"
+			   width="550" height="590" creationComplete="init()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<s:RemoteObject id="birthService" destination="birthService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="validateStockCertiticate" result="validateStockCertiticateHandler(event)"/>
+			<s:method name="renewBirthCertificate" result="renewBirthCertificateHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemParametersService" destination="systemParametersService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryById" result="queryByIdHandler(event)" />
+			<s:method name="queryById2" result="queryByIdHandler2(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		.myLabel
+		{
+			fontStyle:normal;
+			fontWeight:bold;
+			color:#A020F0;
+			fontFamily:微软雅黑;
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D301;
+			import com.xyw.module.csyxzm.model.VBirthInfo;
+			import com.xyw.module.csyxzm.model.QueryBirthRequest;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.managers.PopUpManager;
+			import mx.printing.FlexPrintJob;
+			import mx.printing.FlexPrintJobScaleType;
+			import mx.rpc.events.ResultEvent;
+			import com.xyw.sys.model.SystemUser;
+			
+			public var inter:int=0;
+			public var d301:D301 = null;
+			public var vBirthInfo:VBirthInfo = null;
+			public var systemUser:SystemUser = null;
+			
+			private function init():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//检查打印权限
+				if(this.systemUser.dayin == "1"){
+					this.save2.enabled = true;
+				}
+				
+				this.d301_02.text = this.d301.d30102;
+				this.d301_03.text = this.vBirthInfo.sex;
+				this.d301_07.text = String(this.d301.d30107);
+				this.d301_47.text = this.d301.d30147;
+				this.d301_04.text = this.vBirthInfo.birth;
+				this.d301_32.text = this.d301.d30132;
+				this.d301_08.text = String(this.d301.d30108);
+				this.d301_09.text = this.vBirthInfo.health;
+				this.d301_10.text = this.d301.d30110;
+				this.d301_29.text = String(this.d301.d30129);
+				this.d301_33.text = this.vBirthInfo.deliverDate;
+				this.d301_25.text = this.d301.d30125;
+				this.d301_05.text = this.vBirthInfo.birthAreaName;
+				this.d301_31.text = this.vBirthInfo.areaName;
+				this.d301_50.text = this.vBirthInfo.reissReason;
+				if(this.d301.d30167 =="1"){
+					/* if(this.d301.d30111 == null)
+					{ */
+						this.d301_11.text = "///";
+						this.d301_34.text = "////";
+						this.d301_12.text = "//////////////////";
+						this.d301_13.text = "////////";
+						this.d301_14.text = "//";
+						this.d301_15.text = "//";
+						this.d301_21.text = "//////////////////";
+						this.d301_16.text = this.d301.d30116;
+						this.d301_35.text = this.vBirthInfo.fatherType;
+						this.d301_17.text = this.d301.d30117;
+						this.d301_18.text = DateField.dateToString(this.d301.d30118,"YYYY-MM-DD");
+						this.d301_19.text = this.vBirthInfo.fatherNationality;
+						this.d301_20.text = this.vBirthInfo.fatherVolk;
+						this.d301_48.text = this.vBirthInfo.familyFaAddress;
+					/* } */
+				}else if(this.d301.d30167 =="2"){
+					/* if(this.d301.d30116 == null)
+					{ */
+						this.d301_16.text = "///";
+						this.d301_35.text = "////";
+						this.d301_17.text = "//////////////////";
+						this.d301_18.text = "////////";
+						this.d301_19.text = "//";
+						this.d301_20.text = "//";
+						this.d301_48.text = "//////////////////";
+						this.d301_11.text = this.d301.d30111;
+						this.d301_34.text = this.vBirthInfo.montherType;
+						this.d301_12.text = this.d301.d30112;
+						this.d301_13.text = DateField.dateToString(this.d301.d30113,"YYYY-MM-DD");
+						this.d301_14.text = this.vBirthInfo.motherNationality;
+						this.d301_15.text = this.vBirthInfo.motherVolk;
+						this.d301_21.text = this.vBirthInfo.familyAddress;
+					/* } */
+				}else{
+					this.d301_11.text = this.d301.d30111;
+					this.d301_34.text = this.vBirthInfo.montherType;
+					this.d301_12.text = this.d301.d30112;
+					this.d301_13.text = DateField.dateToString(this.d301.d30113,"YYYY-MM-DD");
+					this.d301_14.text = this.vBirthInfo.motherNationality;
+					this.d301_15.text = this.vBirthInfo.motherVolk;
+					this.d301_16.text = this.d301.d30116;
+					this.d301_35.text = this.vBirthInfo.fatherType;
+					this.d301_17.text = this.d301.d30117;
+					this.d301_18.text = DateField.dateToString(this.d301.d30118,"YYYY-MM-DD");
+					this.d301_19.text = this.vBirthInfo.fatherNationality;
+					this.d301_20.text = this.vBirthInfo.fatherVolk;
+					this.d301_21.text = this.vBirthInfo.familyAddress;
+					this.d301_48.text = this.vBirthInfo.familyFaAddress;
+				}
+				this.d301_43.text = this.d301.d30143;
+				this.d301_36.text =this.d301.d30136;
+				this.d301_37.text = this.vBirthInfo.relation;
+				this.d301_38.text = this.vBirthInfo.licensType;
+				this.d301_39.text = this.d301.d30139;
+				this.d301_40.text = this.vBirthInfo.licensDate;
+				this.d301_22.text = this.vBirthInfo.birthAreaType;
+				if(this.d301.d30123 == null || this.d301.d30123 == "")
+				{
+					this.d301_23.text = "////////";
+				}else
+				{
+					this.d301_23.text = this.d301.d30123;
+				}
+				this.d301_24.text = this.vBirthInfo.birthIns;
+				this.d301_26.text = this.vBirthInfo.viseIns;
+				this.d301_27.text =this.d301.d30127;
+				this.d301_28.text = this.vBirthInfo.signDate;
+			}
+			
+			private function printD301():void
+			{
+				var flexPrintJob:FlexPrintJob = new FlexPrintJob();
+				flexPrintJob.printAsBitmap = false;
+				if(flexPrintJob.start())
+				{
+					flexPrintJob.addObject(this.data,FlexPrintJobScaleType.NONE);
+					flexPrintJob.send();
+				}
+				
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function renewBirthCertificate():void
+			{
+				this.birthService.renewBirthCertificate(d301);
+			}
+			
+			private function renewBirthCertificateHandler(event:ResultEvent):void
+			{
+				var queryBirthResponse:Object = event.result;
+				if(queryBirthResponse.state) {
+					Alert.show(queryBirthResponse.promptMessage,"系统提示");
+					if(inter==0){
+						this.systemParametersService.queryById("02");
+					}else{
+						this.systemParametersService.queryById2("02");
+					}
+				} else {
+					Alert.show(queryBirthResponse.errorMessage,"系统提示");
+				}
+			}
+			
+			private function queryByIdHandler(event:ResultEvent):void
+			{	
+				var flag:String = event.result as String;
+				var urlRequest:URLRequest = null;
+				if(flag == "1") {
+					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print/printBirthInfo_new.jsp?d30110=" + this.d301.d30110 + "&userCode=" + this.systemUser.userCode);
+				} else if(flag == "0") {
+					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print/printBirthInfo.jsp?d30110=" + this.d301.d30110);
+				}
+				navigateToURL(urlRequest,"_blank");
+				
+				removeWindow();
+			}
+			
+			private function queryByIdHandler2(event:ResultEvent):void
+			{	
+				var flag:String = event.result as String;
+				var urlRequest:URLRequest = null;
+				inter=0;
+				if(flag == "1") {
+					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print_new/PrintDirect/PrintDirect.jsp?d30110=" + this.d301.d30110 + "&userCode=" + this.systemUser.userCode);
+				} else if(flag == "0") {
+					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print_new/PrintDirect/PrintDirect.jsp?d30110=" + this.d301.d30110);
+				}
+				navigateToURL(urlRequest,"_blank");
+				
+				removeWindow();
+			}
+			
+			private function validateStockCertiticate():void{
+				
+				this.save.enabled=false;
+				
+				var queryBirthRequest:QueryBirthRequest = new QueryBirthRequest();
+				queryBirthRequest.d301_10 = this.d301_10.text;
+				queryBirthRequest.d301_26 = this.systemUser.institutionCode;
+				
+				this.birthService.validateStockCertiticate(queryBirthRequest);
+			}
+			
+			//保存及打印专用
+			private function validateStockCertiticate2():void{
+				this.save2.enabled=false;
+				
+				var queryBirthRequest:QueryBirthRequest = new QueryBirthRequest();
+				inter=1;
+				queryBirthRequest.d301_10 = this.d301_10.text;
+				queryBirthRequest.d301_26 = this.systemUser.institutionCode;
+				
+				this.birthService.validateStockCertiticate(queryBirthRequest);
+			}
+			
+			private function validateStockCertiticateHandler(event:ResultEvent):void
+			{
+				var queryBirthResponse:Object = event.result;
+				if(!queryBirthResponse.state)
+				{
+					Alert.show(queryBirthResponse.errorMessage,"系统提示");
+					return;
+				}
+				
+				renewBirthCertificate();
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<s:VGroup width="99%" paddingLeft="7" id="data">
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="分娩信息" width="100%">
+					<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid width="100%">
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="婴儿姓名"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_02" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="性别"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_03" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="出生孕周"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_07" styleName="myLabel"/><s:Label text="周"/>
+									<s:Label id="d301_47" styleName="myLabel"/><s:Label text="天"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>	
+							
+							<mx:GridRow width="100%">	
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="出生日期"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_04" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="病历号"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_32" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="健康状况 "/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_09" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>	
+							
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="体重"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_29" styleName="myLabel"/><s:Label text="g"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="出生证号 "/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_10" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="填表日期"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_33" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="身长"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_08" styleName="myLabel"/><s:Label text="cm"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="接生员"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_25" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="换发原因"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_50" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="出生地"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left" colSpan="3">
+									<s:Label id="d301_05" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="所属地区"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left" colSpan="3">
+									<s:Label id="d301_31" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="家庭信息" width="100%">
+					<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid width="100%">
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="母亲姓名"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_11" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="证件类别"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_34" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="证件号码"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_12" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="出生日期"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_13" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="母亲国籍"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_14" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="母亲民族"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_15" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="母亲地址"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left" colSpan="5">
+									<s:Label id="d301_21" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="父亲姓名"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_16" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="证件类别"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_35" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="证件号码"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_17" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="出生日期"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_18" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="父亲国籍"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_19" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="父亲民族"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_20" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow width="100%">
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="联系方式"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_43" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="父亲地址"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left" colSpan="3">
+									<s:Label id="d301_48" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="领证人信息" width="100%">
+					<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid width="100%">
+							<mx:GridRow width="100%">
+								<mx:GridItem>
+									<s:Label text="领证人"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_36" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="与新生儿关系"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_37" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow width="100%">
+								<mx:GridItem>
+									<s:Label text="证件类别"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_38" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="证件号码"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_39" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="填表日期"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_40" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="签发信息" width="100%">
+					<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid width="100%">
+							<mx:GridRow width="100%">
+								<mx:GridItem>
+									<s:Label text="出生地点分类"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_22" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出生地其他"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" horizontalAlign="left">
+									<s:Label id="d301_23" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="接生机构"/>
+								</mx:GridItem>
+								<mx:GridItem width="16%" colSpan="3" horizontalAlign="left">
+									<s:Label id="d301_24" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow width="100%">
+								<mx:GridItem>
+									<s:Label text="签发人"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_27" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="签发时间"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label id="d301_28" styleName="myLabel"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="签证机构"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left" colSpan="3">
+									<s:Label id="d301_26" styleName="myLabel"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="双方签字" width="100%">
+					<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid width="100%">
+							<mx:GridRow width="100%">
+								<mx:GridItem>
+									<s:Label text="家属签字"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="______________"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="医院签字"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="______________"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="(提示：签字确认后不允许再修改!)"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>
+		
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			
+			<s:Button label="打印确认信息" click="printD301()"/>
+			<s:Button label="保存及打印出生证" id="save" enabled="true" click="validateStockCertiticate()"/>
+			<s:Button label="保存及打印专用" id="save2" enabled="false" click="validateStockCertiticate2()"/>
+			<s:Button label="关闭" click="removeWindow()"/>
+		</s:HGroup>
+		
+	</s:VGroup>
+</s:TitleWindow>

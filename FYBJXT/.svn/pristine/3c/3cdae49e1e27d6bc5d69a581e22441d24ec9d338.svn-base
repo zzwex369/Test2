@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%"
+		  rollOut="overAndUp(event)"
+		  rollOver="overAndUp(event)"
+		  >
+	<fx:Declarations>
+		<s:RemoteObject id="f301Service" destination="f301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF301"  result="queryF301Handler(event)"/>
+		</s:RemoteObject>
+		
+		
+		
+		<s:Parallel target="{vgroupDataGrid}" id="parallel">
+			<!--<s:Resize widthTo="500" duration="1000"/>-->
+			<!--模糊-->
+			<!--<mx:Blur duration="1000" 
+			blurXFrom="10.0" blurXTo="0.0" 
+			blurYFrom="10.0" blurYTo="0.0"/>-->
+			<!--正常-->
+			<!--<mx:Blur duration="1000"
+			blurXFrom="0.0" blurXTo="10.0" 
+			blurYFrom="0.0" blurYTo="10.0"/>-->
+			<s:Resize widthTo="1135"/>
+		</s:Parallel>
+		
+		<mx:DateValidator id="dateValidator"  property="text"
+						  inputFormat="yyyy-mm-dd" 
+						  wrongLengthError="格式错误  正确格式例：2008-01-01"
+						  wrongDayError="天数错误"
+						  wrongMonthError="月份错误"
+						  wrongYearError="年份错误"
+						  invalidCharError="内容无效"
+						  requiredFieldError="内容不能为空"/>
+		
+		
+	</fx:Declarations>
+		<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		mx|ToolTip{
+			
+			fontSize:15;
+			backgroundColor:#000000;
+			color:#FFFFFF;
+			/* leading:12; */
+		}
+		.errorTip
+		{
+			font-size: 15;
+			border-color: red;/* //控制背景色 */
+			color: #fff;
+			font-weight: bold;
+			paddingBottom:1; 
+			cornerRadius:5;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.fnjcdj.gwfxpg;
+			import com.xyw.module.fnbj.model.F301Request;
+			import com.xyw.module.fnbj.model.F308;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			[Bindable]
+			private var systemUser:SystemUser =null;
+			private var f301Request:F301Request;
+			private var vf301:Object;
+			private var f308:F308;
+			[Bindable]
+			private var f308_14:String;
+			public var arrayTip:Array=[null,null,null,null];//保存提示信息  objId:Object,objType:String,errorString:String,tip:ToolTip
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				ToolTipManager.hideDelay = Infinity; //提示持续时间，Infinity表示一直不消失直到鼠标移走
+				ToolTipManager.showDelay = 0; //提示信息到鼠标的距离
+				this.systemUser =this.parentApplication.systemUser;
+				//initializeComboBox();
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vf301 = DataGrid(event.target).selectedItem;
+			}
+			
+			public function gwdjhandle(event:Event):void{
+				if(this.vf301 == null){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+					
+				}else {
+					var window:gwdjTitleWindow = new gwdjTitleWindow();
+					window.vf301 = this.vf301;
+					CompMethod.popUpTitleWindow(window,this);
+					window.addEventListener("save_ok",ref);
+				}
+			}
+			
+			public function ref(event:Event):void{
+				refresh();
+			}
+			
+			protected function readCard_B(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F301_02.text = array[0];//姓名
+							this.F301_05.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			private function queryfnwcdj():void
+			{
+				f301Request=new F301Request();
+				initQueryParam();
+				f301Request.parameterPageindex = 1;
+				f301Request.parameterPagesize = 20;
+				this.f301Service.queryF301(f301Request);
+			}
+			private function initQueryParam():void
+			{
+				f301Request.fromto="gwdj";
+				var type:String = this.jigou.getLastSelectedInstitution();
+				var jigou_:String = this.jigou.getLastSelectedInstitutionCode();
+				
+				f301Request.jigou = (type == "10")?jigou_:jigou_.substring(0,Number(type));
+				//this.currentState="special";
+				f301Request.f30102 =StringUtil.trim(this.F301_02.text);
+				f301Request.f30105 =StringUtil.trim(this.F301_05.text);
+				f301Request.f30113 =StringUtil.trim(this.F301_13.text);
+				
+				if(f301Request.f30102!=""||f301Request.f30105!=""||f301Request.f30113!=""){
+					return;
+				}
+				if(deliveryTime.selected){
+					f301Request.f30131Start=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+					f301Request.f30131End=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+					return;
+				}
+				f301Request.f30149Start=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+				f301Request.f30149End=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+			}
+			
+			protected function _refreshIndex():void
+			{
+				CompMethod._refreshIndex(this,"com/xyw/module/fnbj/fngwdj/index.swf");
+			}
+			protected function overAndUp(event:MouseEvent):void
+			{
+				if(event.type==MouseEvent.ROLL_OVER)
+				{ 
+					if(!arrayTip[3])
+						arrayTip=CompMethod.showTip(arrayTip[0],arrayTip[1],arrayTip[2],arrayTip[3]);
+					if(!this.hasEventListener(Event.ENTER_FRAME))
+						this.addEventListener(Event.ENTER_FRAME,enterFrameHandler); 
+				}else
+				{
+					this.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);			
+					arrayTip[3]=CompMethod.destoryTip(arrayTip[3]);		
+				}
+				
+			}
+			
+			
+			/***************显示删除提示信息*********************/
+			private function enterFrameHandler(event:Event):void
+			{
+				if(arrayTip[3])	
+					arrayTip=CompMethod.showTip(arrayTip[0],arrayTip[1],arrayTip[2],arrayTip[3]);		 
+			}
+			private function queryF301Handler(event:ResultEvent):void{
+				var f301Response:Object = event.result;
+				var rowCount:Number = f301Response.rowCount;
+				if(f301Response.state){
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = f301Response.vf301s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.certificateDataGrid.dataProvider = f301Response.vf301s;
+					this.vf301 = null;
+				}else{
+					Alert.show(f301Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				f301Request=new F301Request();
+				this.initQueryParam();
+				f301Request.parameterPageindex = currentPageIndex;
+				f301Request.parameterPagesize = pageSize;
+				this.f301Service.queryF301(f301Request);
+			}
+			private function refresh():void
+			{
+				f301Request=new F301Request();
+				this.initQueryParam();
+				f301Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				f301Request.parameterPagesize = 20;
+				this.f301Service.queryF301(f301Request);
+			}
+			
+			
+			private function closeHander(event:CloseEvent):void
+			{
+				if(event.detail==1)
+					_refreshIndex();
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal"/>			
+		<s:State name="special"/>
+	</s:states>
+	<s:Scroller x="-6" y="1" width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" includeIn="normal,special">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10" creationComplete="creationCompleteHandler(event)">
+			<mx:TabNavigator  width="1155" chromeColor="#ffffff" creationPolicy="all" height.normal="160" height.special="407">
+				<s:NavigatorContent width="100%" label="孕妇查询" >			
+					<s:VGroup width="1155" paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						
+						
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10"
+								  paddingRight="10" verticalAlign="middle">
+							
+							<s:Label id="lbl" color="#FD0909"
+									 fontSize="16"
+									 text="!  注意：若输入内容，查询不受日期条件限制，有读卡功能的直接读卡就可以查询"/>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="检查机构"/>
+							<component:InstitutionComboBox id="jigou"  width="956" villageVisible="true"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" verticalAlign="middle" paddingBottom="5">
+							<s:Label styleName="mustQuery" text="孕妇档案查询"
+									 paddingLeft.normal="10"
+									 paddingLeft.special="10"/>
+							<s:HGroup id="fmload" verticalAlign="middle">
+								<s:Label text="请输入孕妇姓名" paddingLeft="8"/><s:TextInput id="F301_02"/>
+								<s:Label text="证件号码" /><s:TextInput id="F301_05" width="140"/>
+								<s:Label text="手机号码" /><s:TextInput id="F301_13" width="140" />
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup>
+							
+							<s:HGroup>
+								<s:Label text="检查日期"
+										 paddingLeft.normal="10" paddingTop.normal="5"
+										 paddingLeft.special="10" paddingTop.special="5"/>
+								<s:RadioButton id="deliveryTime" groupName="fm1" label="按建卡日期查询" />
+								<s:RadioButton id="systemTime" groupName="fm1" label="按录入日期查询" width="115" selected="true"/>
+								
+								<component:CustomRangeDateField  id="timeStart" width="120" isSelectNow="true"
+																 isQuerySysDate="false" getRangesDate="{timeEnd.disabledRanges}" />
+								
+								<s:Label text="至"
+										 paddingTop.normal="5"
+										 paddingTop.special="5"/>
+								<component:CustomRangeDateField  id="timeEnd" width="120" isSelectNow="true" 	  />
+								<s:Button buttonMode="true" click="queryfnwcdj()" label="查询"/>	
+								<s:Button buttonMode="true" label="读卡" id="duka1" enabled="{systemUser.duka=='1'}" width="60" click="readCard_B(event)"/>
+								<s:Button buttonMode="true" click="gwdjhandle(event)" label="登记高危"/>	
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>		
+			<!--		<s:HGroup width="100%" height="100%" verticalAlign="middle" paddingBottom="5">
+			<s:Label text="孕妇档案查询" styleName="mustQuery"/>
+			<s:HGroup id="fmload" verticalAlign="middle">
+			<s:Label text="请输入孕妇姓名" paddingLeft="8"/><s:TextInput id="F301_02"/>
+			<s:Label text="证件号码" /><s:TextInput id="F301_05" width="140"/>
+			<s:Label text="手机号码" /><s:TextInput id="F301_13" width="140" />
+			<s:Button buttonMode="true" click="queryfnwcdj()" label="查询"/>	
+			<s:Button buttonMode="true" label="读卡" id="duka1" enabled="{systemUser.duka =='1'}" width="60" click="readCard_B(event)"/>-->
+			
+			
+			<s:VGroup id="vgroupDataGrid" width="500" height="100%" includeIn="normal"
+					  creationCompleteEffect="{parallel}" itemDestructionPolicy="auto"
+					  paddingRight="5"
+					  width.normal="1155">
+				<s:DataGrid id="certificateDataGrid" width="100%" height="198"
+							alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="false"
+							rowHeight="22" selectionChange="onSelected(event)"
+							width.normal="1155" height.normal="352">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+							<s:GridColumn width="100" dataField="f30102" headerText="妇女姓名"/>
+							<s:GridColumn width="150" dataField="f30105" headerText="妇女身份证号"/>
+							<s:GridColumn width="80" dataField="f30106Str" headerText="出生日期"/>
+							<s:GridColumn width="50" dataField="f30116Zh" headerText="血型"/>
+							<s:GridColumn width="80" dataField="f30112Zh" headerText="婚姻状况"/>
+							<s:GridColumn width="100" dataField="f30113" headerText="联系方式"/>
+							<s:GridColumn width="150" dataField="f30117" headerText="保健卡号"/>
+							<s:GridColumn width="80" dataField="f30131Str" headerText="建卡日期"/>
+							<s:GridColumn dataField="f30132Zh" headerText="建卡单位"/>
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>					
+				<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+			</s:VGroup>
+			
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

@@ -1,0 +1,819 @@
+package com.xyw.medical.etbj.etsl.model;
+
+import java.util.Date;
+
+/**
+ * VE702 entity. @author MyEclipse Persistence Tools
+ */
+
+public class VE702 implements java.io.Serializable {
+
+	// Fields
+
+	private String e70101;
+	private String e70102;
+	private String e70103;
+	private String e70104;
+	private String e70105;
+	private String e70106;
+	private String e70107;
+	private String e70108;
+	private Date e70109;
+	private String e70110;
+	private String e70111;
+	private String e70112;
+	private String e70113;
+	private String e70114;
+	private String e70115;
+	private String e70116;
+	private String e70117;
+	private String e70118;
+	private String e70119;
+	private String e70120;
+	private String e70121;
+	private String e70122;
+	private String e70123;
+	private String e70130;
+	private String e70131;
+	private String e70132;
+	private Date e70133;
+	private String e70134;
+	private String e70135;
+	private String e70201;
+	private String e70202;
+	private String e70203;
+	private String e70204;
+	private String e70205;
+	private String e70206;
+	private String e70207;
+	private String e70208;
+	private String e70209;
+	private String e70210;
+	private String e70211;
+	private String e70212;
+	private String e70213;
+	private String e70214;
+	private String e70215;
+	private String e70216;
+	private String e70217;
+	private String e70218;
+	private String e70219;
+	private String e70220;
+	private String e70221;
+	private String e70222;
+	private String e70223;
+	private String e70224;
+	private String e70225;
+	private String e70226;
+	private String e70227;
+	private String e70228;
+	private String e70229;
+	private String e70230;
+	private String e70231;
+	private String e70232;
+	private String e70233;
+	private String e70234;
+	private String e70235;
+	private String e70236;
+	private String e70237;
+	private String e70238;
+	private String e70239;
+	private String e70240;
+	private String e70241;
+	private String e70242;
+	private String e70243;
+	private String e70244;
+	private String e70245;
+	private String e70246;
+	private String e70247;
+	private String e70248;
+	private String e70249;
+	private String e70250;
+	private String e70251;
+	private String e70252;
+	private String e70253;
+	private String e70254;
+	private String e70255;
+	private String e70256;
+	private String e70257;
+	private String e70258;
+	private String e70259;
+	private String e70260;
+	private String e70261;
+	private String e70262;
+	private String e70263;
+	private String e70264;
+	private String e70265;
+	private String e70266;
+	private Date e70267;
+	private String e70268;
+	private String e70269;
+	private Date e70270;
+	private String e70271;
+	private String e70272;
+	private Date e70273;
+	private String e70316;
+	private Date e70318;
+	private String e70322;
+	private String e70325;
+	private String e70208zh;
+	private String e70209zh;
+	private String e70260zh;
+	private String e70261zh;
+	private String e70268zh;
+	private String e70271zh;
+	private String e70316zh;
+	private String e70322zh;
+	private String e70325zh;
+	public String getE70101() {
+		return e70101;
+	}
+	public void setE70101(String e70101) {
+		this.e70101 = e70101;
+	}
+	public String getE70102() {
+		return e70102;
+	}
+	public void setE70102(String e70102) {
+		this.e70102 = e70102;
+	}
+	public String getE70103() {
+		return e70103;
+	}
+	public void setE70103(String e70103) {
+		this.e70103 = e70103;
+	}
+	public String getE70104() {
+		return e70104;
+	}
+	public void setE70104(String e70104) {
+		this.e70104 = e70104;
+	}
+	public String getE70105() {
+		return e70105;
+	}
+	public void setE70105(String e70105) {
+		this.e70105 = e70105;
+	}
+	public String getE70106() {
+		return e70106;
+	}
+	public void setE70106(String e70106) {
+		this.e70106 = e70106;
+	}
+	public String getE70107() {
+		return e70107;
+	}
+	public void setE70107(String e70107) {
+		this.e70107 = e70107;
+	}
+	public String getE70108() {
+		return e70108;
+	}
+	public void setE70108(String e70108) {
+		this.e70108 = e70108;
+	}
+	public Date getE70109() {
+		return e70109;
+	}
+	public void setE70109(Date e70109) {
+		this.e70109 = e70109;
+	}
+	public String getE70110() {
+		return e70110;
+	}
+	public void setE70110(String e70110) {
+		this.e70110 = e70110;
+	}
+	public String getE70111() {
+		return e70111;
+	}
+	public void setE70111(String e70111) {
+		this.e70111 = e70111;
+	}
+	public String getE70112() {
+		return e70112;
+	}
+	public void setE70112(String e70112) {
+		this.e70112 = e70112;
+	}
+	public String getE70113() {
+		return e70113;
+	}
+	public void setE70113(String e70113) {
+		this.e70113 = e70113;
+	}
+	public String getE70114() {
+		return e70114;
+	}
+	public void setE70114(String e70114) {
+		this.e70114 = e70114;
+	}
+	public String getE70115() {
+		return e70115;
+	}
+	public void setE70115(String e70115) {
+		this.e70115 = e70115;
+	}
+	public String getE70116() {
+		return e70116;
+	}
+	public void setE70116(String e70116) {
+		this.e70116 = e70116;
+	}
+	public String getE70117() {
+		return e70117;
+	}
+	public void setE70117(String e70117) {
+		this.e70117 = e70117;
+	}
+	public String getE70118() {
+		return e70118;
+	}
+	public void setE70118(String e70118) {
+		this.e70118 = e70118;
+	}
+	public String getE70119() {
+		return e70119;
+	}
+	public void setE70119(String e70119) {
+		this.e70119 = e70119;
+	}
+	public String getE70120() {
+		return e70120;
+	}
+	public void setE70120(String e70120) {
+		this.e70120 = e70120;
+	}
+	public String getE70121() {
+		return e70121;
+	}
+	public void setE70121(String e70121) {
+		this.e70121 = e70121;
+	}
+	public String getE70122() {
+		return e70122;
+	}
+	public void setE70122(String e70122) {
+		this.e70122 = e70122;
+	}
+	public String getE70123() {
+		return e70123;
+	}
+	public void setE70123(String e70123) {
+		this.e70123 = e70123;
+	}
+	public String getE70130() {
+		return e70130;
+	}
+	public void setE70130(String e70130) {
+		this.e70130 = e70130;
+	}
+	public String getE70131() {
+		return e70131;
+	}
+	public void setE70131(String e70131) {
+		this.e70131 = e70131;
+	}
+	public String getE70132() {
+		return e70132;
+	}
+	public void setE70132(String e70132) {
+		this.e70132 = e70132;
+	}
+	public Date getE70133() {
+		return e70133;
+	}
+	public void setE70133(Date e70133) {
+		this.e70133 = e70133;
+	}
+	public String getE70134() {
+		return e70134;
+	}
+	public void setE70134(String e70134) {
+		this.e70134 = e70134;
+	}
+	public String getE70135() {
+		return e70135;
+	}
+	public void setE70135(String e70135) {
+		this.e70135 = e70135;
+	}
+	public String getE70201() {
+		return e70201;
+	}
+	public void setE70201(String e70201) {
+		this.e70201 = e70201;
+	}
+	public String getE70202() {
+		return e70202;
+	}
+	public void setE70202(String e70202) {
+		this.e70202 = e70202;
+	}
+	public String getE70203() {
+		return e70203;
+	}
+	public void setE70203(String e70203) {
+		this.e70203 = e70203;
+	}
+	public String getE70204() {
+		return e70204;
+	}
+	public void setE70204(String e70204) {
+		this.e70204 = e70204;
+	}
+	public String getE70205() {
+		return e70205;
+	}
+	public void setE70205(String e70205) {
+		this.e70205 = e70205;
+	}
+	public String getE70206() {
+		return e70206;
+	}
+	public void setE70206(String e70206) {
+		this.e70206 = e70206;
+	}
+	public String getE70207() {
+		return e70207;
+	}
+	public void setE70207(String e70207) {
+		this.e70207 = e70207;
+	}
+	public String getE70208() {
+		return e70208;
+	}
+	public void setE70208(String e70208) {
+		this.e70208 = e70208;
+	}
+	public String getE70209() {
+		return e70209;
+	}
+	public void setE70209(String e70209) {
+		this.e70209 = e70209;
+	}
+	public String getE70210() {
+		return e70210;
+	}
+	public void setE70210(String e70210) {
+		this.e70210 = e70210;
+	}
+	public String getE70211() {
+		return e70211;
+	}
+	public void setE70211(String e70211) {
+		this.e70211 = e70211;
+	}
+	public String getE70212() {
+		return e70212;
+	}
+	public void setE70212(String e70212) {
+		this.e70212 = e70212;
+	}
+	public String getE70213() {
+		return e70213;
+	}
+	public void setE70213(String e70213) {
+		this.e70213 = e70213;
+	}
+	public String getE70214() {
+		return e70214;
+	}
+	public void setE70214(String e70214) {
+		this.e70214 = e70214;
+	}
+	public String getE70215() {
+		return e70215;
+	}
+	public void setE70215(String e70215) {
+		this.e70215 = e70215;
+	}
+	public String getE70216() {
+		return e70216;
+	}
+	public void setE70216(String e70216) {
+		this.e70216 = e70216;
+	}
+	public String getE70217() {
+		return e70217;
+	}
+	public void setE70217(String e70217) {
+		this.e70217 = e70217;
+	}
+	public String getE70218() {
+		return e70218;
+	}
+	public void setE70218(String e70218) {
+		this.e70218 = e70218;
+	}
+	public String getE70219() {
+		return e70219;
+	}
+	public void setE70219(String e70219) {
+		this.e70219 = e70219;
+	}
+	public String getE70220() {
+		return e70220;
+	}
+	public void setE70220(String e70220) {
+		this.e70220 = e70220;
+	}
+	public String getE70221() {
+		return e70221;
+	}
+	public void setE70221(String e70221) {
+		this.e70221 = e70221;
+	}
+	public String getE70222() {
+		return e70222;
+	}
+	public void setE70222(String e70222) {
+		this.e70222 = e70222;
+	}
+	public String getE70223() {
+		return e70223;
+	}
+	public void setE70223(String e70223) {
+		this.e70223 = e70223;
+	}
+	public String getE70224() {
+		return e70224;
+	}
+	public void setE70224(String e70224) {
+		this.e70224 = e70224;
+	}
+	public String getE70225() {
+		return e70225;
+	}
+	public void setE70225(String e70225) {
+		this.e70225 = e70225;
+	}
+	public String getE70226() {
+		return e70226;
+	}
+	public void setE70226(String e70226) {
+		this.e70226 = e70226;
+	}
+	public String getE70227() {
+		return e70227;
+	}
+	public void setE70227(String e70227) {
+		this.e70227 = e70227;
+	}
+	public String getE70228() {
+		return e70228;
+	}
+	public void setE70228(String e70228) {
+		this.e70228 = e70228;
+	}
+	public String getE70229() {
+		return e70229;
+	}
+	public void setE70229(String e70229) {
+		this.e70229 = e70229;
+	}
+	public String getE70230() {
+		return e70230;
+	}
+	public void setE70230(String e70230) {
+		this.e70230 = e70230;
+	}
+	public String getE70231() {
+		return e70231;
+	}
+	public void setE70231(String e70231) {
+		this.e70231 = e70231;
+	}
+	public String getE70232() {
+		return e70232;
+	}
+	public void setE70232(String e70232) {
+		this.e70232 = e70232;
+	}
+	public String getE70233() {
+		return e70233;
+	}
+	public void setE70233(String e70233) {
+		this.e70233 = e70233;
+	}
+	public String getE70234() {
+		return e70234;
+	}
+	public void setE70234(String e70234) {
+		this.e70234 = e70234;
+	}
+	public String getE70235() {
+		return e70235;
+	}
+	public void setE70235(String e70235) {
+		this.e70235 = e70235;
+	}
+	public String getE70236() {
+		return e70236;
+	}
+	public void setE70236(String e70236) {
+		this.e70236 = e70236;
+	}
+	public String getE70237() {
+		return e70237;
+	}
+	public void setE70237(String e70237) {
+		this.e70237 = e70237;
+	}
+	public String getE70238() {
+		return e70238;
+	}
+	public void setE70238(String e70238) {
+		this.e70238 = e70238;
+	}
+	public String getE70239() {
+		return e70239;
+	}
+	public void setE70239(String e70239) {
+		this.e70239 = e70239;
+	}
+	public String getE70240() {
+		return e70240;
+	}
+	public void setE70240(String e70240) {
+		this.e70240 = e70240;
+	}
+	public String getE70241() {
+		return e70241;
+	}
+	public void setE70241(String e70241) {
+		this.e70241 = e70241;
+	}
+	public String getE70242() {
+		return e70242;
+	}
+	public void setE70242(String e70242) {
+		this.e70242 = e70242;
+	}
+	public String getE70243() {
+		return e70243;
+	}
+	public void setE70243(String e70243) {
+		this.e70243 = e70243;
+	}
+	public String getE70244() {
+		return e70244;
+	}
+	public void setE70244(String e70244) {
+		this.e70244 = e70244;
+	}
+	public String getE70245() {
+		return e70245;
+	}
+	public void setE70245(String e70245) {
+		this.e70245 = e70245;
+	}
+	public String getE70246() {
+		return e70246;
+	}
+	public void setE70246(String e70246) {
+		this.e70246 = e70246;
+	}
+	public String getE70247() {
+		return e70247;
+	}
+	public void setE70247(String e70247) {
+		this.e70247 = e70247;
+	}
+	public String getE70248() {
+		return e70248;
+	}
+	public void setE70248(String e70248) {
+		this.e70248 = e70248;
+	}
+	public String getE70249() {
+		return e70249;
+	}
+	public void setE70249(String e70249) {
+		this.e70249 = e70249;
+	}
+	public String getE70250() {
+		return e70250;
+	}
+	public void setE70250(String e70250) {
+		this.e70250 = e70250;
+	}
+	public String getE70251() {
+		return e70251;
+	}
+	public void setE70251(String e70251) {
+		this.e70251 = e70251;
+	}
+	public String getE70252() {
+		return e70252;
+	}
+	public void setE70252(String e70252) {
+		this.e70252 = e70252;
+	}
+	public String getE70253() {
+		return e70253;
+	}
+	public void setE70253(String e70253) {
+		this.e70253 = e70253;
+	}
+	public String getE70254() {
+		return e70254;
+	}
+	public void setE70254(String e70254) {
+		this.e70254 = e70254;
+	}
+	public String getE70255() {
+		return e70255;
+	}
+	public void setE70255(String e70255) {
+		this.e70255 = e70255;
+	}
+	public String getE70256() {
+		return e70256;
+	}
+	public void setE70256(String e70256) {
+		this.e70256 = e70256;
+	}
+	public String getE70257() {
+		return e70257;
+	}
+	public void setE70257(String e70257) {
+		this.e70257 = e70257;
+	}
+	public String getE70258() {
+		return e70258;
+	}
+	public void setE70258(String e70258) {
+		this.e70258 = e70258;
+	}
+	public String getE70259() {
+		return e70259;
+	}
+	public void setE70259(String e70259) {
+		this.e70259 = e70259;
+	}
+	public String getE70260() {
+		return e70260;
+	}
+	public void setE70260(String e70260) {
+		this.e70260 = e70260;
+	}
+	public String getE70261() {
+		return e70261;
+	}
+	public void setE70261(String e70261) {
+		this.e70261 = e70261;
+	}
+	public String getE70262() {
+		return e70262;
+	}
+	public void setE70262(String e70262) {
+		this.e70262 = e70262;
+	}
+	public String getE70263() {
+		return e70263;
+	}
+	public void setE70263(String e70263) {
+		this.e70263 = e70263;
+	}
+	public String getE70264() {
+		return e70264;
+	}
+	public void setE70264(String e70264) {
+		this.e70264 = e70264;
+	}
+	public String getE70265() {
+		return e70265;
+	}
+	public void setE70265(String e70265) {
+		this.e70265 = e70265;
+	}
+	public String getE70266() {
+		return e70266;
+	}
+	public void setE70266(String e70266) {
+		this.e70266 = e70266;
+	}
+	public Date getE70267() {
+		return e70267;
+	}
+	public void setE70267(Date e70267) {
+		this.e70267 = e70267;
+	}
+	public String getE70268() {
+		return e70268;
+	}
+	public void setE70268(String e70268) {
+		this.e70268 = e70268;
+	}
+	public String getE70269() {
+		return e70269;
+	}
+	public void setE70269(String e70269) {
+		this.e70269 = e70269;
+	}
+	public Date getE70270() {
+		return e70270;
+	}
+	public void setE70270(Date e70270) {
+		this.e70270 = e70270;
+	}
+	public String getE70271() {
+		return e70271;
+	}
+	public void setE70271(String e70271) {
+		this.e70271 = e70271;
+	}
+	public String getE70272() {
+		return e70272;
+	}
+	public void setE70272(String e70272) {
+		this.e70272 = e70272;
+	}
+	public Date getE70273() {
+		return e70273;
+	}
+	public void setE70273(Date e70273) {
+		this.e70273 = e70273;
+	}
+	public String getE70208zh() {
+		return e70208zh;
+	}
+	public void setE70208zh(String e70208zh) {
+		this.e70208zh = e70208zh;
+	}
+	public String getE70209zh() {
+		return e70209zh;
+	}
+	public void setE70209zh(String e70209zh) {
+		this.e70209zh = e70209zh;
+	}
+	public String getE70260zh() {
+		return e70260zh;
+	}
+	public void setE70260zh(String e70260zh) {
+		this.e70260zh = e70260zh;
+	}
+	public String getE70261zh() {
+		return e70261zh;
+	}
+	public void setE70261zh(String e70261zh) {
+		this.e70261zh = e70261zh;
+	}
+	public String getE70268zh() {
+		return e70268zh;
+	}
+	public void setE70268zh(String e70268zh) {
+		this.e70268zh = e70268zh;
+	}
+	public String getE70271zh() {
+		return e70271zh;
+	}
+	public void setE70271zh(String e70271zh) {
+		this.e70271zh = e70271zh;
+	}
+	public String getE70316() {
+		return e70316;
+	}
+	public void setE70316(String e70316) {
+		this.e70316 = e70316;
+	}
+	public Date getE70318() {
+		return e70318;
+	}
+	public void setE70318(Date e70318) {
+		this.e70318 = e70318;
+	}
+	public String getE70322() {
+		return e70322;
+	}
+	public void setE70322(String e70322) {
+		this.e70322 = e70322;
+	}
+	public String getE70325() {
+		return e70325;
+	}
+	public void setE70325(String e70325) {
+		this.e70325 = e70325;
+	}
+	public String getE70316zh() {
+		return e70316zh;
+	}
+	public void setE70316zh(String e70316zh) {
+		this.e70316zh = e70316zh;
+	}
+	public String getE70322zh() {
+		return e70322zh;
+	}
+	public void setE70322zh(String e70322zh) {
+		this.e70322zh = e70322zh;
+	}
+	public String getE70325zh() {
+		return e70325zh;
+	}
+	public void setE70325zh(String e70325zh) {
+		this.e70325zh = e70325zh;
+	}
+
+}

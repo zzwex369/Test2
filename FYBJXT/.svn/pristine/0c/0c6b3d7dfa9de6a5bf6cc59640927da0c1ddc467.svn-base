@@ -1,0 +1,299 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+	<!-- Generated Aug 12, 2016 8:48:15 AM by Hibernate Tools 3.4.0.CR1 -->
+<hibernate-mapping>
+	<class name="com.xyw.medical.etbj.model.E305" table="E305">
+		<id name="e30501" type="long">
+			<column name="E305_01" />
+			<generator class="sequence">
+				<param name="sequence">E305_01_SEQ</param>
+			</generator>
+		</id>
+		<property name="e30502" type="java.lang.String">
+			<column name="E305_02" />
+		</property>
+		<property name="e30503" type="java.lang.String">
+			<column name="E305_03" />
+		</property>
+		<property name="e30504" type="java.util.Date">
+			<column name="E305_04" />
+		</property>
+		<property name="e30505" type="java.lang.String">
+			<column name="E305_05" />
+		</property>
+		<property name="e30506" type="java.lang.String">
+			<column name="E305_06" />
+		</property>
+		<property name="e30507" type="java.lang.String">
+			<column name="E305_07" />
+		</property>
+		<property name="e30508" type="java.lang.String">
+			<column name="E305_08" />
+		</property>
+		<property name="e30509" type="java.lang.String">
+			<column name="E305_09" />
+		</property>
+		<property name="e30510" type="java.util.Date">
+			<column name="E305_10" />
+		</property>
+		<property name="e30511" type="java.lang.String">
+			<column name="E305_11" />
+		</property>
+		<property name="e30512" type="java.lang.String">
+			<column name="E305_12" />
+		</property>
+		<property name="e30513" type="java.lang.String">
+			<column name="E305_13" />
+		</property>
+		<property name="e30514" type="java.util.Date">
+			<column name="E305_14" />
+		</property>
+		<property name="e30515" type="java.lang.String">
+			<column name="E305_15" />
+		</property>
+		<property name="e30516" type="java.lang.String">
+			<column name="E305_16" />
+		</property>
+		<property name="e30517" type="java.lang.String">
+			<column name="E305_17" />
+		</property>
+		<property name="e30518" type="java.lang.String">
+			<column name="E305_18" />
+		</property>
+		<property name="e30519" type="java.lang.String">
+			<column name="E305_19" />
+		</property>
+		<property name="e30520" type="java.lang.String">
+			<column name="E305_20" />
+		</property>
+		<property name="e30521" type="java.lang.String">
+			<column name="E305_21" />
+		</property>
+		<property name="e30522" type="java.lang.String">
+			<column name="E305_22" />
+		</property>
+		<property name="e30523" type="java.lang.String">
+			<column name="E305_23" />
+		</property>
+		<property name="e30524" type="java.lang.String">
+			<column name="E305_24" />
+		</property>
+		<property name="e30525" type="java.lang.String">
+			<column name="E305_25" />
+		</property>
+		<property name="e30526" type="java.lang.String">
+			<column name="E305_26" />
+		</property>
+		<property name="e30527" type="java.lang.String">
+			<column name="E305_27" />
+		</property>
+		<property name="e30528" type="java.lang.String">
+			<column name="E305_28" />
+		</property>
+		<property name="e30529" type="java.lang.String">
+			<column name="E305_29" />
+		</property>
+		<property name="e30530" type="java.lang.String">
+			<column name="E305_30" />
+		</property>
+		<property name="e30531" type="java.lang.String">
+			<column name="E305_31" />
+		</property>
+		<property name="e30532" type="java.lang.String">
+			<column name="E305_32" />
+		</property>
+		<property name="e30533" type="java.lang.String">
+			<column name="E305_33" />
+		</property>
+		<property name="e30534" type="java.lang.String">
+			<column name="E305_34" />
+		</property>
+		<property name="e30535" type="java.lang.String">
+			<column name="E305_35" />
+		</property>
+		<property name="e30536" type="java.lang.String">
+			<column name="E305_36" />
+		</property>
+		<property name="e30537" type="java.lang.String">
+			<column name="E305_37" />
+		</property>
+		<property name="e30538" type="java.lang.String">
+			<column name="E305_38" />
+		</property>
+		<property name="e30539" type="java.lang.String">
+			<column name="E305_39" />
+		</property>
+		<property name="e30540" type="java.lang.String">
+			<column name="E305_40" />
+		</property>
+		<property name="e30541" type="java.lang.String">
+			<column name="E305_41" />
+		</property>
+		<property name="e30542" type="java.lang.String">
+			<column name="E305_42" />
+		</property>
+		<property name="e30543" type="java.lang.String">
+			<column name="E305_43" />
+		</property>
+		<property name="e30544" type="java.lang.String">
+			<column name="E305_44" />
+		</property>
+		<property name="e30545" type="java.lang.String">
+			<column name="E305_45" />
+		</property>
+		<property name="e30546" type="java.lang.String">
+			<column name="E305_46" />
+		</property>
+		<property name="e30547" type="java.lang.String">
+			<column name="E305_47" />
+		</property>
+		<property name="e30548" type="java.lang.String">
+			<column name="E305_48" />
+		</property>
+		<property name="e30549" type="java.lang.String">
+			<column name="E305_49" />
+		</property>
+		<property name="e30550" type="java.lang.String">
+			<column name="E305_50" />
+		</property>
+		<property name="e30551" type="java.lang.String">
+			<column name="E305_51" />
+		</property>
+		<property name="e30552" type="java.lang.String">
+			<column name="E305_52" />
+		</property>
+		<property name="e30553" type="java.lang.String">
+			<column name="E305_53" />
+		</property>
+		<property name="e30554" type="java.lang.String">
+			<column name="E305_54" />
+		</property>
+		<property name="e30555" type="java.lang.String">
+			<column name="E305_55" />
+		</property>
+		<property name="e30556" type="java.lang.String">
+			<column name="E305_56" />
+		</property>
+		<property name="e30557" type="java.lang.String">
+			<column name="E305_57" />
+		</property>
+		<property name="e30558" type="java.lang.String">
+			<column name="E305_58" />
+		</property>
+		<property name="e30559" type="java.lang.String">
+			<column name="E305_59" />
+		</property>
+		<property name="e30560" type="java.lang.String">
+			<column name="E305_60" />
+		</property>
+		<property name="e30561" type="java.lang.String">
+			<column name="E305_61" />
+		</property>
+		<property name="e30562" type="java.lang.String">
+			<column name="E305_62" />
+		</property>
+		<property name="e30563" type="java.lang.String">
+			<column name="E305_63" />
+		</property>
+		<property name="e30564" type="java.lang.String">
+			<column name="E305_64" />
+		</property>
+		<property name="e30565" type="java.lang.String">
+			<column name="E305_65" />
+		</property>
+		<property name="e30566" type="java.lang.String">
+			<column name="E305_66" />
+		</property>
+		<property name="e30567" type="java.lang.String">
+			<column name="E305_67" />
+		</property>
+		<property name="e30568" type="java.lang.String">
+			<column name="E305_68" />
+		</property>
+		<property name="e30569" type="java.lang.String">
+			<column name="E305_69" />
+		</property>
+		<property name="e30570" type="java.lang.String">
+			<column name="E305_70" />
+		</property>
+		<property name="e30571" type="java.lang.String">
+			<column name="E305_71" />
+		</property>
+		<property name="e30572" type="java.lang.String">
+			<column name="E305_72" />
+		</property>
+		<property name="e30573" type="java.lang.String">
+			<column name="E305_73" />
+		</property>
+		<property name="e30574" type="java.util.Date">
+			<column name="E305_74" />
+		</property>
+		<property name="e30575" type="java.lang.String">
+			<column name="E305_75" />
+		</property>
+		<property name="e30576" type="java.util.Date">
+			<column name="E305_76" />
+		</property>
+		<property name="e30577" type="java.lang.String">
+			<column name="E305_77" />
+		</property>
+		<property name="e30578" type="long">
+			<column name="E305_78" />
+		</property>
+		<property name="e30579" type="java.lang.String">
+			<column name="E305_79" />
+		</property>
+		<property name="e30580" type="java.lang.String">
+			<column name="E305_80" />
+		</property>
+		<property name="e30581" type="java.lang.String">
+			<column name="E305_81" />
+		</property>
+		<property name="e30582" type="java.lang.String">
+			<column name="E305_82" />
+		</property>
+		<property name="e30583" type="java.lang.String">
+			<column name="E305_83" />
+		</property>
+		<property name="e30584" type="java.lang.String">
+			<column name="E305_84" />
+		</property>
+		<property name="e30585" type="java.lang.String">
+			<column name="E305_85" />
+		</property>
+		<property name="e30586" type="java.lang.String">
+			<column name="E305_86" />
+		</property>
+		<property name="e30587" type="java.lang.String">
+			<column name="E305_87" />
+		</property>
+		<property name="e30588" type="java.lang.String">
+			<column name="E305_88" length="10" />
+		</property>
+		<property name="e30589" type="java.lang.String">
+			<column name="E305_89" length="10" />
+		</property>
+		<property name="e30590" type="java.lang.String">
+			<column name="E305_90" length="200" />
+		</property>
+		<property name="e30591" type="java.lang.String">
+			<column name="E305_91" length="200" />
+		</property>
+		<property name="e30592" type="java.lang.String">
+			<column name="E305_92" length="200" />
+		</property>
+		<property name="e30593" type="java.lang.String">
+			<column name="E305_93" length="200" />
+		</property>
+		<property name="e30594" type="java.lang.String">
+			<column name="E305_94" length="200" />
+		</property>
+		<property name="e30595" type="java.lang.String">
+			<column name="E305_95" length="1" />
+		</property>
+		<property name="e30596" type="java.lang.String">
+			<column name="E305_96" length="1" />
+		</property>
+	</class>
+</hibernate-mapping>

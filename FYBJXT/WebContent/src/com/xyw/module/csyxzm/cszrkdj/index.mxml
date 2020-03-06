@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="certificateRegistService" destination="certificateRegistService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="registCertificate" result="registCertificateHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="certificateApplyService" destination="certificateApplyService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="query" result="queryHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+			cornerRadius:3;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+			cornerRadius:5;
+		}
+		.myLabel
+		{
+			fontStyle:italic;
+			fontWeight:bold;
+			color:#A020F0;
+		}
+		
+		s|Label
+		{
+			fontSize:13;
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D501;
+			import com.xyw.module.csyxzm.model.D501Request;
+			import com.xyw.module.csyxzm.model.D502;
+			import com.xyw.module.csyxzm.model.D502Request;
+			import com.xyw.module.csyxzm.model.D502Response;
+			import com.xyw.module.csyxzm.model.VD501;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flashx.textLayout.events.SelectionEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import spark.events.GridEvent;
+			import spark.events.GridSelectionEvent;
+			import spark.formatters.DateTimeFormatter;
+			
+			public var vd501s:ArrayCollection = null;
+			public var vD501:VD501 = null;
+			public var d502:D502 = null;
+			public var d502Request:D502Request = null;
+			public var systemUser:SystemUser =  null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				systemUser = this.parentApplication.systemUser;
+				this.d502_02.text = systemUser.institution;
+				this.d502_02.enabled = false;
+				this.d502_04.enabled = false;
+				//this.d502_05.enabled = false;
+				this.d502_07.enabled = false;
+				//this.d502_06.addEventListener(Event.CHANGE, onD50206ChangeHandler);
+				this.d502_09.addEventListener(FocusEvent.FOCUS_OUT, onD50209FocusOut);
+				this.d502_10.addEventListener(FocusEvent.FOCUS_OUT, onD50210FocusOut);
+				this.initilizeComboBox();
+				
+				this.certificateApplyDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,selectedHandler);
+			}
+			
+			private function selectedHandler(event:GridSelectionEvent):void
+			{
+				this.vD501 = DataGrid(event.target).selectedItem as VD501;
+				if(this.vD501 != null) {
+					this.d502_09.text = this.vD501.d50107;
+					this.d502_10.text = this.vD501.d50108;
+					this.d502_11.text = this.vD501.d50106;
+					var d502_09_text_num:Number = Number(this.d502_09.text);
+					var d502_10_text_num:Number = Number(this.d502_10.text);
+					this.d502_04.value = d502_10_text_num - d502_09_text_num + 1;
+				}
+			}
+			
+			private function onD50206ChangeHandler(event:Event):void {
+				var value:Number = this.d502_06.value;
+				if(value > 0) {
+					this.d502_05.enabled = true;
+				} else {
+					this.d502_05.enabled = false;
+				}
+			}
+			
+			private function onD50209FocusOut(event:FocusEvent):void
+			{
+				var d502_09_text_num:Number = Number(this.d502_09.text);
+				var d502_10_text_num:Number = Number(this.d502_10.text);
+				this.d502_04.value = d502_10_text_num - d502_09_text_num + 1;
+			}
+			
+			private function onD50210FocusOut(event:FocusEvent):void
+			{
+				var d502_09_text_num:Number = Number(this.d502_09.text);
+				var d502_10_text_num:Number = Number(this.d502_10.text);
+				this.d502_04.value = d502_10_text_num - d502_09_text_num + 1;
+			}
+			
+			private function initilizeComboBox():void
+			{
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t";
+				comboBoxDataRequest.flag = "D101";
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t where t.d101_11 = '" + this.systemUser.institutionCode + "'";
+				comboBoxDataRequest.flag = "D101";
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object = event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101") {
+					this.d502_07.text = this.systemUser.institution;
+					
+				}
+			}
+			
+			private function registValdateCertificate(event:MouseEvent):void
+			{
+				if(this.systemUser.institutionType != "1") {
+					var len:int = this.systemUser.areaCode.length;
+					var lenArea:int = this.area.getAreaCode().length;
+					var prompt:String = "";
+					switch(len) {
+						case 2 :
+							prompt = "所属地区应选到省级!";
+							this.registCertificateButton.enabled = false;
+							break;
+						case 4 :
+							prompt = "所属地区应选到市级!";
+							this.registCertificateButton.enabled = false;
+							break;
+						case 6 :
+							prompt = "所属地区应选到县级!";
+							this.registCertificateButton.enabled = false;
+							break;
+					}
+					if(len != lenArea) {
+						Alert.show(prompt, "系统提示");
+						this.registCertificateButton.enabled = false;
+						return;
+					}
+				}
+				
+				if(this.d502_02.text == null || this.d502_02.text == "") {
+					Alert.show("入库单位不能为空!", "系统提示");
+					this.d502_02.setFocus();
+					this.registCertificateButton.enabled = false;
+					return;
+				}
+				
+				if(this.d502_03.text == null || this.d502_03.text == "") {
+					Alert.show("入库人不能为空!", "系统提示");
+					this.registCertificateButton.enabled = false;
+					this.d502_03.setFocus();
+					return;
+				}
+				
+				if(this.d502_04.value == 0) {
+					Alert.show("入库数量不能为空!", "系统提示");
+					this.registCertificateButton.enabled = false;
+					this.d502_04.setFocus();
+					return;
+				}
+				
+				if(this.d502_07.text == "") {
+					Alert.show("审核单位不能为空!", "系统提示");
+					this.registCertificateButton.enabled = false;
+					this.d502_07.setFocus();
+					return;
+				}
+				
+				if(this.d502_08.text == "" || this.d502_08 == null) {
+					Alert.show("审核人不能为空!", "系统提示");
+					this.registCertificateButton.enabled = false;
+					this.d502_08.setFocus();
+					return;
+				}
+				
+				var reg:RegExp = /^[A-Z]$/;
+				if(!reg.test(this.d502_11.text)) {
+					Alert.show("首字母必须为大写字母", "系统提示");
+					this.registCertificateButton.enabled = false;
+					return;
+				}
+				
+				if(this.d502_09.text == null || this.d502_09.text == "") {
+					Alert.show("起始编号不能为空!", "系统提示");
+					this.registCertificateButton.enabled = false;
+					this.d502_09.setFocus();
+					return;
+				}
+				
+				if(this.d502_10.text == null || this.d502_10.text == "") {
+					Alert.show("终止编号不能为空!", "系统提示");
+					this.registCertificateButton.enabled = false;
+					this.d502_10.setFocus();
+					return;
+				}
+				var d502_09_text_num:Number = Number(this.d502_09.text);
+				var d502_10_text_num:Number = Number(this.d502_10.text);
+				
+				if(d502_10_text_num < d502_09_text_num) {
+					Alert.show("出生证起始编号不能大于出生证终止编号!", "系统提示");
+					return;
+				}
+				
+				var d502_02_text:String = this.systemUser.institutionCode;
+				var d502_03_text:String = this.d502_03.text;
+				var d502_04_text:Number = this.d502_04.value;
+				var d502_05_Date:Date = this.d502_05.selectedDate;
+				var d502_06_value:Number = this.d502_06.value;
+				var d502_07_data:String = this.systemUser.institutionCode;
+				var d502_08_text:String = this.d502_08.text;
+				var d502_09_text:String = this.d502_09.text;
+				var d502_10_text:String = this.d502_10.text;
+				var d502_11_text:String = this.d502_11.text;
+				var d502_12_text:String = this.area.getAreaCode();
+				
+				d502 = new D502();
+				d502.d50202 = d502_02_text;
+				d502.d50203 = d502_03_text;
+				d502.d50204 = d502_04_text;
+				d502.d50205 = d502_05_Date;
+				d502.d50206 = d502_06_value;
+				d502.d50207 = d502_07_data;
+				d502.d50208 = d502_08_text;
+				d502.d50209 = d502_09_text;
+				d502.d50210 = d502_10_text;
+				d502.d50211 = d502_11_text;
+				d502.d50212 = d502_12_text;
+				
+				var window:Confirmation = new Confirmation();
+				window.owner = this;
+				window.d502 = this.d502;
+				window.d502_02_Zh = this.d502_02.text;
+				window.d502_07_Zh = this.systemUser.institution;
+				
+				PopUpManager.addPopUp(window,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+				var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+				window.move(x, y);
+				
+				this.registCertificateButton.enabled = true;
+			}
+			
+			private function registCertificate(event:MouseEvent):void
+			{
+				this.registCertificateButton.enabled = false;
+				d502Request = new D502Request();
+				d502Request.d502 = d502;
+				this.certificateRegistService.registCertificate(d502Request);
+			}
+			
+			private function registCertificateHandler(event:ResultEvent):void
+			{
+				var d502Response:Object = event.result;
+				if(d502Response.errorMessage == null) {
+					Alert.show(d502Response.promptMessage, "系统提示");
+					this.registCertificateButton.enabled = false;
+				} else {
+					Alert.show(d502Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				var d501Request:D501Request = new D501Request();
+				var d501:D501 = new D501();
+				d501.d50102 = this.systemUser.institutionCode;
+				d501.d50114 = "single";
+				d501.d50112 = this.d501_12.selectedDate;
+				d501.d50112_end = this.d501_12_end.selectedDate;
+				
+				var r:int = ObjectUtil.compare(d501.d50112, d501.d50112_end);
+				if(r == 1) {
+					Alert.show("起始日期不能超出终止日期!", "系统提示");
+					return;
+				}
+				d501Request.parameterPageindex = 1;
+				d501Request.parameterPagesize = 20;
+				
+				d501Request.d501 = d501;
+				
+				this.certificateApplyService.query(d501Request);
+			}
+			
+			private function queryHandler(event:ResultEvent):void
+			{
+				var d501Response:Object = event.result;
+				var rowCount:Number = d501Response.rowCount;
+				if(d501Response.errorMessage == null) {
+					vd501s = d501Response.vd501s;
+					this.pagerBar.dataGrid = this.certificateApplyDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.visible = true;
+					this.pagerBar.resultData = vd501s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled =true;
+					}
+				} else {
+					Alert.show(d501Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				var d501Request:D501Request = new D501Request();
+				var d501:D501 = new D501();
+				
+				d501.d50102 = this.systemUser.institutionCode;
+				d501.d50114 = "single";
+				
+				d501.d50112 = this.d501_12.selectedDate;
+				d501.d50112_end = this.d501_12_end.selectedDate;
+				
+				
+				var r:int = ObjectUtil.compare(d501.d50112, d501.d50112_end);
+				if(r == 1) {
+					Alert.show("起始日期不能超出终止日期!", "系统提示");
+					return;
+				}
+				
+				d501Request.parameterPageindex = currentPageIndex;
+				d501Request.parameterPagesize = pageSize;
+				
+				d501Request.d501 = d501;
+				
+				this.certificateApplyService.query(d501Request);
+			}
+			
+			private function detail(event:MouseEvent):void
+			{
+				
+			}
+			
+			private function formatDateToStringD50112(vd501:Object, column:GridColumn):String
+			{
+				var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+				dateTimeFormatter.dateTimePattern = "yyyy-MM-dd";
+				var date_D50112:Date = vd501.d50112;
+				var date_D50112_Text:String = dateTimeFormatter.format(date_D50112);
+				return date_D50112_Text;
+			}			
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller x="11" y="4" width="100%" height="100%" horizontalScrollPolicy="auto"
+					verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+			
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="出生证申领查询" width="100%">
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="发放时间"/><mx:DateField yearNavigationEnabled="true" id="d501_12" width="120" dayNames='["日","一","二","三","四","五","六"]'
+															monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+															formatString="YYYY-MM-DD"/>
+						<s:Label text="至"/><mx:DateField yearNavigationEnabled="true" id="d501_12_end" width="120" dayNames='["日","一","二","三","四","五","六"]'
+														 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														 formatString="YYYY-MM-DD"/>
+						<s:Button label="查询" click="query(event)"/>
+						<!--s:Button id="detailButton" label="详情" click="detail(event)"/-->
+					</s:HGroup>	
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:DataGrid id="certificateApplyDataGrid" editable="true" textAlign="center" rowHeight="22" width="100%" height="230" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">  
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d50101" headerText="主键" visible="false"/>
+						<s:GridColumn dataField="d50102" headerText="申领单位" visible="false"/>
+						<s:GridColumn dataField="d50102Zh" headerText="申领单位"/>
+						<s:GridColumn dataField="d50103" headerText="申领人1"/>
+						<s:GridColumn dataField="d50104" headerText="申领人2"/>
+						<s:GridColumn dataField="d50106" headerText="首字母"/>
+						<s:GridColumn dataField="d50107" headerText="起始编号"/>
+						<s:GridColumn dataField="d50108" headerText="终止编号"/>
+						<s:GridColumn dataField="d50105" headerText="数量"/>
+						<s:GridColumn dataField="d50109" headerText="发放单位" visible="false"/>
+						<s:GridColumn dataField="d50109Zh" headerText="发放单位"/>
+						<s:GridColumn dataField="d50110" headerText="发放人1"/>
+						<s:GridColumn dataField="d50111" headerText="发放人2"/>
+						<s:GridColumn dataField="d50112" headerText="发放时间" editable="false" labelFunction="formatDateToStringD50112"/>
+						
+						<s:GridColumn dataField="d50113" headerText="发放地点"/>
+						<s:GridColumn dataField="d50114" headerText="县区" visible="false"/>
+						<s:GridColumn dataField="d50114Zh" headerText="县区"/>
+						<s:GridColumn dataField="d50115" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50116" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50117" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50118" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50119" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50120" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50121" headerText="备注" visible="false"/>
+						
+						<s:GridColumn dataField="d50122" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50123" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50124" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50125" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50126" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50127" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50128" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50129" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50130" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50131" headerText="备注" visible="false"/>
+						
+						<s:GridColumn dataField="d50132" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50133" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50134" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50135" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50136" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50137" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50138" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50139" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50140" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50141" headerText="备注" visible="false"/>
+						
+						<s:GridColumn dataField="d50142" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50143" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50144" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50145" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50146" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50147" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50148" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50149" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50150" headerText="备注" visible="false"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+			<s:Label text="输入登记信息前，请先选择操作的行！" color="red" fontSize="20"/>
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="出生证入库登记" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem colSpan="5">
+									<s:Label text="所属地区"/><component:AreaComboBox id="area" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="入库单位"/><s:TextInput id="d502_02"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="入库人"/><s:TextInput id="d502_03"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="首字母"/><s:TextInput id="d502_11" enabled="false"/>
+									
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="起始编号"/><s:TextInput id="d502_09" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="终止编号"/><s:TextInput id="d502_10" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="审核单位"/><s:TextInput id="d502_07" width="130"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="审核人"/><s:TextInput id="d502_08"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="入库数"/><s:NumericStepper id="d502_04" minimum="1" maximum="100000000" width="128"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="库存数量"/><s:NumericStepper id="d502_06" minimum="0" maximum="100000000" width="128"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="库存时间"/><mx:DateField id="d502_05" selectedDate="{new Date()}" yearNavigationEnabled="true" width="128" dayNames='["日","一","二","三","四","五","六"]'
+																		monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																		formatString="YYYY-MM-DD"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>	
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="520" width="100%" height="30">
+				<s:Button label="确定" id="registValdateCertificateButton" click="registValdateCertificate(event)"/>
+				<s:Button label="确定入库" id="registCertificateButton" enabled="false" click="registCertificate(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

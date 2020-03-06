@@ -1,0 +1,260 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.xyw.medical.birth.model.D502" table="D502">
+        <comment>&#179;&#246;&#201;&#250;&#214;&#164;&#200;&#235;&#191;&#226;&#181;&#199;&#188;&#199;</comment>
+        <id name="d50201" type="long">
+            <column name="D502_01" precision="10" scale="0" />
+            <generator class="sequence">
+            	<param name="sequence">D502_01_SEQ</param>
+            </generator>
+        </id>
+        <property name="d50202" type="string">
+            <column name="D502_02" length="14">
+                <comment>&#200;&#235;&#191;&#226;&#181;&#165;&#206;&#187;</comment>
+            </column>
+        </property>
+        <property name="d50203" type="string">
+            <column name="D502_03" length="20">
+                <comment>&#200;&#235;&#191;&#226;&#200;&#203;</comment>
+            </column>
+        </property>
+        <property name="d50204" type="java.lang.Long">
+            <column name="D502_04" precision="10" scale="0">
+                <comment>&#200;&#235;&#191;&#226;&#202;&#253;&#193;&#191;</comment>
+            </column>
+        </property>
+        <property name="d50205" type="date">
+            <column name="D502_05" length="7">
+                <comment>&#200;&#235;&#191;&#226;&#202;&#177;&#188;&#228;</comment>
+            </column>
+        </property>
+        <property name="d50206" type="java.lang.Long">
+            <column name="D502_06" precision="10" scale="0">
+                <comment>&#212;&#173;&#191;&#226;&#180;&#230;&#202;&#253;</comment>
+            </column>
+        </property>
+        <property name="d50207" type="string">
+            <column name="D502_07" length="14">
+                <comment>&#201;&#243;&#186;&#203;&#200;&#203;&#181;&#165;&#206;&#187;</comment>
+            </column>
+        </property>
+        <property name="d50208" type="string">
+            <column name="D502_08" length="20">
+                <comment>&#201;&#243;&#197;&#250;&#200;&#203;</comment>
+            </column>
+        </property>
+        <property name="d50209" type="string">
+            <column name="D502_09" length="20">
+                <comment>&#179;&#246;&#201;&#250;&#214;&#164;&#198;&#240;&#202;&#188;&#177;&#224;&#186;&#197;</comment>
+            </column>
+        </property>
+        <property name="d50210" type="string">
+            <column name="D502_10" length="20">
+                <comment>&#179;&#246;&#201;&#250;&#214;&#164;&#214;&#213;&#214;&#185;&#177;&#224;&#186;&#197;</comment>
+            </column>
+        </property>
+        <property name="d50211" type="string">
+            <column name="D502_11" length="10">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50212" type="string">
+            <column name="D502_12" length="12">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50213" type="long">
+            <column name="D502_13" length="10">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50214" type="string">
+            <column name="D502_14" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50215" type="string">
+            <column name="D502_15" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50216" type="string">
+            <column name="D502_16" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50217" type="string">
+            <column name="D502_17" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50218" type="string">
+            <column name="D502_18" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50219" type="string">
+            <column name="D502_19" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50220" type="string">
+            <column name="D502_20" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50221" type="string">
+            <column name="D502_21" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50222" type="string">
+            <column name="D502_22" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50223" type="string">
+            <column name="D502_23" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50224" type="string">
+            <column name="D502_24" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50225" type="string">
+            <column name="D502_25" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50226" type="string">
+            <column name="D502_26" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50227" type="string">
+            <column name="D502_27" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50228" type="string">
+            <column name="D502_28" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50229" type="string">
+            <column name="D502_29" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50230" type="string">
+            <column name="D502_30" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50231" type="string">
+            <column name="D502_31" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50232" type="string">
+            <column name="D502_32" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50233" type="string">
+            <column name="D502_33" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50234" type="string">
+            <column name="D502_34" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50235" type="string">
+            <column name="D502_35" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50236" type="string">
+            <column name="D502_36" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50237" type="string">
+            <column name="D502_37" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50238" type="string">
+            <column name="D502_38" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50239" type="string">
+            <column name="D502_39" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50240" type="string">
+            <column name="D502_40" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50241" type="string">
+            <column name="D502_41" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50242" type="string">
+            <column name="D502_42" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50243" type="string">
+            <column name="D502_43" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50244" type="string">
+            <column name="D502_44" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50245" type="string">
+            <column name="D502_45" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50246" type="string">
+            <column name="D502_46" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50247" type="string">
+            <column name="D502_47" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50248" type="string">
+            <column name="D502_48" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50249" type="string">
+            <column name="D502_49" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="d50250" type="string">
+            <column name="D502_50" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

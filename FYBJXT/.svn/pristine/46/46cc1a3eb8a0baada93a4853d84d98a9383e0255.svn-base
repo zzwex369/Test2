@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="certificateRegistService" destination="certificateRegistService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="query" result="queryHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+			cornerRadius:3;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+			cornerRadius:5;
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D506;
+			import com.xyw.module.csyxzm.model.D506Request;
+			import com.xyw.module.csyxzm.model.VD506;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.event.RefreshParentWindowDataEvent;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			import spark.events.GridSelectionEvent;
+			import spark.formatters.DateTimeFormatter;
+			
+			[Bindable]
+			public var vd506:VD506 = null;
+			public var systemUser:SystemUser = null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.initilizeComboBox();
+				this.certificateMoveDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE, onSelectionChange);
+			}
+			
+			private function initilizeComboBox():void
+			{
+				
+			}
+
+			private function query(event:MouseEvent):void
+			{
+				
+				var d506Request:D506Request = new D506Request();
+				var d506:D506 = new D506();
+				d506.d506_05 = this.d506_05.text;
+				d506.d506_08 = this.institutionComboBox.getLastSelectedInstitutionCode();
+				d506.d506_09Start = this.d506_09Start.selectedDate;
+				d506.d506_09End = this.d506_09End.selectedDate;
+				d506.d506_03 = this.systemUser.institutionCode;
+				if(d506.d506_09Start != null && d506.d506_09End != null) {
+					var r:int = ObjectUtil.compare(d506.d506_09Start, d506.d506_09End);
+					if(r == 1) {
+						Alert.show("查询起始时间不能大于终止时间!", "系统提示");
+						return;
+					}
+				}
+
+				d506Request.parameterPageindex = 1;
+				d506Request.parameterPagesize = 20;
+				
+				d506Request.d506 = d506;
+				
+				this.certificateRegistService.query(d506Request);
+			}
+			
+			private function queryHandler(event:ResultEvent):void
+			{
+				var d506Response:Object = event.result;
+				var rowCount:Number = d506Response.rowCount;
+				if(d506Response.errorMessage == null) {
+					var vd506s:ArrayCollection = d506Response.vd506s;
+					this.pagerBar.dataGrid = this.certificateMoveDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = vd506s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					} else {
+						Alert.show("暂无数据!", "系统提示");
+					}
+				} else {
+					Alert.show(d506Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				var d506Request:D506Request = new D506Request();
+				var d506:D506 = new D506();
+				d506.d506_05 = this.d506_05.text;
+				d506.d506_08 = this.institutionComboBox.getLastSelectedInstitutionCode();
+				d506.d506_09Start = this.d506_09Start.selectedDate;
+				d506.d506_09End = this.d506_09End.selectedDate;
+				d506.d506_03 = this.systemUser.institutionCode;
+				d506Request.parameterPageindex = currentPageIndex;
+				d506Request.parameterPagesize = pageSize;
+				
+				d506Request.d506 = d506;
+				this.certificateRegistService.query(d506Request);
+			}
+			
+			public function refresh():void
+			{
+				var d506Request:D506Request = new D506Request();
+				var d506:D506 = new D506();
+				d506.d506_05 = this.d506_05.text;
+				d506.d506_08 = this.institutionComboBox.getLastSelectedInstitutionCode();
+				d506.d506_09Start = this.d506_09Start.selectedDate;
+				d506.d506_09End = this.d506_09End.selectedDate;
+				d506Request.d506 = d506;
+				d506Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				d506Request.parameterPagesize = 20;
+				
+				this.certificateRegistService.query(d506Request);
+				
+			}
+			
+			private function formatDateToStringD50609(vd506:Object, column:GridColumn):String
+			{
+				var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+				dateTimeFormatter.dateTimePattern = "yyyy-MM-dd";
+				var columnDataField:String = column.dataField;
+				if("d506_09" == columnDataField) {
+					var date_D506_09:Date = vd506.d506_09;
+					var date_D506_09_Text:String = dateTimeFormatter.format(date_D506_09);
+					return date_D506_09_Text;
+				}
+				return null;
+			}
+			
+			private function onOperationSuccess(event:RefreshParentWindowDataEvent):void
+			{
+				this.refresh();
+			}
+			
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.vd506 = DataGrid(event.target).selectedItem as VD506;
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="出生证调剂查询" width="100%">
+				<s:VGroup width="100%">
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="单位"/><!--s:DropDownList id="d506_02" width="200"/-->
+						<component:InstitutionComboBox id="institutionComboBox"/>
+						<!--s:Label text="首字母"/><s:TextInput width="80" id="d503_11"/-->
+					</s:HGroup>	
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="时间"/><mx:DateField id="d506_09Start" yearNavigationEnabled="true" width="120" dayNames='["日","一","二","三","四","五","六"]'
+														  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														  formatString="YYYY-MM-DD"/>
+						<s:Label text="至"/>
+						<mx:DateField id="d506_09End" yearNavigationEnabled="true" width="120" dayNames='["日","一","二","三","四","五","六"]'
+									  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+									  formatString="YYYY-MM-DD"/>
+						<s:Label text="首字母"/><s:TextInput id="d506_05"/>
+						<s:Button label="查询" click="query(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:DataGrid id="certificateMoveDataGrid" editable="true" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">  
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+					<s:GridColumn dataField="d506_01" headerText="主键" visible="false"/>
+					<s:GridColumn dataField="d506_02" headerText="入库主键" visible="false"/>
+					<s:GridColumn dataField="d506_03" headerText="调剂单位" visible="false"/>
+					<s:GridColumn dataField="d506_03_Zh" headerText="调剂单位"/>
+					<s:GridColumn dataField="d506_04" headerText="调剂人"/>
+					<s:GridColumn dataField="d506_05" headerText="首字母"/>
+					<s:GridColumn dataField="d506_06" headerText="起始编号"/>
+					<s:GridColumn dataField="d506_07" headerText="终止编号"/>
+					<s:GridColumn dataField="d506_08" headerText="原单位" visible="false"/>
+					<s:GridColumn dataField="d506_08_Zh" headerText="原单位"/>
+					<s:GridColumn dataField="d506_09" headerText="调剂时间" editable="false" labelFunction="formatDateToStringD50609"/>
+					<s:GridColumn dataField="d506_10" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_11" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_12" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_13" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_14" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_15" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_16" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_17" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_18" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_19" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d506_20" headerText="备注" visible="false"/>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+		<component:PagerBar id="pagerBar" enabled="false"/>
+	</s:VGroup>
+</s:Module>

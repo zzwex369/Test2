@@ -1,0 +1,1299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  xmlns:fngjeda="com.xyw.module.msss.la.fngjadacx.*"
+		  width="100%" height="100%" creationComplete="init()">
+	<fx:Declarations>
+	
+		<s:RemoteObject id="l302Service" destination="l302Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL302" result="saveL302Handler(event)"/>
+			<s:method name="queryByL302Id" result="queryByL302IdHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l301Service" destination="l301Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryL301" result="queryL301Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:Parallel id="parallel" target="{vgroupDataGrid}">
+			<!--<s:Resize widthTo="500" duration="1000"/>-->
+			<!--模糊-->
+			<!--<mx:Blur duration="1000" 
+			blurXFrom="10.0" blurXTo="0.0" 
+			blurYFrom="10.0" blurYTo="0.0"/>-->
+			<!--正常-->
+			<!--<mx:Blur duration="1000"
+			blurXFrom="0.0" blurXTo="10.0" 
+			blurYFrom="0.0" blurYTo="10.0"/>-->
+			<s:Resize widthTo="1135"/>
+		</s:Parallel>
+		<s:Resize id="resize" duration="1000" target="{vgroupDataGrid}" widthTo="50"/>
+		<s:GlowFilter id="glow1" color="#de7800"/>
+		<s:AnimateFilter id="effect1" bitmapFilter="{glow1}" duration="2000" repeatBehavior="reverse"
+						 repeatCount="0" target="{lbl}">
+			<s:SimpleMotionPath property="blurX" valueFrom="0" valueTo="20"/>
+			<s:SimpleMotionPath property="blurY" valueFrom="0" valueTo="20"/>
+		</s:AnimateFilter>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		s|TextInput
+		{
+			fontFamily:"微软雅黑";
+		}
+		
+		
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			//include "../fngjadacx/gjaAs/fkjc.as";
+			//include "../fngjadacx/gjaAs/bsjc.as";
+			import com.xyw.module.msss.la.fngjadacx.finishCaseWindow;
+			import com.xyw.module.msss.la.model.L301;
+			import com.xyw.module.msss.la.model.L301Request;
+			import com.xyw.module.msss.la.model.L302;
+			import com.xyw.module.msss.la.model.L302Request;
+			import com.xyw.module.msss.la.model.L302Response;
+			import com.xyw.module.msss.la.model.VL301;
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.DataGridEvent;
+			import com.xyw.sys.custom.component.LoadPicWindow2;
+			import com.xyw.sys.event.CustomDataEvent;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.controls.Button;
+			import mx.controls.DateField;
+			import mx.core.IVisualElement;
+			import mx.core.UIComponent;
+			import mx.effects.IAbstractEffect;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			include "../fngjadacx/customLA.as";
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			[Bindable]
+			private var systemUser:SystemUser;
+			[Bindable]
+			private var vl301:Object=null;
+			[Bindable]
+			private var _disabledRanges:Array=null;
+			private var dateTime:Number=new Date().time-1000 * 60 * 60 * 24*10;//十天前毫秒数;
+			private var date:Date=new Date();
+			private var l302:L302;
+			[Bindable]
+			private var resL302:Object=null;//返回的保存成功对象
+			[Bindable]
+			private var oldId:String;//返回的结案成功对象的ID
+			[Bindable]
+			private var l302Response:Object;
+			private var l301:L301=null;
+		    private var tabHeight:Number;
+			private var l302102Arr:Array=new Array(1);//最后诊断
+			private var l301Request:L301Request=null;
+			private var addVgroupDataGrid:Array=new Array();//存储查询列表，1vgroup高度 （包含节点高度）2 nav高度，3tab高度  4.查询节点
+			private var picData:ArrayCollection=new ArrayCollection();
+			private function init():void
+			{
+				/* 	this.currentState="bs"; */
+				systemUser=this.parentApplication.systemUser;
+				date.time=dateTime;
+				ToolTipManager.showDelay=0;
+
+			}
+			
+			/******************下拉框填充数据******************/
+			
+			private function vgroup6_creationCompleteHandler(event:FlexEvent):void
+			{
+				tabHeight=tabZZBl.height;
+
+			}
+			
+			
+			
+		
+			/*****************细胞学*******************/
+			private function savegjxbx():void
+			{
+				l302=new L302();
+				var l302Request:L302Request=new L302Request();
+				if(L302_71_01.selected)
+				{
+					l302.l30271="1";
+					if(L302_73_01.selected)l302.l30273="1";
+					if(L302_73_02.selected)l302.l30273="2";
+					if(L302_73_03.selected)l302.l30273="3";
+					if(L302_73_04.selected)l302.l30273="4";
+					if(L302_73_05.selected)l302.l30273="5";
+					if(L302_73_06.selected)l302.l30273="6";
+				}
+				if(L302_71_02.selected)
+				{
+					l302.l30271="2";
+
+				}
+				l302.l30274=CompMethod.getRadioButtonValue([L302_74,L302_74_01,L302_74_02]);
+				if(L302_71_03.selected)
+				{
+					if(StringUtil.trim(L302_72.text)=="")
+					{
+						Alert.show("请输入宫颈细胞其他取材方式","系统提示");
+						return ;
+					}
+					l302.l30271="9";
+					l302.l30272=StringUtil.trim(L302_72.text);
+				}
+				
+				var l302168Arr:Array=CompMethod.getCheckBoxAutomationName([L302_168]);
+				
+				if(l302.l30274=='7'&&!l302168Arr[0])
+				{
+					Alert.show("请选择不典型腺上皮细胞 位置","系统提示");
+					return;
+				}
+				
+				var l302169Arr:Array=CompMethod.getCheckBoxAutomationName([L302_169]);
+				
+				if(l302.l30274=='10'&&!l302169Arr[0])
+				{
+					Alert.show("请选择腺癌 位置 ","系统提示");
+					return;
+				}
+				
+		
+				
+				if(StringUtil.trim(checkxbx.checker.text)=="")
+				{
+					Alert.show("请输入检查人员信息","系统提示");
+					return;
+				}
+				this.mouseChildren=false;
+				l302.l302168=l302168Arr[1];
+				l302.l302169=l302169Arr[1];
+				l302.l30276=checkxbx.institutionCode.selectedItem.data;
+				l302.l30277=StringUtil.trim(checkxbx.checker.text);
+				l302.l30278=DateField.stringToDate(checkxbx.nowDate.text,"YYYY-MM-DD");
+
+				l302Request.flag="3";	
+				l302.l30202=vl301.l30101;
+				l302Request.l302=l302;
+				l302Service.saveL302(l302Request);
+			}
+			/********************VIA****************/
+			private function savevia():void
+			{
+				l302=new L302();
+				var l302Request:L302Request=new L302Request();
+				if(L302_79_01.selected)l302.l30279="1";
+				if(L302_79_02.selected)l302.l30279="2";
+				if(L302_80_01.selected)l302.l30280="1";
+				if(L302_80_02.selected)l302.l30280="2";
+				if(L302_81_01.selected)l302.l30281="1";
+				if(L302_81_02.selected)l302.l30281="2";
+				if(StringUtil.trim(checkvia.checker.text)=="")
+				{
+					Alert.show("请输入检查人员信息","系统提示");
+					return;
+				}
+				this.mouseChildren=false;
+				l302.l30282=checkvia.institutionCode.selectedItem.data;
+				l302.l30283=StringUtil.trim(checkvia.checker.text);
+				l302.l30284=DateField.stringToDate(checkvia.nowDate.text,"YYYY-MM-DD");
+
+				l302Request.flag="4";
+				l302.l30202=vl301.l30101;
+				l302Request.l302=l302;
+				l302Service.saveL302(l302Request);
+			}
+			
+			
+			
+			
+			
+			
+			
+			private function verificationZZBL():Boolean
+			{
+				if(!resL302.l30292)
+				{
+					Alert.show("请先登记阴道镜检查","系统提示");
+					return false;
+				}
+				
+				if(!checkzzbl.checker.text)
+				{
+					Alert.show("请输入报告人员信息","系统提示");
+					return false;
+				}
+				
+				if(l302.l30295=='2')
+				{
+					if(!l302.l30296)
+					{
+						Alert.show("请选择异常原因！","系统提示");
+						return false;
+					}else if(l302.l30296=='9'&&!L302_97.text)
+					{
+						Alert.show("请输入其他原因！","系统提示");
+						return false;
+					}
+					
+				}
+				return true;
+			}
+			
+			/***************组织病理*********************/
+			private function savezzbl():void
+			{
+				
+				l302=new L302();
+				var l302Request:L302Request=new L302Request();
+				l302.l30297=StringUtil.trim(L302_97.text);
+				l302.l30295=CompMethod.getRadioButtonValue([L302_95]);
+				l302.l30296=CompMethod.getRadioButtonValue([Item96_1,Item96_2,Item96_3,
+					Item96_4,Item96_5,Item96_6,
+					Item96_7,Item96_8,Item96_9]);
+				if(!verificationZZBL())
+					return ;
+			
+				this.mouseChildren=false;
+				l302.l30297=StringUtil.trim(L302_97.text);
+				l302.l30298=checkzzbl.institutionCode.selectedItem.data;
+				l302.l30299=StringUtil.trim(checkzzbl.checker.text);
+				l302.l302100=DateField.stringToDate(checkzzbl.nowDate.text,"YYYY-MM-DD");
+
+				l302Request.flag="6";	
+				l302.l30202=vl301.l30101;
+				l302Request.l302=l302;
+				l302Service.saveL302(l302Request);
+			}
+			
+			
+			
+			private function saveL302Handler(event:ResultEvent):void
+			{
+				this.mouseChildren=true;
+				var l302Response:Object=event.result;
+				if(l302Response.state)
+				{
+					if(picData.length)
+						picData=new ArrayCollection();
+					resL302=l302Response.l302;
+					getL302Registration(resL302,"red");
+					Alert.show(l302Response.promptMessage,"系统提示",1,this,closeHander);
+					
+				}else
+					Alert.show(l302Response.errorMessage,"系统提示");
+			}
+			
+			
+			private function closeHander(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var selectIndex:int=1+(tab.selectedIndex);
+					if(selectIndex==10)
+						selectIndex=0;
+					tab.selectedIndex=selectIndex;
+					this.currentState=this.states[selectIndex].name;
+					
+					l302Service.queryByL302Id(vl301.l30101);	
+				}
+			}
+			
+			
+			
+			private function jcdjCreationComplete2():void
+			{
+				checkzzbl.institution.text="诊断机构";
+				checkzzbl.Checkname.text="报告人员";
+				checkzzbl.time.text="诊断日期";
+				checkzzbl._initializeComboBox('5');
+			}
+			
+			private function getVl301(_vl301:Object):void
+			{
+				if(_vl301!=null)
+				{
+					tab.selectedIndex=0;
+					this.vl301=_vl301;
+					l302Service.queryByL302Id(vl301.l30101);
+					resL302=new L302();
+					//VGroupbs.enabled=true;
+				}
+			}
+			
+			private function queryByL302IdHandler(event:ResultEvent):void
+			{
+				l302Response=event.result;
+				if(l302Response.state)
+				{
+					resL302=l302Response.l302;		
+					/* if(tab.selectedIndex==0)
+					{
+					Alert.show("已经登记过病史信息无法再次登记","系统提示");
+					VGroupbs.enabled=false;
+					} */
+					getL302Registration(resL302,"red");
+				}/* else 
+				{
+					//_l302=new L302();
+					VGroupbs.enabled=true;		
+				} */
+			}
+			
+		
+			/**
+			 *判断是否登记过
+			 *  
+			 */
+			private function tabnavigator1_changeHandler(event:IndexChangedEvent):void
+			{
+				var i:int=TabNavigator(event.target).selectedIndex;
+				this.currentState=this.states[i].name;
+				/* if(i==0)
+				{
+					
+					this.currentState=this.states[i].name;
+					/* if(l302Response.state)
+					{
+					Alert.show("已经登记过病史信息无法再次登记","系统提示");
+					VGroupbs.enabled=false;					
+					} 
+				}
+				else if(i==1)
+				{				
+					this.currentState=this.states[i].name;
+					/* if(_l302.l30259!=null)
+					Alert.show("已经登记过妇科检查信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 
+				}
+				else if(i==2)
+				{
+					this.currentState=this.states[i].name;
+					/* if(_l302.l30268!=null)
+					Alert.show("已经登记过HPV检查信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 
+				}
+				else if(i==3)
+				{
+					this.currentState=this.states[i].name;
+					/* if(_l302.l30276!=null)
+					Alert.show("已经登记过宫颈细胞学检查信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 		
+				}
+				else if(i==4)
+				{
+					this.currentState=this.states[i].name;
+					/* if(_l302.l30282!=null)
+					Alert.show("已经登记过醋酸染色或复方碘染色后肉眼观察法检查（VIA/VILI）信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 
+				}
+				else if(i==5)
+				{
+					this.currentState=this.states[i].name;
+					/* if(_l302.l30292!=null)
+					Alert.show("已经登记过阴道镜检查信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 
+					
+				}
+				else if(i==6)
+				{
+					this.currentState=this.states[i].name;
+					/* if(_l302.l30298!=null)
+					Alert.show("已经登记过组织病理检查信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 
+				}
+				else if(i==7)
+				{
+					this.currentState=this.states[i].name;
+					/* if(_l302.l302105!=null)
+					Alert.show("已经登记过最后诊断检查信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 
+				}
+				else if(i==8)
+				{
+					this.currentState=this.states[i].name;
+					/* if(_l302.l302112!=null)
+					Alert.show("已经登记过随访治疗信息无法再次登记","系统提示");	
+					else if(_l302.l302118==null)
+					Alert.show("请先登记病史信息","系统提示"); 
+				} */
+			}
+		
+			public function queryL301():void
+			{
+				_query(1,10);
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				_query(pagerBar.currentPageIndex,10);
+			}
+			
+			
+			private function _query(currentPageIndex:int,pageSize:int):void
+			{
+				setHeight(addVgroupDataGrid[0],addVgroupDataGrid[1],addVgroupDataGrid[2]);
+				vgroup.addElement(addVgroupDataGrid[3]);
+				parallel.play();
+				this.initQueryParam();
+				l301Request.parameterPageindex=currentPageIndex;
+				l301Request.parameterPagesize=pageSize;
+				this.l301Service.queryL301(l301Request);	
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():Boolean
+			{
+				var boolean:Boolean=true;
+				l301=new L301();
+				l301Request = new L301Request();
+				
+				var l30102:String=StringUtil.trim(L301_02.text);
+				var l30104:String=StringUtil.trim(L301_04.text);
+				var l30110:String=StringUtil.trim(L301_10.text);
+				try{
+					
+					if(l30102||l30104||l30110)
+					{
+						l301.l30102=l30102;
+						l301.l30104=l30104;
+						l301.l30110=l30110;
+					}else
+					{
+					
+						l301Request.timeStr=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+						l301Request.timeEnd=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+						
+						var type:String = L301_17.getLastSelectedInstitution();
+						var l301_17:String = L301_17.getLastSelectedInstitutionCode();
+					
+						l301.l30117 = (type == "8")?l301_17:l301_17.substring(0,Number(type));
+					
+					}
+					l301.l30137="is null ";
+					l301Request.l301=l301;
+					
+				}catch(e:Error)
+				{
+					Alert.show("查询异常","系统提示");
+				}
+				return boolean;
+			}
+			
+			public function queryL301Handler(event:ResultEvent):void
+			{
+				var l301Response:Object = event.result;
+				var vl301s:ArrayCollection =l301Response.vl301s;
+				var rowCount:Number = l301Response.rowCount;
+				certificateDataGrid.dataProvider=vl301s;
+				pagerBar.dataGrid = certificateDataGrid;  
+				pagerBar.rowCount = rowCount;
+				pagerBar.resultData = vl301s;
+				pagerBar.dataBind();
+				pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					pagerBar.enabled = true;
+				}
+				if(!l301Response.state)
+				{
+					Alert.show(l301Response.errorMessage,"系统提示");
+					return;
+				}
+			}
+			
+			
+			private function onSelected(event:Event):void
+			{
+				
+				setTabChildColor("black",new Array(9),true)
+				this.vl301 = DataGrid(event.target).selectedItem;
+				if(this.systemUser.institutionCode!=vl301.l30117)
+					Alert.show("该档案不是本单位录入，由"+vl301.l30124+"录入，是否继续登记检查信息？","系统提示",3,this,
+						function(event:CloseEvent):void
+						{
+							if(event.detail==Alert.YES)
+								register();
+							else
+								vl301=certificateDataGrid.selectedItem=null;
+						});
+				else
+					register();
+			}
+			
+			/**
+			 *登记检查
+			 */
+			private function register():void
+			{
+				this.getVl301(vl301);
+				vgroup_creationCompleteHandler(null);
+			}
+			
+			private function vgroup_creationCompleteHandler(event:FlexEvent):void
+			{
+				resize.play();
+				//vgroupDataGrid.width=500;
+				addVgroupDataGrid.push(vgroup.height);
+				addVgroupDataGrid.push(navigatorContent.height);
+				addVgroupDataGrid.push(tabNavigator.height);
+				addVgroupDataGrid.push(vgroupDataGrid);
+				vgroup.removeElement(vgroupDataGrid);
+				callLater(setHeight,new Array(90,90,127));
+				
+			}
+			
+			
+			private function setHeight(vgroupHeight:Number,navigatorContentHeight:Number,tabNavigatorHeight:Number):void
+			{
+				vgroup.height=vgroupHeight;
+				navigatorContent.height=navigatorContentHeight;
+				tabNavigator.height=tabNavigatorHeight;
+			}
+			
+			
+			private function readCard():void
+			{
+				var arr:Array =CompMethod.readCard();
+				if(arr)
+				{
+					if(CompMethod.sex('女',arr[1]))
+					{
+						L301_02.text=arr[0];
+						L301_04.text=arr[5];
+						queryL301();
+					}else
+						Alert.show("请读女性身份证","系统提示");
+				}else
+					Alert.show("读卡失败","系统提示");
+			}
+			
+			
+			
+			/**
+			 *
+			 */ 
+			private function clearSelectAndText(flag:Boolean=true):void
+			{
+				
+				L302_72.text='';
+				if(flag)
+					CompMethod._walk(L302_73);
+				else 
+					L302_73_01.selected=true;
+			}
+		
+			private function finishCase():void
+			{
+				if(oldId==resL302.l30202)
+				{
+					Alert.show("不能重复结案","系统提示");
+					return;
+				}
+				else if(!resL302.l302171)
+				{
+					Alert.show("未登记初筛临床建议功能无法进行结案！","系统提示");
+					return;
+				}
+				else if(!resL302.l302125)
+				{
+					Alert.show("未登记最后诊断功能无法进行结案！","系统提示");
+					return;
+				}
+				else if(getCheckEnabled(['1','2','3','13','17','18','19','20'],
+					resL302.l302102.split(','))[0]&&!resL302.l302112)//需要登记随访
+				{
+					Alert.show("最后诊断为癌前病变或恶性肿瘤，需要登记随访信息才能结案！","系统提示");
+					return;
+				
+				}
+				else if(this.systemUser.institutionCode!=resL302.l302118)
+				{
+					Alert.show("不是本单位登记的病史是无法结案的！","系统提示");
+					return;
+				}
+				Alert.yesLabel="审核并结案";
+				Alert.noLabel="结案";
+				Alert.cancelLabel="取消";
+				Alert.buttonWidth=80;
+				Alert.show("结案之后就无法修改对应检查信息，请确认","系统提示",11,this,popHandler);
+			}
+			
+			private function popHandler(event:CloseEvent):void
+			{
+				Alert.yesLabel="是";
+				Alert.noLabel="否";
+				Alert.buttonWidth=65;
+				var detail:int=event.detail;
+				if(detail==1||detail==2)
+				{
+					if(detail==1)
+						feedback();
+					var window:finishCaseWindow=new finishCaseWindow();
+					window.dataArr=new Array(resL302.l30202,resL302.l30203,resL302.l30204,
+						resL302.l30205,true,false,false);
+					CompMethod.popUpTitleWindow(window,this);
+				}
+			}
+			
+			public function setOldId(id:String):void
+			{
+				vl301=null;
+				this.oldId=id;
+				tab.selectedIndex=0;
+				this.currentState="bs";
+			
+			}
+			//反馈卡
+			public function feedback():void{
+				navigateToURL(new URLRequest(this.parentApplication.contextRoot + "/print_new/ms/gja/gja.jsp?l30201=" +resL302.l30201+'&status=1'),null);
+			}
+			
+			/**
+			 *去设置选项卡颜色
+			 * flag false 设置指定选项卡颜色
+			 *      true  设置全部选项卡颜色
+			 */
+			private function setTabChildColor(tabColor:String,arr:Object,flag:Boolean=false):void
+			{
+				var i:int=0;
+				for(var k:int=0;k<arr.length;k++)
+				{
+					i=flag?k:Number(arr.getItemAt(k));
+					(tab.getTabAt(i) as mx.controls.Button).setStyle("color",tabColor);
+				}	
+			}
+			
+			
+			/**
+			 *根据l302登记情况 去设置选项卡颜色
+			 */
+			private function getL302Registration(l302:Object,tabColor:String):void
+			{
+				var arr:ArrayCollection=new ArrayCollection();
+				if(l302.l30259)
+					arr.addItem(1);
+				if(l302.l30268)
+					arr.addItem(2);
+				if(l302.l30276)
+					arr.addItem(3);
+				if(l302.l302171)
+					arr.addItem(4);
+				if(l302.l30282)
+					arr.addItem(5);
+				if(l302.l30292)
+					arr.addItem(6);
+				if(l302.l30298)
+					arr.addItem(7);
+				if(l302.l302105)
+					arr.addItem(8);
+				if(l302.l302112)
+					arr.addItem(9);
+				if(l302.l302118)
+					arr.addItem(0);
+				setTabChildColor("red",arr);
+			}
+			
+			
+			private function uploadPic():void{
+				var detailTitleWindow:LoadPicWindow2= new LoadPicWindow2();
+				detailTitleWindow.paramsArr=[this.vl301.l30102,'1',4,4];//0.档案人名   1. 类型代码    2 图片数量限制（最少） 3 图片数量限制（最多）
+				detailTitleWindow.picArr=['1'];//图片参数   0 sql条件 不为空可以不写其他 1 缩放比例   2质量参数  3图片格式 
+				CompMethod.popUpTitleWindow(detailTitleWindow,this,true);
+			}
+			
+			/*****************图片放入集合*******************/
+			public function putPictures(arr:ArrayCollection):void
+			{
+				try
+				{
+					picData.addAll(arr);
+					
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("上传图片异常","系统提示");
+				}
+			}
+			
+			
+			private function L302_102_14_changeHandler(event:Event,id:TextInput):void
+			{
+				if(!event.target.selected)
+					id.text='';
+			}
+			
+			
+			
+			private function checkxbx_creationCompleteHandler(event:FlexEvent):void
+			{
+				checkxbx._initializeComboBox('2');
+			
+			}
+		
+			
+			
+			private function addText(rowID:GridRow,tabID:TabNavigator):void
+			{
+				if(rowID.visible&&tabID.height==tabHeight)
+					tabID.height+=30; 
+				
+			}
+			
+			private function removeText(textID:TextInput,rowID:GridRow,tabID:TabNavigator):void
+			{
+				
+				textID.text='';
+				if(!rowID.visible&&tabID.height!=tabHeight)
+					tabID.height-=30; 
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="bs"/>
+		<s:State name="fk"/>
+		<s:State name="hpv"/>
+		<s:State name="gjxbx"/>
+		<s:State name="csjy"/>
+		<s:State name="via"/>
+		<s:State name="ydj"/>
+		<s:State name="zz"/>
+		<s:State name="zd"/>
+		<s:State name="sf"/>
+	</s:states>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="100%" chromeColor="#ffffff"> 
+			<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10"
+					  paddingTop="10">
+				
+				
+				<mx:TabNavigator id="tabNavigator" width="1250" height="419">
+					<s:NavigatorContent id="navigatorContent" width="100%" label="档案查询"
+										buttonMode="true">
+						<s:VGroup id="vgroup" width="100%"
+								  creationComplete="vgroup_creationCompleteHandler(event)">
+							
+							
+							<s:HGroup width="100%" paddingBottom="5" paddingLeft="10"
+									  paddingRight="10" verticalAlign="middle">
+								
+								<s:Label id="lbl" color="#FD0909" creationComplete="effect1.play();"
+										 fontSize="16"
+										 text="!  注意：若输入内容，查询不受日期和录入单位条件限制，有读卡功能的直接读卡就可以查询"/>
+							</s:HGroup>
+							
+							<s:HGroup width="100%" paddingBottom="0" paddingLeft="10"
+									  paddingRight="10" verticalAlign="middle">
+								<s:Label text="录入单位"/>
+								<component:InstitutionComboBox id="L301_17" width="732"
+															   buttonMode="true"/>
+								<s:Button label="反馈卡" buttonMode="true" click="feedback()"
+										  enabled="{resL302}"/>
+							</s:HGroup>
+							
+							
+							
+							<s:HGroup width="100%" paddingBottom="5" paddingLeft="10"
+									  paddingRight="10" paddingTop="5" verticalAlign="middle">
+								<s:Label text="姓      名"/><s:TextInput id="L301_02"/>
+								<s:Label text="证件号码"/><s:TextInput id="L301_04" width="140"/>
+								<s:Label text="联系方式"/><s:TextInput id="L301_10"/>
+								<s:Label text="登记时间"/>
+								<component:CustomRangeDateField  id="timeStart" width="120" isSelectNow="true"
+																 isQuerySysDate="false" getRangesDate="{timeEnd.disabledRanges}" />
+
+								<s:Label text="至"/>
+								<component:CustomRangeDateField  id="timeEnd" width="120" isSelectNow="true" 	  />
+
+
+								<s:Button id="duka1" width="60" label="读卡" buttonMode="true"
+										  click="readCard()" enabled="{systemUser.duka=='1'}"/>
+								<s:Button label="查询" buttonMode="true" click="queryL301()"/>
+								<s:Button label="结案登记" buttonMode="true" click="finishCase()"
+										  enabled="{resL302}"/>
+								
+							</s:HGroup>
+							
+							
+							<s:VGroup id="vgroupDataGrid" width="500" height="100%" paddingRight="5">
+								<s:DataGrid id="certificateDataGrid" width="100%" height="246"
+											alternatingRowColors="[#FFFFFF,#EEEEEE]"
+											editable="false" rowHeight="22"
+											selectionChange="onSelected(event)">
+									<s:columns>
+										<s:ArrayList>
+											
+											<s:GridColumn width="40" editable="false" headerText="序号"
+														  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+											<s:GridColumn width="200" dataField="l30116"
+														  headerText="档案编号"/>
+											<s:GridColumn width="100" dataField="l30102"
+														  headerText="姓名"/>
+											<s:GridColumn width="140" dataField="l30104"
+														  headerText="证件号码"/>
+											<s:GridColumn width="117" dataField="l30110"
+														  headerText="联系电话"/>
+											<s:GridColumn width="125" dataField="l30105str"
+														  headerText="出生日期"/>
+											<s:GridColumn width="200" dataField="l30117zh"
+														  headerText="录入单位"/>
+											<s:GridColumn width="100" dataField="l30118"
+														  headerText="录入人员"/>
+											<s:GridColumn dataField="l30119str" headerText="录入时间"/>
+										</s:ArrayList>
+									</s:columns>
+								</s:DataGrid>					
+								<component:PagerBar id="pagerBar" enabled="false" isExcel="false"
+													isExcel2="false" isPrinter="false" pageSize="10"/>
+							</s:VGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+			
+			<s:VGroup width="100%" enabled="{vl301!=null}" paddingBottom="20" paddingLeft="10"
+					  paddingRight="10">
+				<mx:TabNavigator id="tab" width="1250" change="tabnavigator1_changeHandler(event)"
+								 chromeColor="#ffffff" creationPolicy="all"
+								 width.ydj="1340"
+								 height.zd="747">
+					<s:NavigatorContent width="100%" height="100%" label="（一）病史情况"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="病史情况">
+						<fngjeda:gjabjbs includeIn="bs" height.bs="780" itemDestructionPolicy="auto" paddingLeft="5" state="1"
+										 vl301="{this.vl301}" l30202="{vl301.l30101}"
+										 saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（二）妇科检查"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="妇科检查">
+						<fngjeda:gjafkjc includeIn="fk" height.fk="700"  itemDestructionPolicy="auto" paddingLeft="5"
+										 l30202="{this.resL302.l30202}"    state="1"
+										 saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+						
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（三）HPV检查"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="HPV检查">
+						<fngjeda:gjahpv includeIn="hpv" height.hpv="300"  itemDestructionPolicy="auto" paddingLeft="5"
+										l30202="{this.resL302.l30202}"    state="1"
+										 saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+						
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（四）宫颈细胞学检查"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="宫颈细胞学检查">
+						<s:VGroup includeIn="gjxbx" itemDestructionPolicy="auto" paddingLeft="5">
+							<mx:TabNavigator width="1150" chromeColor="#ffffff" creationPolicy="all">
+								<s:NavigatorContent width="100%" label="宫颈细胞学检查">
+									<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="110" text="宫颈细胞取材方式"/>
+											<s:HGroup width="324" height="100%" paddingBottom="3"
+													  verticalAlign="middle">
+												<s:RadioButton id="L302_71_01" width="85"
+															   label="1.巴氏涂片" buttonMode="true"
+															   click="clearSelectAndText(false)"
+															   groupName="xbqc" selected="true"/>
+												<s:RadioButton id="L302_71_02" width="160"
+															   label="2. 液基/薄层细胞学检查"
+															   buttonMode="true"
+															   click="clearSelectAndText()"
+															   groupName="xbqc"/>
+												<s:RadioButton id="L302_71_03" width="65"
+															   label="3.其他" buttonMode="true"
+															   click="clearSelectAndText()"
+															   groupName="xbqc"/>
+											</s:HGroup>
+											<s:Label enabled="{L302_71_03.selected}" text="其他"/><s:TextInput id="L302_72"
+																											 width="130"
+																											 enabled="{L302_71_03.selected}"/>
+										</s:HGroup>
+										<s:HGroup width="100%" height="100%"
+												  enabled="{L302_71_01.selected}" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="110" text="巴氏分级"/>
+											<s:HGroup id="L302_73" width="100%" height="100%"
+													  paddingBottom="3" verticalAlign="middle">
+												<s:RadioButton id="L302_73_01" width="85"
+															   label="1.I级" buttonMode="true"
+															   groupName="xbbsfj" selected="true"/>
+												<s:RadioButton id="L302_73_02" width="85"
+															   label="2.IIA" buttonMode="true"
+															   groupName="xbbsfj"/>
+												<s:RadioButton id="L302_73_03" width="85"
+															   label="3.IIB" buttonMode="true"
+															   groupName="xbbsfj"/>
+												<s:RadioButton id="L302_73_04" width="85"
+															   label="4.III级" buttonMode="true"
+															   groupName="xbbsfj"/>
+												<s:RadioButton id="L302_73_05" width="85"
+															   label="5.IV级" buttonMode="true"
+															   groupName="xbbsfj"/>
+												<s:RadioButton id="L302_73_06" width="85"
+															   label="6.V级" buttonMode="true"
+															   groupName="xbbsfj"/>
+											</s:HGroup>
+										</s:HGroup>
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="111" text="TBS分类报告结果"/>
+											<s:HGroup id="L302_74" width="100%" height="100%"
+													  paddingBottom="3" verticalAlign="middle">
+												<s:RadioButton width="219" label="1.未见上皮内病变细胞和恶性细胞"
+															   buttonMode="true" groupName="L302_74"
+															   selected="true" value="1" 
+															   change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+												<s:RadioButton width="230" label="2.未明确意义的不典型鳞状上皮细胞"
+															   buttonMode="true" groupName="L302_74"
+															   value="2" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+												<s:RadioButton width="319"
+															   label="3.不典型鳞状上皮细胞-不除外高度鳞状上皮内病变"
+															   buttonMode="true" groupName="L302_74"
+															   value="3" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+												<s:RadioButton width="158" label="4.低度鳞状上皮内病变"
+															   buttonMode="true" groupName="L302_74"
+															   value="4" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+											</s:HGroup>
+											
+										</s:HGroup>
+										
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="111" text="TBS分类报告结果"/>
+											<s:HGroup id="L302_74_01" width="100%" height="100%"
+													  paddingBottom="3" verticalAlign="middle">
+												<s:RadioButton width="219" label="5.高度鳞状上皮内病变"
+															   buttonMode="true" groupName="L302_74"
+															   value="5" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+												<s:RadioButton width="230" label="6.鳞状细胞癌"
+															   buttonMode="true" groupName="L302_74"
+															   value="6" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+												<s:RadioButton  label="7.不典型腺上皮细胞" id="L302_74_03_7"
+															   buttonMode="true" groupName="L302_74"
+															   value="7" change="CompMethod.hasNumEles(L302_168)"/>
+												<s:HGroup width="181" height="100%"  verticalAlign="baseline" id="L302_168"
+														  enabled="{L302_74_03_7.selected}">
+													<s:Label text="("/>
+													<s:CheckBox buttonMode="true" automationName="1" label="宫颈管"/>
+													<s:CheckBox buttonMode="true" automationName="2" label="子宫内膜"/>
+													<s:Label text=")"/>
+													
+												</s:HGroup>  
+												<s:RadioButton label="8.不典型宫颈管腺细胞倾向瘤变"
+															   buttonMode="true" groupName="L302_74"
+															   value="8" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+											</s:HGroup>
+										</s:HGroup>
+										
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="111" text="TBS分类报告结果"/>
+											<s:HGroup id="L302_74_02" width="100%" height="100%"
+													  paddingBottom="3" verticalAlign="middle">
+												<s:RadioButton width="219" label="9.宫颈癌原位癌"
+															   buttonMode="true" groupName="L302_74"
+															   value="9" change="CompMethod.hasNumEles([L302_168,L302_169])"/>
+												<s:RadioButton  label="10.腺癌" id="L302_74_04_10"
+															   buttonMode="true" groupName="L302_74"
+															   value="10" change="CompMethod.hasNumEles(L302_169)"/>
+												<s:HGroup height="100%"  verticalAlign="baseline" id="L302_169" enabled="{L302_74_04_10.selected}">
+													<s:Label text="("/>
+													<s:CheckBox buttonMode="true" automationName="1" label="宫颈管"/>
+													<s:CheckBox buttonMode="true" automationName="2" label="子宫内膜"/>
+													<s:Label text=")"/>
+													
+												</s:HGroup>  
+												
+											</s:HGroup>
+											
+										</s:HGroup>
+									</s:VGroup>
+								</s:NavigatorContent>
+							</mx:TabNavigator>
+							<fngjeda:gjajcdj id="checkxbx" width="1150" chromeColor="#ffffff"
+											 creationComplete="checkxbx_creationCompleteHandler(event)"
+											 creationPolicy="all" />
+							<s:HGroup width="1150" height="30" contentBackgroundColor="#FF0000"
+									  horizontalAlign="center" paddingBottom="20" paddingLeft="10"
+									  paddingTop="10" verticalAlign="middle">
+								<s:Button id="saveGjxbx" label="保存" buttonMode="true"
+										  click="savegjxbx()"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%"
+										label="（五）初筛临床建议"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="初筛临床建议">
+						<fngjeda:gjacsjy includeIn="csjy" state="1" l302="{this.resL302}" 
+										 itemDestructionPolicy="auto"
+										 saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%"
+										label="（六）醋酸染色或复方碘染色后肉眼观察法检查（VIA/VILI）"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="醋酸染色或复方碘染色后肉眼观察法检查（VIA/VILI）">
+						<s:VGroup includeIn="via" itemDestructionPolicy="auto" paddingLeft="5">
+							<mx:TabNavigator width="1150" chromeColor="#ffffff" creationPolicy="all">
+								<s:NavigatorContent width="100%" label="醋酸染色或复方碘染色后肉眼观察法检查（VIA/VILI）">
+									<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="176" text="醋酸染色后肉眼观察（VIA）"/>
+											<s:HGroup width="100%" height="100%" paddingBottom="3"
+													  verticalAlign="middle">
+												<s:RadioButton id="L302_79_01" width="218"
+															   label="1.未见异常（无颜色变化）"
+															   buttonMode="true" groupName="vVIA"
+															   selected="true"/>
+												<s:RadioButton id="L302_79_02"
+															   label="2.异常或可疑癌（有白色反应）"
+															   buttonMode="true" groupName="vVIA"/>
+											</s:HGroup>	
+										</s:HGroup>
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="176" text="碘染色后肉眼观察（VILI）"/>
+											<s:HGroup width="100%" height="100%" paddingBottom="3"
+													  verticalAlign="middle">
+												<s:RadioButton id="L302_80_01" width="218"
+															   label="1. 未见异常（染成深褐色）"
+															   buttonMode="true" groupName="vVILI"
+															   selected="true"/>
+												<s:RadioButton id="L302_80_02"
+															   label="2.异常或可疑癌（未被碘染色）"
+															   buttonMode="true" groupName="vVILI"/>
+											</s:HGroup>
+										</s:HGroup>
+										<s:HGroup width="100%" height="100%" paddingBottom="5"
+												  verticalAlign="middle">
+											<s:Label width="177" text="需阴道镜检查"/>
+											<s:HGroup width="100%" height="100%" paddingBottom="3"
+													  verticalAlign="middle">
+												<s:RadioButton id="L302_81_01" width="217"
+															   label="1.是" buttonMode="true"
+															   groupName="vVIACheck"/>
+												<s:RadioButton id="L302_81_02" width="100"
+															   label="2.否" buttonMode="true"
+															   groupName="vVIACheck" selected="true"/>
+											</s:HGroup>
+										</s:HGroup>
+									</s:VGroup>
+								</s:NavigatorContent>
+							</mx:TabNavigator>
+							<fngjeda:gjajcdj id="checkvia" width="1150" chromeColor="#ffffff"
+											 creationComplete="checkvia._initializeComboBox('2');"
+											 creationPolicy="all"/>
+							<s:HGroup width="1150" height="30" contentBackgroundColor="#FF0000"
+									  horizontalAlign="center" paddingBottom="20" paddingLeft="10"
+									  paddingTop="10" verticalAlign="middle">
+								<s:Button id="saveVia" label="保存" buttonMode="true" click="savevia()"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（七）阴道镜检查"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="阴道镜检查">
+					
+					
+							<fngjeda:gjaydj includeIn="ydj" state="1" l30202="{this.resL302.l30202}" 
+											 itemDestructionPolicy="auto" paddingLeft="5" 
+											 saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+							
+							
+					
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" height="100%" label="（八）组织病理检查"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="组织病理检查">
+						<s:VGroup includeIn="zz"
+								  creationComplete="vgroup6_creationCompleteHandler(event)"
+								  itemDestructionPolicy="auto" paddingLeft="5">
+							<s:HGroup width="100%" horizontalAlign="center">
+								<s:Label color="#F11616" fontSize="20" text="登记此项必须先登记阴道镜检查!"/>
+							</s:HGroup>
+							
+							<mx:TabNavigator width="800" id="tabZZBl" chromeColor="#ffffff" creationPolicy="all">
+								<s:NavigatorContent width="100%" label="组织病理学检查">
+									<s:VGroup width="100%" height="100%" >
+										
+										<s:HGroup paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">	
+											<s:Label width="119" text="组织病理学检查结果"/>
+											<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_95">
+												<s:RadioButton width="99" label="1.未见异常" groupName="L302_95" selected="true"  value="1"
+															   buttonMode="true" id="L302_95_01" click="CompMethod._walk(grid96);callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+												<s:RadioButton width="81" label="2.异常" groupName="L302_95" buttonMode="true" value="2" id="L302_95_02"/>
+											</s:HGroup>
+											
+										</s:HGroup>
+										
+										
+										<s:VGroup width="100%" height="100%" paddingLeft="150" enabled="{L302_95_02.selected}">
+											<mx:Grid id="grid96">
+												<mx:GridRow>
+													<mx:GridItem verticalAlign="middle">
+														<s:Label text="异常原因"/>
+													</mx:GridItem>
+													
+													<mx:GridItem id="Item96_1">
+														<s:RadioButton label="炎症" buttonMode="true" value="1" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+													<mx:GridItem id="Item96_2">
+														<s:RadioButton label="低级别鳞状上皮内病变" buttonMode="true" value="2" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+													<mx:GridItem id="Item96_3">
+														<s:RadioButton label="高级别鳞状上皮内病变" buttonMode="true" value="3" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+													<mx:GridItem id="Item96_4">
+														<s:RadioButton label="宫颈原位腺癌" buttonMode="true" value="4" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+												</mx:GridRow>
+												
+												<mx:GridRow>
+													<mx:GridItem  height="12"/>
+													
+													<mx:GridItem id="Item96_5">
+														<s:RadioButton label="宫颈微小浸润鳞癌" buttonMode="true" value="7" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+													<mx:GridItem id="Item96_6">
+														<s:RadioButton label="宫颈微小浸润腺癌" buttonMode="true" value="8" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+													<mx:GridItem id="Item96_7" colSpan="2">
+														<s:RadioButton label="宫颈浸润鳞癌" buttonMode="true" value="10" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+												</mx:GridRow>
+												
+												
+												
+												<mx:GridRow>
+													<mx:GridItem  height="12"/>
+													
+													<mx:GridItem id="Item96_8">
+														<s:RadioButton label="宫颈浸润腺癌" buttonMode="true" value="11" groupName="L302_96" change="callLater(removeText,[L302_97,lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+													<mx:GridItem id="Item96_9">
+														<s:RadioButton id="L302_96_9" label="其他" buttonMode="true" value="9" groupName="L302_96" change="callLater(addText,[lastRowZZBL,tabZZBl])"/>
+													</mx:GridItem>
+													
+												</mx:GridRow>
+												
+												<mx:GridRow id="lastRowZZBL" includeInLayout="{L302_96_9.selected}" visible="{L302_96_9.selected}">
+													<mx:GridItem verticalAlign="middle" colSpan="5" >
+														<s:Label text="其他说明"/>
+														<s:TextInput id="L302_97" width="100%"/>
+													</mx:GridItem>
+													
+												</mx:GridRow>
+											</mx:Grid>
+										</s:VGroup>
+									</s:VGroup>  
+								</s:NavigatorContent>
+								
+							</mx:TabNavigator>
+							<fngjeda:gjajcdj id="checkzzbl" width="800" chromeColor="#ffffff"
+											 creationComplete="jcdjCreationComplete2()"
+											 creationPolicy="all"/>
+							<s:HGroup width="800" height="30" contentBackgroundColor="#FF0000"
+									  horizontalAlign="center" paddingBottom="20" paddingLeft="10"
+									  paddingTop="10" verticalAlign="middle">
+								<s:Button id="saveZzbl" label="保存" buttonMode="true"
+										  click="savezzbl()"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="（九）最后诊断"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="最后诊断">
+						<fngjeda:gjazhzd includeIn="zd" height.zd="700"  itemDestructionPolicy="auto" paddingLeft="5"
+										 state="1" l302="{this.resL302}"
+										saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+					</s:NavigatorContent>
+					<s:NavigatorContent  label="（十）随访治疗情况"
+										icon="@Embed('images/navigatorContentIcon.png')"
+										toolTip="随访治疗情况" height.sf="560">
+						<fngjeda:gjasfzl includeIn="sf" height.sf="550" itemDestructionPolicy="auto" paddingLeft="5"
+										 state="1" l302="{this.resL302}"
+										 saveSuccess="closeHander(new CloseEvent(CloseEvent.CLOSE,false,false,1))"/>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

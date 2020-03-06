@@ -1,0 +1,8 @@
+<%@ page contentType="text/html; charset=utf-8"%>
+<%@ include file = "GenXmlData_men_tjb.jsp" %>
+<%
+String sql = "select t.*,substr(t.F401_04,1,4) as year,substr(t.F401_04,6,2) as month,substr(t.F401_04,9,2) as day,substr(t.F401_93_str,1,4) as year2,substr(t.F401_93_str,6,2) as month2,substr(t.F401_93_str,9,2) as day2 from V_F401 t where t.f401_01 = "+ request.getParameter("f40101"); 
+%>
+<%
+XML_GenOneRecordset(response,sql);
+%>

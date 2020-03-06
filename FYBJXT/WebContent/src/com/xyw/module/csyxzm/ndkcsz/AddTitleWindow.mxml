@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="350" height="130" chromeColor="#429edd"
+			   fontSize="15" title="新增库存"
+			   close="removeModifyPasswordWindow(event)"
+			   creationComplete="modifyPasswordTitlewindowCreationCompleteHandler(event)"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<s:RemoteObject id="certificateRemainService" destination="certificateRemainService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="save" result="saveHandler(event)" fault="faultHandler(event)"/>
+			<s:method name="validateRemain" result="validateRemainHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D504;
+			import com.xyw.module.csyxzm.model.D504Request;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.MessageResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			public var systemUser:SystemUser;
+			
+			[Bindable]
+			public var d504_03_value:Number;
+			
+			private function modifyPasswordTitlewindowCreationCompleteHandler(event:FlexEvent):void
+			{
+				systemUser = this.parentApplication.systemUser;
+				this.d504_03_value = new Date().fullYear;
+				this.d504_03.value = this.d504_03_value;
+			}
+			
+			private function removeModifyPasswordWindow(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function validateRemain():void
+			{
+				var d504Request:D504Request = new D504Request();
+				var d504:D504 = new D504();
+				d504.d504_02 = this.systemUser.institutionCode;
+				d504.d504_03 = String(this.d504_03.value);
+				d504.d504_04 = this.d504_04.value;
+				
+				d504Request.d504 = d504;
+				
+				this.certificateRemainService.validateRemain(d504Request);
+			}
+			
+			private function validateRemainHandler(event:ResultEvent):void
+			{
+				var d504Response:Object = event.result;
+				if(d504Response.errorMessage == null)
+				{
+					this.saveRemain();
+				}else
+				{
+					Alert.show(d504Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function saveRemain():void
+			{
+				var d504Request:D504Request = new D504Request();
+				var d504:D504 = new D504();
+				d504.d504_02 = this.systemUser.institutionCode;
+				d504.d504_03 = String(this.d504_03.value);
+				d504.d504_04 = this.d504_04.value;
+				
+				d504Request.d504 = d504;
+				this.certificateRemainService.save(d504Request);
+			}
+			
+			private function saveHandler(event:ResultEvent):void
+			{
+				var d504Response:Object = event.result;
+				if(d504Response.errorMessage == null)
+				{
+					Alert.show(d504Response.promptMessage,"系统提示");
+				}else
+				{
+					Alert.show(d504Response.errorMessage,"系统提示");
+				}
+			}
+			private function reset(event:MouseEvent):void
+			{
+				this.d504_03.value = this.d504_03_value;
+				this.d504_04.value = 0;
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" paddingBottom="20" paddingLeft="20" paddingRight="20" paddingTop="20">
+		<s:HGroup verticalAlign="middle" horizontalAlign="center">
+			<s:Label text="年度" fontSize="15"/>
+			<s:NumericStepper height="22" minimum="0" maximum="1000000" id="d504_03" width="180"/>
+			<s:Button label="重置" click="reset(event)"/>
+		</s:HGroup>
+		<s:HGroup verticalAlign="middle" horizontalAlign="center">
+			<s:Label text="库存" fontSize="15"/>
+			<s:NumericStepper id="d504_04" minimum="0" maximum="10000" height="22" width="180"/>
+			<s:Button label="保存" click="validateRemain()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

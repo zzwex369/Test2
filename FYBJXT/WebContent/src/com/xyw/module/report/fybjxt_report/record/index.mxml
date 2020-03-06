@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete="creationCompleteHandler(event)">
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				date_satrt.selectedDate=new Date(new Date().fullYear,new Date().month,'01');
+				date_end.selectedDate=new Date();
+			}
+			
+			
+			private function query():void
+			{
+				if(this.date_satrt.text == "")
+				{
+					Alert.show("请选择开始时间!","系统提示!");
+					return;
+				}else if(this.date_end.text == "")
+				{
+					Alert.show("请选择结束时间!","系统提示!");
+					return;
+				}
+				if((this.date_end.selectedDate.time)-(this.date_satrt.selectedDate.time)<0)
+				{
+					Alert.show("开始时间不能大于结束时间","系统提示");
+					return;
+				}
+				var date_satrt:String=null;	
+				var date_end:String=null;
+				var date_status:String="0";
+				var f30146:String="";
+				var address_status:String=null;
+				var address:String=null;	
+				date_satrt = this.date_satrt.text;
+				date_end = this.date_end.text;
+				var institution:String = this.institution.getLastSelectedInstitutionCode();
+				var institutionType:String = this.institution.getLastSelectedInstitution();		
+				
+				institution = (institutionType == "10")?institution:institution.substring(0,Number(institutionType));
+
+				if(this.f30136_.selected){
+					address_status="0";//产妇户口地址
+					address=this.f301_36.getAreaCode();
+				}else if(this.f30135_.selected)
+				{
+					address_status="1";//产妇现在住址
+					address=this.f301_35.getAreaCode();
+				}
+				if(this.Yes.selected){
+					f30146 = "1"; /* 是  */
+				}else if(this.No.selected){
+					f30146 = "2"; /* 否  */
+				}
+				date_status=(this.deliveryTime.selected)==true?"0":"1";//0 建卡日期  1录入日期
+				var url:String = null;
+				url = this.parentApplication.contextRoot + "/report_new/jsp/Report.jsp?" +
+						"institution="+institution+"&address_status="+address_status+"&address="+address+"&date_status="+date_status+"&f30146="+f30146+"&date_satrt="+date_satrt+"&date_end="+date_end;
+				navigateToURL(new URLRequest(url), null);
+			}
+			//测试路径
+			private function printCertificate2():void
+			{
+				var urlRequest:URLRequest = null;
+				urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print_new/PrintDirect/Report.htm") ;
+				navigateToURL(urlRequest,"_blank");
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="产妇档案登记本" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="建卡单位"/>
+						<component:InstitutionComboBox id="institution" width="730" villageVisible="true"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="查询地址" />
+						<s:RadioButton id="f30136_" groupName="fm2" label="按产妇户口地址查询" selected="true" buttonMode="true"/>
+						<s:Label id="text" text="户口地址" x="12"/>
+						<component:AreaComboBoxCommon id="f301_36"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="查询地址" visible="false"/>					
+						<s:RadioButton id="f30135_" groupName="fm2" label="按产妇现住地址查询" buttonMode="true"/>
+						<s:Label text="现住地址"/>
+						<component:AreaComboBoxVillage id="f301_35"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="查询时间"/>
+						<s:RadioButton id="deliveryTime" groupName="fm1" label="按建卡日期查询" selected="true" buttonMode="true"/>
+						<s:RadioButton id="systemTime" groupName="fm1" label="按录入日期查询" width="140" buttonMode="true"/>
+						<s:Label text="查询时间" width="65"/><mx:DateField yearNavigationEnabled="true" id="date_satrt" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																	   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																	   formatString="YYYY-MM-DD"/>
+						<s:Label text="至" width="22"/><mx:DateField yearNavigationEnabled="true" id="date_end" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																	monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																	formatString="YYYY-MM-DD"/>
+						
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="母子健康手册是否发放"/>
+						<s:RadioButton id="Uncertain" groupName="fm3" label="全部" selected="true" buttonMode="true"/><!--0-->
+						<s:RadioButton id="Yes" groupName="fm3" label="是" buttonMode="true"/><!--1-->
+						<s:RadioButton id="No" groupName="fm3" label="否" width="140" buttonMode="true"/><!--2-->
+						<s:Button label="查询" id="loadDelivery" click="query()"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

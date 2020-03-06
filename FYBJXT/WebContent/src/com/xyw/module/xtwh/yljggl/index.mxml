@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%" backgroundColor="#FFFFFF"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  creationComplete = "creationCompleteHandle(event)">
+	
+	<fx:Declarations>    
+		<s:RemoteObject id="medicalService" destination="medicalService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="query" result="queryHandler(event)" />
+			<s:method name="remove" result="removeHandler(event)"/>
+			<s:method name="export" result="exportHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		component|AreaComboBox
+		{
+			fontSize:13;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+			cornerRadius:5;
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+			cornerRadius:3;
+		}
+		
+		mx|Alert{
+			/*borderColor: red;*/
+			borderVisible:false;
+			backgroundColor: yellow;
+			dropShadowVisible: true;
+			chromeColor: yellow;
+			titleStyleName: alertTitle;
+			messageStyleName: alertMessage;
+			buttonStyleName: alertButton;
+		}
+		.alertTitle{
+			fontSize: 15;
+			fontWeight: bold;
+			color: black;
+		}
+		.alertMessage {
+			fontWeight: normal;
+			color: black;
+		}
+		.alertButton {
+			color: black;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.D101;
+			import com.xyw.module.xtwh.model.D101Request;
+			import com.xyw.module.xtwh.model.D101Response;
+			import com.xyw.module.xtwh.model.VD101;
+			import com.xyw.sys.custom.component.PagerBar;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			
+			import flashx.textLayout.tlf_internal;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			import spark.formatters.DateTimeFormatter;
+			
+			private var imageurl:String = "";
+			public var pageIndex:int=0;
+			public var pageSize:int=20;
+			
+			[Bindable]
+			public var d101:D101 = null;
+			public var selectIndex:String;
+			public var selectIndexName:String;
+			public var vd101:VD101 = null;
+			
+			private function creationCompleteHandle(event:FlexEvent):void
+			{
+				initializeComboBox();
+				this.dataGridInfo.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelectionChange);
+			}
+			
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.vd101 = DataGrid(event.target).selectedItem as VD101;
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				var d101Request:D101Request = new D101Request();
+				d101 = new D101();
+				var d10104_AreaCode:String = this.area.getAreaCode();
+				d101.d10104 = d10104_AreaCode;
+				
+				var d10106ComboboxData:ComboBoxData = this.d10106.selectedItem as ComboBoxData;
+				d101.d10106 = d10106ComboboxData.data;
+				d101Request.d101 = d101;
+				d101Request.pageIndex = 1;
+				d101Request.pageSize = 20;
+				
+				this.medicalService.query(d101Request);
+			}
+			
+			private function queryHandler(event:ResultEvent):void
+			{
+				var d101Response:D101Response = event.result as D101Response;
+				
+				var rowCount:Number = d101Response.rowCount;
+				var d101s:ArrayCollection = d101Response.vd101s;
+				
+				if(d101Response.errorMessage == null) {
+					
+					this.pagerBar.dataGrid = this.dataGridInfo;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = d101s;
+					this.pagerBar.pagerFunction = pagerFunction;
+					this.pagerBar.dataBind();
+					
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(d101Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function pagerFunction(currentPageIndex:int,pageSize:int):void
+			{
+				var d101Request:D101Request = new D101Request();
+				d101 = new D101();
+				var d10104_AreaCode:String = this.area.getAreaCode();
+				d101.d10104 = d10104_AreaCode;
+				var d10106ComboboxData:ComboBoxData = this.d10106.selectedItem as ComboBoxData;
+				d101.d10106 = d10106ComboboxData.data;
+				
+				d101Request.d101 = d101;
+				d101Request.pageIndex = currentPageIndex;
+				d101Request.pageSize = pageSize;
+				
+				this.medicalService.query(d101Request);
+			}
+			
+			private function add(event:MouseEvent):void
+			{
+				var window:AddTitleWindow=new AddTitleWindow();
+				window.owner = this;
+				PopUpManager.addPopUp(window,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+				var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+				window.move(x,y);
+				
+				window.areaCode = area.getAreaCode();
+				window.areaName = area.getAreaName();
+				
+			}
+			
+			private function modify(event:MouseEvent):void
+			{
+				if(this.vd101 ==  null){
+					Alert.show("请选择要操作的行!", "系统提示");
+					return;
+				}
+				var window:ModifyTitleWindow = new ModifyTitleWindow();
+				window.owner = this;
+				window.vd101 = this.vd101;
+				PopUpManager.addPopUp(window,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+				var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+				window.move(x, y);
+				//window.d10105_text = area.getAreaName();
+				//window.areaCode = this.area.getAreaCode();
+				//window.d10106_text = d10106.selectedItem.data;
+				
+			}
+			
+			public function refrashPage():void
+			{
+				var d101Request:D101Request = new D101Request();
+				d101 = new D101();
+				var d10104_AreaCode:String = this.area.getAreaCode();
+				d101.d10104 = d10104_AreaCode;
+				var d101_06_comboBoxData:ComboBoxData = this.d10106.selectedItem as ComboBoxData;
+				d101.d10106 = d101_06_comboBoxData.data;
+				
+				d101Request.d101 = d101;
+				d101Request.pageIndex = this.pagerBar.currentPageIndex;
+				d101Request.pageSize = 20;
+				
+				this.medicalService.query(d101Request);
+			}
+			
+			private function remove(event:MouseEvent):void
+			{
+				if(this.vd101 ==  null){
+					Alert.show("请选择要操作的行!", "系统提示");
+					return;
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";
+				Alert.show("确定要删除选中行吗?", "系统提示",(Alert.YES | Alert.NO) , this, alertCallBack);
+				
+			}
+			
+			
+			/////////////////////////////////////////////////
+			private function imgLoad(event:MouseEvent):void
+			{
+				if(this.vd101 ==  null){
+					Alert.show("请选择要操作的行!", "系统提示");
+					return;
+				}
+				
+				this.imageurl = this.parentApplication.contextRoot + "/image/" + this.vd101.d10101 + ".jpg" ;
+				var myLoader:URLLoader=new URLLoader()
+				var myUrl:URLRequest=new URLRequest();
+				myUrl.url = this.imageurl;
+				myLoader.dataFormat=URLLoaderDataFormat.BINARY;
+				myLoader.addEventListener(Event.COMPLETE,success);
+				myLoader.addEventListener(IOErrorEvent.IO_ERROR,ioErrorHandler);
+				myLoader.load(myUrl);
+			}
+			private function ioErrorHandler(event:IOErrorEvent):void {
+				Alert.show("未提供资质","系统提示");
+			}
+			private function success(event:Event):void {
+				var imgwindow:ImageWindow = new ImageWindow();
+				imgwindow.owner = this;
+				PopUpManager.addPopUp(imgwindow,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - imgwindow.width) / 2 ;
+				var y:Number = (this.parentApplication.mdiCanvas.height - imgwindow.height) / 2;
+				imgwindow.move(x, y);
+				
+				imgwindow.imageurl = this.imageurl;
+				imgwindow.init();
+			}
+			
+			private function alertCallBack(event:CloseEvent):void
+			{
+				var d101Request:D101Request = new D101Request();
+				var d101:D101 = new D101();
+				d101.d10101 = this.vd101.d10101;
+				d101Request.d101 = d101;
+				
+				if(event.detail == Alert.YES){
+					this.medicalService.remove(d101Request);
+				}
+			}
+			
+			private function removeHandler(event:ResultEvent):void
+			{
+				var d101Response:D101Response = event.result as D101Response;
+				if(d101Response.errorMessage == null){
+					this.refrashPage();
+					Alert.okLabel = "确认";
+					Alert.show(d101Response.promptMessage, "系统提示");
+				}else{
+					Alert.show(d101Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function initializeComboBox():void
+			{
+				var comboBoxDataRequest_s101_02:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest_s101_02.flag = "S101_02";
+				comboBoxDataRequest_s101_02.sql = "select t.S_01, t.S_02 from S101_02 t";
+				comboBoxDataRequest_s101_02.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest_s101_02);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object = event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S101_02") {
+					this.d10106.dataProvider = comboBoxDataList;
+					this.d10106.selectedIndex = 0;
+				}
+			}
+			
+			private function formatDateToStringD10140(vd101:VD101, column:GridColumn):String
+			{
+				var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+				dateTimeFormatter.dateTimePattern = "yyyy-MM-dd";
+				var columnDataField:String = column.dataField;
+				if("d10140" == columnDataField){
+					var data_D10140:Date = vd101.d10140;
+					var date_D10140_text:String = dateTimeFormatter.format(data_D10140);
+					return date_D10140_text;
+				}
+				return null;
+			}
+			
+			private function exportExcelData():void
+			{
+				var d101Request:D101Request = new D101Request();
+				var vd101:VD101 = new VD101();
+				d101 = new D101();
+				
+				d101.d10102 = this.vd101.d10102;
+				d101.d10104 = this.area.getAreaCode();
+				var d10106_comboBoxData:ComboBoxData = this.d10106.selectedItem as ComboBoxData;
+				d101.d10106 = d10106_comboBoxData.data;
+				
+				d101Request.d101 = d101;
+				
+				this.medicalService.export(d101Request);
+			}
+			
+			private function exportHandler(event:ResultEvent):void
+			{
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" height="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:TabNavigator width="100%" paddingTop="0" cornerRadius="4" creationPolicy="all" chromeColor="#ffffff">
+			<s:NavigatorContent label="医疗机构查询" height="75">
+				<s:VGroup width="100%">
+					<component:AreaComboBox id="area" width="100%" chromeColor="#eeeeee" paddingLeft="10" paddingTop="5" horizontalAlign="left"/>
+					<s:HGroup paddingLeft="10" paddingBottom="5"  paddingTop="5">
+						<s:Label text="机构级别" paddingTop="5"/><s:DropDownList id="d10106" width="100" />
+						<s:Button label="查询" id="queryButton" click="query(event)" />
+						<s:Button label="添加" id="addButton" click="add(event)" />
+						<s:Button label="修改" id="modifyButton" click="modify(event)" />
+						<s:Button label="删除" id="removeButton" click="remove(event)" />
+						<s:Button label="查看资质" id="imgButton" click="imgLoad(event)" />
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+
+		<s:VGroup width="100%">
+			<s:DataGrid id="dataGridInfo" editable="true" borderColor="black" width="100%" height="350" rowHeight="23" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="45" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d10101" headerText="机构代码"/>
+						<s:GridColumn dataField="d10102" headerText="机构名称"/>
+						<s:GridColumn dataField="d10103" headerText="拼音码" visible="false"/>
+						<s:GridColumn dataField="d10104" headerText="所属地区" visible="false"/>
+						<s:GridColumn dataField="d10105" headerText="机构类别" visible="false"/>
+						<s:GridColumn dataField="d10105Zh" headerText="机构类别"/>
+						<s:GridColumn dataField="d10106" headerText="机构级别" visible="false"/>
+						<s:GridColumn dataField="d10106Zh" headerText="机构级别"/>
+						<s:GridColumn dataField="d10107" headerText="通讯地址" />
+						<s:GridColumn dataField="d10108" headerText="邮政编码"/>
+						<s:GridColumn dataField="d10109" headerText="电话号码"/>
+						<s:GridColumn dataField="d10110" headerText="签发机构类型" visible="false"/>
+						<s:GridColumn dataField="d10110Zh" headerText="签发机构类型"/>
+						<s:GridColumn dataField="d10140" headerText="使用截止日期" labelFunction="formatDateToStringD10140" />
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+		</s:VGroup>
+	</s:VGroup>
+</s:Module>

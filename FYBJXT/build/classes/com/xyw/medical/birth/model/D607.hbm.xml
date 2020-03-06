@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class name="com.xyw.medical.birth.model.D607" table="D607" >
+		<comment>亲子鉴定</comment>
+		<id name="d60701" type="java.lang.Long">
+			<column name="D607_01" precision="10" scale="0" />
+			<generator class="sequence">
+				<param name="sequence">D607_01_seq</param>
+			</generator>
+		</id>
+		<property name="d60702" type="java.lang.String">
+			<column name="D607_02" length="50">
+				<comment>父亲姓名</comment>
+			</column>
+		</property>
+		<property name="d60703" type="java.util.Date">
+			<column name="D607_03" length="7">
+				<comment>出生日期</comment>
+			</column>
+		</property>
+		<property name="d60704" type="java.lang.String">
+			<column name="D607_04" length="18">
+				<comment>身份证号</comment>
+			</column>
+		</property>
+		<property name="d60705" type="java.lang.String">
+			<column name="D607_05" length="50">
+				<comment>国籍 s301_03</comment>
+			</column>
+		</property>
+		<property name="d60706" type="java.lang.String">
+			<column name="D607_06" length="50">
+				<comment>民族 s301_04</comment>
+			</column>
+		</property>
+		<property name="d60707" type="java.lang.String">
+			<column name="D607_07" length="200">
+				<comment>家庭地址</comment>
+			</column>
+		</property>
+		<property name="d60708" type="java.lang.String">
+			<column name="D607_08" length="50">
+				<comment>母亲姓名</comment>
+			</column>
+		</property>
+		<property name="d60709" type="java.util.Date">
+			<column name="D607_09" length="7">
+				<comment>出生日期</comment>
+			</column>
+		</property>
+		<property name="d60710" type="java.lang.String">
+			<column name="D607_10" length="18">
+				<comment>身份证号</comment>
+			</column>
+		</property>
+		<property name="d60711" type="java.lang.String">
+			<column name="D607_11" length="50">
+				<comment>国籍</comment>
+			</column>
+		</property>
+		<property name="d60712" type="java.lang.String">
+			<column name="D607_12" length="50">
+				<comment>民族</comment>
+			</column>
+		</property>
+		<property name="d60713" type="java.lang.String">
+			<column name="D607_13" length="200">
+				<comment>家庭地址</comment>
+			</column>
+		</property>
+		<property name="d60714" type="java.lang.String">
+			<column name="D607_14" length="50">
+				<comment>子女姓名</comment>
+			</column>
+		</property>
+		<property name="d60715" type="java.util.Date">
+			<column name="D607_15" length="7">
+				<comment>出生日期</comment>
+			</column>
+		</property>
+		<property name="d60716" type="java.lang.String">
+			<column name="D607_16" length="18">
+				<comment>身份证号</comment>
+			</column>
+		</property>
+		<property name="d60717" type="java.lang.String">
+			<column name="D607_17" length="50">
+				<comment>国籍</comment>
+			</column>
+		</property>
+		<property name="d60718" type="java.lang.String">
+			<column name="D607_18" length="50">
+				<comment>民族</comment>
+			</column>
+		</property>
+		<property name="d60719" type="java.lang.String">
+			<column name="D607_19" length="200">
+				<comment>家庭地址</comment>
+			</column>
+		</property>
+		<property name="d60720" type="java.lang.String">
+			<column name="D607_20" length="200">
+				<comment>亲子鉴定号</comment>
+			</column>
+		</property>
+		<property name="d60721" type="java.lang.String">
+			<column name="D607_21" length="50">
+				<comment>委托人姓名</comment>
+			</column>
+		</property>
+		<property name="d60722" type="java.lang.String">
+			<column name="D607_22" length="18">
+				<comment>身份证号</comment>
+			</column>
+		</property>
+		<property name="d60723" type="java.util.Date">
+			<column name="D607_23" length="7">
+				<comment>受理时间</comment>
+			</column>
+		</property>
+		<property name="d60724" type="java.lang.String">
+			<column name="D607_24" length="14">
+				<comment>受理单位</comment>
+			</column>
+		</property>
+		<property name="d60725" type="java.lang.String">
+			<column name="D607_25" length="200">
+				<comment>案情摘要</comment>
+			</column>
+		</property>
+		<property name="d60726" type="java.lang.String">
+			<column name="D607_26" length="200">
+				<comment>鉴定要求</comment>
+			</column>
+		</property>
+		<property name="d60727" type="java.lang.String">
+			<column name="D607_27" length="200">
+				<comment>检验地点</comment>
+			</column>
+		</property>
+		<property name="d60728" type="java.lang.String">
+			<column name="D607_28" length="200">
+				<comment>鉴定意见</comment>
+			</column>
+		</property>
+		<property name="d60729" type="java.lang.String">
+			<column name="D607_29" length="2">
+				<comment>是否为亲子关系 S601_04</comment>
+			</column>
+		</property>
+		<property name="d60730" type="java.lang.String">
+			<column name="D607_30" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60731" type="java.lang.String">
+			<column name="D607_31" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60732" type="java.lang.String">
+			<column name="D607_32" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60733" type="java.lang.String">
+			<column name="D607_33" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60734" type="java.lang.String">
+			<column name="D607_34" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60735" type="java.lang.String">
+			<column name="D607_35" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60736" type="java.lang.String">
+			<column name="D607_36" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60737" type="java.lang.String">
+			<column name="D607_37" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60738" type="java.lang.String">
+			<column name="D607_38" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60739" type="java.lang.String">
+			<column name="D607_39" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+		<property name="d60740" type="java.lang.String">
+			<column name="D607_40" length="200">
+				<comment>备注</comment>
+			</column>
+		</property>
+	</class>
+</hibernate-mapping>

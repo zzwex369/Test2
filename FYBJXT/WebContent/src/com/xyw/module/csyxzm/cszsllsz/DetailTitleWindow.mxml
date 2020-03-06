@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="1100" height="430" chromeColor="#429edd"
+			   creationComplete="titlewindowCreationCompleteHandler(event)"
+			   close="closeTitleWindow()" title="出生证申领详情"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<s:RemoteObject id="certificateApplyService" destination="certificateApplyService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="query" result="queryHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D501;
+			import com.xyw.module.csyxzm.model.D501Request;
+			import com.xyw.module.csyxzm.model.D501Response;
+			import com.xyw.module.csyxzm.model.VD501;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.formatters.DateTimeFormatter;
+			
+			public var d501_01:Number;
+			public var areaCode:String = "";
+			public var systemUser:SystemUser = null;
+			
+			private function closeTitleWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function titlewindowCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				if(this.areaCode != "") {
+					var d501Request:D501Request = new D501Request();
+					var d501:D501 = new D501();
+					//d501.d50114 = this.areaCode;
+					d501.d50115 = this.d501_01;
+					d501Request.d501 = d501;
+					d501Request.parameterPageindex = 1;
+					d501Request.parameterPagesize = 99999;
+					
+					this.certificateApplyService.query(d501Request);
+				}
+			}
+			
+			private function queryHandler(event:ResultEvent):void
+			{
+				var d501Response:Object = event.result;
+				var rowCount:Number = d501Response.rowCount;
+				if(d501Response.errorMessage == null) {
+					var vd501s:ArrayCollection = d501Response.vd501s;
+					this.detailCertificateApplyDataGrid.dataProvider = vd501s;
+				} else {
+					Alert.show(d501Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function formatDateToStringD50112(vd501:Object, column:GridColumn):String
+			{
+				var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+				dateTimeFormatter.dateTimePattern = "yyyy-MM-dd";
+				var date_D50112:Date = vd501.d50112;
+				var date_D50112_Text:String = dateTimeFormatter.format(date_D50112);
+				return date_D50112_Text;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup chromeColor="#ffffff" width="100%" height="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<s:DataGrid id="detailCertificateApplyDataGrid" editable="true" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">  
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+					<s:GridColumn dataField="d50101" headerText="主键" visible="false"/>
+					<s:GridColumn dataField="d50102" headerText="申领单位" visible="false"/>
+					<s:GridColumn dataField="d50102Zh" headerText="申领单位"/>
+					<s:GridColumn dataField="d50103" headerText="申领人1"/>
+					<s:GridColumn dataField="d50104" headerText="申领人2"/>
+					<s:GridColumn dataField="d50106" headerText="首字母"/>
+					<s:GridColumn dataField="d50107" headerText="起始编号"/>
+					<s:GridColumn dataField="d50108" headerText="终止编号"/>
+					<s:GridColumn dataField="d50105" headerText="数量"/>
+					<s:GridColumn dataField="d50109" headerText="发放单位" visible="false"/>
+					<s:GridColumn dataField="d50109Zh" headerText="发放单位"/>
+					<s:GridColumn dataField="d50110" headerText="发放人1"/>
+					<s:GridColumn dataField="d50111" headerText="发放人2"/>
+					<s:GridColumn dataField="d50112" headerText="发放时间" editable="false" labelFunction="formatDateToStringD50112"/>
+					<s:GridColumn dataField="d50113" headerText="发放地点"/>
+					<s:GridColumn dataField="d50114" headerText="县区" visible="false"/>
+					<s:GridColumn dataField="d50114Zh" headerText="县区"/>
+					<s:GridColumn dataField="d50115" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50116" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50117" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50118" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50119" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50120" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50121" headerText="备注" visible="false"/>
+					
+					<s:GridColumn dataField="d50122" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50123" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50124" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50125" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50126" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50127" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50128" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50129" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50130" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50131" headerText="备注" visible="false"/>
+					
+					<s:GridColumn dataField="d50132" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50133" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50134" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50135" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50136" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50137" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50138" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50139" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50140" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50141" headerText="备注" visible="false"/>
+					
+					<s:GridColumn dataField="d50142" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50143" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50144" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50145" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50146" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50147" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50148" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50149" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50150" headerText="备注" visible="false"/>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+	</s:VGroup>
+</s:TitleWindow>

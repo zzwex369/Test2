@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="f501Service" destination="f501Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF501" result="queryF501Handler(event)"/>
+			<s:method name="deleteF501" result="deleteF501Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.cs.fnbjcssqcx.tittle;
+			import com.xyw.module.msss.fnbj.model.F501Request;
+			import com.xyw.module.msss.fnbj.model.F501Response;
+			import com.xyw.module.msss.fnbj.model.VF501;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.SecurityControler;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			public var systemUser:SystemUser = null;
+			public var f501Request:F501Request;
+			public var vF501:Object;
+			
+			//========================启动权限控制============//
+			private function security():void{
+				SecurityControler.start(null,'visible');
+				SecurityControler.addAllPerms(this.parentApplication.permissionList);
+			}
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				//security();
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+				}
+				
+				
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vF501 = DataGrid(event.target).selectedItem;
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				try
+				{
+					f501Request = new F501Request();
+					var type:String = this.f501_26.getLastSelectedInstitution();
+					var f50126:String = this.f501_26.getLastSelectedInstitutionCode();
+				
+					f501Request.f50126 = type == "8"?f50126:f50126.substring(0,Number(type));
+					
+					if(f501_03.text||f501_05.text){
+						f501Request.f50103 = StringUtil.trim(f501_03.text);
+						f501Request.f50105 = StringUtil.trim(f501_05.text);
+					}else
+					{
+						f501Request.f50147=getRadioButtonValue(F501_47);
+						f501Request.timeStr = DateField.stringToDate(this.timeStart.text,"YYYY-MM-DD");
+						f501Request.timeEnd = DateField.stringToDate(this.timeEnd.text,"YYYY-MM-DD");
+					}
+				}catch(error:Error){
+					Alert.show("出错了");
+				}
+			}
+			
+			private function query():void
+			{
+				_query(1);
+			}
+			
+			private function queryF501Handler(event:ResultEvent):void
+			{
+				var f501Response:Object = event.result;
+				var rowCount:Number = f501Response.rowCount;
+				if(f501Response.errorMessage == null)
+				{
+					var listVF501:ArrayCollection = f501Response.vf501s;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVF501;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.vF501=null;
+				} else {
+					Alert.show(f501Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				_query(pagerBar.currentPageIndex);
+			}
+			
+			private function _query(currentPageIndex:int,pageSize:int=20):void
+			{
+				this.initQueryParam();
+				f501Request.parameterPageindex = currentPageIndex;
+				f501Request.parameterPagesize = pageSize;
+				this.f501Service.queryF501(f501Request);
+			}
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.f501_03.text = array[0];//姓名
+							this.f501_05.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			public function deleteF501():void
+			{
+				if(this.vF501 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				if(vF501.f50149!='3')
+				{
+					Alert.show("只有未上传至省平台的信息才能删除！","系统提示");
+					return;
+				}
+				f501Request.f50101 = this.vF501.f50101;
+				this.f501Service.deleteF501(f501Request);
+			}
+			public function  deleteF501Handler(event:ResultEvent):void{
+				var f501Response:Object = event.result;
+				if(f501Response.state){
+					Alert.show("删除成功！", "系统提示");
+					refresh();
+				} else {
+					Alert.show(f501Response.errorMessage, "系统提示");
+				}
+			}
+			 public function update():void{
+				if(this.vF501 == null){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+				}
+				var window:tittle = new tittle();
+				window.vF501 = this.vF501;
+				CompMethod.popUpTitleWindow(window,this);
+				
+			} 
+			
+			public function printCertificate():void{
+				if(this.vF501==null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				var window:cssqPrint = new cssqPrint();
+				window.vf501 = this.vF501;
+				CompMethod.popUpTitleWindow(window,this);
+				window.load();
+				/* navigateToURL(new URLRequest(this.parentApplication.contextRoot+"/fnbjcssqServlet?f50101=" + vF501.f50101),null)			 */
+			}
+			
+			private function registration():void{
+				if(this.vF501 == null){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+				}
+				var window:RegistrationTitleWindow = new RegistrationTitleWindow();
+				window.vF501 = this.vF501;
+				CompMethod.popUpTitleWindow(window,this);
+			}
+			
+			
+		
+			private function getRadioButtonValue(id:Object):String
+			{
+				var radioButton:RadioButton;
+				var value:String;
+				for(var i:int =1;i<id.numElements;i++)
+				{
+					radioButton=id.getElementAt(i) as RadioButton;
+					if(radioButton.selected)
+					{
+						value=radioButton.value.toString();
+						break;
+					}
+				}
+				return value;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator id="xuanze"  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="综合查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="申请单位"/>
+						<component:InstitutionComboBox id="f501_26" width="100%"/>
+					</s:HGroup>
+					
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle" id="F501_47" gap="35">
+						<s:Label text="报告登记"/>
+						<s:RadioButton buttonMode="true" groupName="F501_47" label="全部" value=""/>
+						<s:RadioButton buttonMode="true" groupName="F501_47" label="已检查" value="1"/>
+						<s:RadioButton buttonMode="true" groupName="F501_47" label="未检查" value="2" selected="true"/>
+					</s:HGroup>
+					
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="申请日期"/>
+						<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" />
+
+						<s:Label text="至"/>
+						<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="产妇姓名"/><s:TextInput id="f501_03"/>
+						<s:Label text="证号号码"/><s:TextInput id="f501_05" width="140"/>
+						<s:Button label="读卡" id="duka1" width="60" click="readCard_mother(event)" enabled="false"/>
+						<s:Button label="查询" click="query()"/>
+						<s:Button label="打印" click="printCertificate()"/>
+						<s:Button label="修改" click="update()"/>
+						<s:Button label="删除" click="deleteF501()"/>
+						<s:Button label="超声报告登记" click="registration()" color="#43CD80"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+			
+		</mx:TabNavigator>
+		<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+					<s:GridColumn dataField="f50147" headerText="报告登记" width="100" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomTransformColorItemRenderer"/>
+					
+					<s:GridColumn dataField="f50103" headerText="产妇姓名" width="90"/>
+					<s:GridColumn dataField="f50105" headerText="产妇身份证号" width="140"/>
+					<s:GridColumn dataField="f50106Str" headerText="出生日期" width="90"/>
+					<s:GridColumn dataField="f50107" headerText="联系方式" width="90"/>
+					
+					<s:GridColumn dataField="f50114Zh" headerText="本次胎儿数" width="100"/>
+					<s:GridColumn dataField="f50115" headerText="本次胎数" width="90"/>
+					<s:GridColumn dataField="f50118" headerText="月经周期天" width="90"/>
+					<s:GridColumn dataField="f50117Str" headerText="末次月经" width="90"/>
+					<s:GridColumn dataField="f50123" headerText="临床诊断" width="140"/>
+					<s:GridColumn dataField="f50124" headerText="申请医生" width="90"/>
+					<s:GridColumn dataField="f50125Str" headerText="申请日期" width="90"/>
+					<s:GridColumn dataField="f50126Zh" headerText="申请单位" width="100"/>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+		<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+	</s:VGroup>
+</s:Module>

@@ -1,0 +1,252 @@
+package com.xyw.sys.custom.component
+{
+	import flash.events.Event;
+	
+	import mx.collections.ArrayCollection;
+	import mx.collections.Sort;
+	import mx.core.Application;
+	import mx.core.UIComponent;
+	import mx.events.CollectionEvent;
+	import mx.utils.DescribeTypeCache;
+	
+	//
+	// Security filters UI components based on metadata with in UIComponenets
+	//
+	public class SecurityControler {
+		
+		public static var defaultControlBy : String = 'visible';
+		
+		[Bindable] private static var _permissions:ArrayCollection;
+		/**
+		 * start security control before the UIComponents are added with permission strings
+		 */
+		public static function start(permissions:ArrayCollection = null,default_control_by : String = "visible"):void {
+			setPermissions(permissions);
+			defaultControlBy = default_control_by;
+			
+			Application.application.systemManager.addEventListener(Event.ADDED_TO_STAGE, processComponenet, true);
+		}
+		
+		/**
+		 * stop security control
+		 */
+		public static function stop():void {
+			Application.application.systemManager.removeEventListener(Event.ADDED_TO_STAGE, processComponenet);
+		}
+		
+		private static function setPermissions(permissions:ArrayCollection)
+		{
+			if(permissions == null) {
+				_permissions = new ArrayCollection();
+			} else {
+				_permissions = permissions;
+			}
+			_permissions.sort = new Sort();
+			_permissions.refresh();
+			_permissions.addEventListener(CollectionEvent.COLLECTION_CHANGE, updateDisplay);
+		}
+		
+		public static function removeAllPerms():void {
+			updatePerms(null);
+		}
+				
+		/**
+		 * Overwrites perms with ArrayCollection
+		 */
+		public static function updatePerms(perms:ArrayCollection):void {
+			setPermissions(perms);
+			//update display
+			updateDisplay(null);
+		}
+		
+		public static function addAllPerms(perms : ArrayCollection): void {
+			for each(var item in perms){
+				_permissions.addItem(item);
+			}
+		}
+
+		/**
+		 * Adds permissions to the security
+		 */
+		public static function addPerm(permName:String):void {
+			if(!_permissions.contains(permName))
+				_permissions.addItem(permName);
+		}
+
+		/**
+		 * Removes permission from security
+		 */
+		public static function removePerm(permName:String):void {
+			while(_permissions.contains(permName))
+				_permissions.removeItemAt(_permissions.getItemIndex(permName));
+		}
+		
+		/**
+		 * 增加需要保护的资源
+		 */
+		public static function addSecurityAction(comp:UIComponent,permission:String = null,controlBy:String = null) : void {
+			var securityAction : SecurityAction = new SecurityAction();
+			securityAction.comp = comp;
+			securityAction.permission = permission == null ? comp.id : permission;
+			securityAction.controlBy = controlBy == null ? defaultControlBy : controlBy;
+			
+			doActionAndAddToCache(securityAction);
+		}
+		
+		//updates display on changes to the roles
+		private static function updateDisplay(event:Event):void {
+			for each(var securityAction:SecurityAction in SecurityActionCache.instance.getAllActions()) {
+				doAction(securityAction);
+			}
+		}
+		
+		//event for processing when component is added
+		private static function processComponenet(event:Event):void {
+			process(event.target);
+		}
+		
+		//process ui object
+		private static function process(obj:Object):void {
+			if(obj is UIComponent) {
+				var comp:UIComponent = obj as UIComponent;
+				//trace('prepare process comp:'+comp+" name:"+String(comp.name)+" styleName:"+String(comp.styleName));
+				//check for wating action
+				if(comp.id != null && SecurityActionCache.instance.isDelayLoadComp(comp.id)) { 
+					for each(var delayedSecurityAction:SecurityAction in SecurityActionCache.instance.getDelayLoadActions(comp)) {
+						delayedSecurityAction.comp = comp;
+						doAction(delayedSecurityAction);
+						SecurityActionCache.instance.addAction(delayedSecurityAction);							
+					}
+				} 
+				
+				//process by annotation
+				var typeInfo:XML = DescribeTypeCache.describeType(obj).typeDescription;
+				var md:XMLList = typeInfo.metadata.(@name == SecurityConstants.PROTECTED_ANNOTATION_NAME);				
+				for each (var metadata:XML in md) {
+					var securityAction:SecurityAction = SecurityAction.createActionFromAnnotation(metadata,defaultControlBy);
+					findComponentAndProcess(comp,securityAction);
+				}
+				
+				//precess by styleName
+				var securityAction:SecurityAction = SecurityAction.createActionFromStyleName(comp,defaultControlBy);
+				if(securityAction != null) {
+					doActionAndAddToCache(securityAction);
+				}
+				
+				//process by ISecurityMetadata
+				if(comp is ISecurityMetadata) {
+					var securityMetadaa : ISecurityMetadata = comp as ISecurityMetadata;
+					for each (var item : Object in securityMetadaa.getSecurityActions()) {
+						var securityAction:SecurityAction = SecurityAction.createActionFromInterface(item,defaultControlBy);
+						if(securityAction != null) {
+							doActionAndAddToCache(securityAction);
+						}
+					}
+				}
+			//going to have to match on id and parentDocument
+			}
+		}
+		
+		private static function findComponentAndProcess(comp:UIComponent,securityAction:SecurityAction):void 
+		{
+			if(securityAction.componentId == null || 
+					securityAction.componentId == "" || securityAction.componentId == SecurityConstants.PARENT_STRING) { //process protections for parent
+				securityAction.comp = comp;
+				doActionAndAddToCache(securityAction);
+			} else {
+				if(comp.getChildByName(securityAction.componentId) == null) { // child comp has not been created yet 										
+					securityAction.parentComp = comp;	
+					SecurityActionCache.instance.addDelayLoadAction(securityAction);	
+				} else { //process child component
+					securityAction.comp = comp.getChildByName(securityAction.componentId) as UIComponent;
+					doActionAndAddToCache(securityAction);
+				}
+			}			
+		}
+		
+		static function doActionAndAddToCache(securityAction:SecurityAction) {
+			doAction(securityAction);
+			SecurityActionCache.instance.addAction(securityAction);
+		}
+				
+		//process action
+		static function doAction(securityAction:SecurityAction):void {
+			var controlBy : String = securityAction.controlBy;
+			if(isPermitted(securityAction.permission)) {
+				//trace('permitted, controlBy:'+controlBy+" comp.id:"+securityAction.comp.id + " comp:"+securityAction.comp);
+				if( controlBy == SecurityConstants.CONTROY_BY_ENABLE ||
+					controlBy == SecurityConstants.CONTROY_BY_VISABLE ||
+					controlBy == SecurityConstants.CONTROY_BY_INCLUDE_IN_LAYOUT) 
+				{
+					securityAction.comp[controlBy] = true;
+					if(controlBy == SecurityConstants.CONTROY_BY_VISABLE) 
+					{
+						securityAction.comp.includeInLayout = true;
+					}
+				}
+				else if (controlBy == SecurityConstants.CONTROY_BY_ALL) 
+				{
+					securityAction.comp.includeInLayout = true;
+					securityAction.comp.visible = true;
+					securityAction.comp.enabled = true;
+				}
+				else if (controlBy == SecurityConstants.CONTROY_BY_REMOVE) 
+				{
+					if(securityAction.parentComp != null && securityAction.parentComp is UIComponent && !securityAction.parentComp.contains(securityAction.comp)) {
+						securityAction.parentComp.addChildAt(securityAction.comp, securityAction.childPosition);
+					}
+				}
+				else 
+				{
+					throw new Error("unknow controlBy:"+controlBy+" on comp:"+securityAction.comp);
+				}
+			} else {
+				//trace('not permitted, controlBy:'+controlBy+" comp.id:"+securityAction.comp.id + " comp:"+securityAction.comp);
+				if( controlBy == SecurityConstants.CONTROY_BY_ENABLE ||
+					controlBy == SecurityConstants.CONTROY_BY_VISABLE ||
+					controlBy == SecurityConstants.CONTROY_BY_INCLUDE_IN_LAYOUT ) 
+				{
+					securityAction.comp[controlBy] = false;
+					if(controlBy == SecurityConstants.CONTROY_BY_VISABLE) 
+					{
+						securityAction.comp.includeInLayout = false;
+					}
+				}
+				else if (controlBy == SecurityConstants.CONTROY_BY_ALL) 
+				{
+					securityAction.comp.includeInLayout = false;
+					securityAction.comp.visible = false;
+					securityAction.comp.enabled = false;
+				}
+				else if (controlBy == SecurityConstants.CONTROY_BY_REMOVE) 
+				{
+					//trace('prepare remove from parent:'+securityAction.comp.parent+" comp.id:"+securityAction.comp.id+" childPosition:"+securityAction.childPosition);
+					//test child is removed
+					if(securityAction.comp.parent != null) {
+						//trace('real remove from parent:'+securityAction.comp.parent+" comp.id:"+securityAction.comp.id+" childPosition:"+securityAction.childPosition);
+						securityAction.parentComp = securityAction.comp.parent as UIComponent;
+						securityAction.childPosition = (securityAction.comp.parent as UIComponent).getChildIndex(securityAction.comp);
+						(securityAction.comp.parent as UIComponent).removeChild(securityAction.comp);
+					}
+				}
+				else 
+				{
+					throw new Error("unknow controlBy:"+controlBy+" on comp:"+securityAction.comp);
+				}
+			}
+		}
+
+		//check for permissions
+		public static function isPermitted(allowedPerms:String):Boolean {
+			if(allowedPerms == null) return false;
+			var paramArray : Array = allowedPerms.split(',');
+			for each(var perm:String in paramArray) {
+				if(_permissions.contains(perm)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+	}
+}

@@ -1,0 +1,57 @@
+package com.xyw.sys.service;
+
+import com.xyw.sys.model.AreaRequest;
+import com.xyw.sys.model.AreaResponse;
+import com.xyw.sys.model.AssistRequest;
+import com.xyw.sys.model.AssistResponse;
+import com.xyw.sys.model.ComboBoxDataRequest;
+import com.xyw.sys.model.ComboBoxDataResponse;
+import com.xyw.sys.model.D804Request;
+import com.xyw.sys.model.D804Response;
+import com.xyw.sys.model.D805;
+import com.xyw.sys.model.D806;
+import com.xyw.sys.model.InstitutionRequest;
+import com.xyw.sys.model.InstitutionResponse;
+import com.xyw.sys.model.LoginRequest;
+import com.xyw.sys.model.LoginResponse;
+import com.xyw.sys.model.MessageResponse;
+import com.xyw.sys.model.NoticeRequest;
+import com.xyw.sys.model.NoticeResponse;
+import com.xyw.sys.model.PicDataRequest;
+import com.xyw.sys.model.PicDataResponse;
+import com.xyw.sys.model.RolePrivilegeRequest;
+import com.xyw.sys.model.RolePrivilegeResponse;
+import com.xyw.sys.model.ServiceDateRequest;
+import com.xyw.sys.model.ServiceDateResponse;
+import com.xyw.sys.model.SysView02Request;
+import com.xyw.sys.model.SysView02Response;
+import com.xyw.sys.model.SystemUser;
+
+public interface SystemService {
+	public LoginResponse login(LoginRequest systemRequest);
+	public AreaResponse getCustomAreaComboBoxData(AreaRequest areaRequest);
+	public AreaResponse getCustomAreaComboBoxDataJS(AreaRequest areaRequest);
+	public AreaResponse getCustomAreaComboBoxDataNew(AreaRequest areaRequest);
+	public InstitutionResponse getCustomInstitutionComboBoxData(InstitutionRequest institutionRequest);
+	public InstitutionResponse getCustomInstitutionComboBoxDataCounty(InstitutionRequest institutionRequest);
+	public InstitutionResponse getCustomInstitutionComboBoxDataTown(InstitutionRequest institutionRequest);
+	public ComboBoxDataResponse getComboBoxData(ComboBoxDataRequest comboBoxDataRequest);
+	public AreaResponse getCustomAreaComboBoxDataCommon(AreaRequest areaRequest);
+	public MessageResponse updatePassword(SystemUser systemUser);
+	public MessageResponse exitSystem();
+	public NoticeResponse setArticleB(NoticeRequest noticeRequest);
+	public NoticeResponse getArticleB(NoticeRequest noticeRequest);
+	public InstitutionResponse getInstitutionLevel(InstitutionRequest institutionRequest);
+	public NoticeResponse getHelpArticleA(AssistRequest assistRequest);
+	public AssistResponse getHelpArticleB(AssistRequest assistRequest);
+	public AssistResponse setHelpArticleB(AssistRequest assistRequest);
+	public SysView02Response getAccount(SysView02Request sysView02Request);
+	public boolean modifyAccountState(String d801_01, String flag);
+	public boolean grantRole(D806 d806);
+	public D804Response getRoles(D804Request d804Request);
+	public RolePrivilegeResponse getRolePrivilege(RolePrivilegeRequest rolePrivilegeRequest);
+	public boolean addPrivilegeToRole(D805 d805);
+	boolean setNotice(String d80101,String d80118);
+	public PicDataResponse changePicAttribute(PicDataRequest picDataRequest);
+	public ServiceDateResponse getServiceDate(ServiceDateRequest serviceDateRequest);
+}

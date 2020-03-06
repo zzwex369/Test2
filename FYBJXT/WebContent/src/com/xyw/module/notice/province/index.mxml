@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  creationComplete="init(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="setArticleB" result="setArticleBHandler(event)" fault="faultHandler(event)"/>
+			<s:method name="getArticleB" result="getArticleBHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.NoticeRequest;
+			import com.xyw.sys.model.SessionException;
+			
+			import mx.accessibility.AlertAccImpl;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.messaging.AbstractConsumer;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			private function init(event:FlexEvent):void
+			{
+				initPara();
+			}
+			
+			private function initPara():void
+			{
+				var noticeRequest:NoticeRequest = new NoticeRequest();
+				var path:String = "policyPaper/notice/";
+				var fileName:String = "provinceNoticeMessage";
+				
+				noticeRequest.fileName = fileName;
+				noticeRequest.path = path;
+				this.systemService.getArticleB(noticeRequest);
+			}
+			
+			private function save(event:MouseEvent):void
+			{
+				var noticeRequest:NoticeRequest = new NoticeRequest();
+				noticeRequest.message = this.richTextEdtor.htmlText;
+				noticeRequest.fileName = "provinceNoticeMessage";
+				noticeRequest.path = "policyPaper/notice/";
+				this.systemService.setArticleB(noticeRequest);
+			}
+			
+			private function setArticleBHandler(event:ResultEvent):void
+			{
+				var noticeResponse:Object = event.result as Object;
+				if(noticeResponse.errorMessage == null)
+				{
+					Alert.show(noticeResponse.promptMessage,"系统提示");
+				}else
+				{
+					Alert.show(noticeResponse.errorMessage,"系统提示");
+				}
+			}
+			
+			private function getArticleBHandler(event:ResultEvent):void
+			{
+				var noticeResponse:Object = event.result as Object;
+				this.richTextEdtor.htmlText = noticeResponse.message;
+			}
+			
+			private function clear(event:MouseEvent):void
+			{
+				this.richTextEdtor.htmlText = "";
+			}
+			
+			private function remove(event:MouseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:VGroup width="100%" height="100%" chromeColor="white" horizontalAlign="center" verticalAlign="middle">
+		<mx:RichTextEditor id="richTextEdtor" chromeColor="#c7c7c7" status="编辑状态" width="900" height="370"/>
+		<s:HGroup width="900" horizontalAlign="right" paddingBottom="5" paddingRight="5">
+			<s:Button label="保存" click="save(event)"/>
+			<s:Button label="清空" click="clear(event)"/>
+			<!--s:Button label="关闭" click="remove(event)"/-->
+		</s:HGroup>	
+	</s:VGroup>
+</s:Module>

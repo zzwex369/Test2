@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationComplete()">
+	<fx:Declarations>
+		<s:RemoteObject id="f304Service" destination="f304Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveF304" result="saveF304Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.birthcard.QueryWindow;
+			import com.xyw.module.fnbj.model.F304;
+			import com.xyw.module.fnbj.model.VF301;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			private var f304:F304 =new F304();
+			public var systemUser:SystemUser =null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			
+			public function moduleCreationComplete():void
+			{
+				this.systemUser =this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka =="1"){
+					this.duka1.enabled =true;
+					this.duka2.enabled =true;
+				}
+				var now:Date = new Date();
+				this.F304_03.selectedDate =now;
+				this.initializeComboBox();
+			}
+			
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t where t.d101_01 = '" + this.systemUser.institutionCode + "' or t.d101_11 ='" + this.systemUser.institutionCode +"'";
+				comboBoxDataRequest.flag ="D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_06";
+				comboBoxDataRequest.sql = "select * from S301_06 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			private function getDroupDownListSelectedIndex(arrayCollection:ArrayCollection,defaultValue:String):int{
+				var len:int =arrayCollection.length;
+				var i:uint =0;
+				var index:int =0;
+				while(i<len){
+					var comboBoxDataP:Object =arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data ==defaultValue){
+						index =arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag =="D101"){
+					var f302_50Index:int =this.getDroupDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					this.F304_08.dataProvider =comboBoxDataList;
+					this.F304_08.selectedIndex =f302_50Index;
+				}else if(flag=="S301_06"){
+					this.F304_11.dataProvider =comboBoxDataList;
+					this.F304_11.selectedIndex =1;
+				}
+			}
+			protected function readCard_B(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.f304_10.text = array[0];//姓名
+							this.f304_12.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F304_10.text = array[0];//姓名
+							this.F304_12.text = array[5];//身份证号
+							//							this.d301_13.text = array[3];//出生日期
+							
+							var nation:String = array[2] + "族";//民族
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			private function queryfnbjdj():void
+			{
+				if(this.f304_10.text =="" && this.f304_12.text =="" && this.f301_13.text ==""){
+					Alert.show("请输入孕妇姓名或者身份证号码或者手机号码！","系统提示");
+					return;
+				}
+				var querywindow:QueryWindow =new QueryWindow();
+				querywindow.owner =this;
+				querywindow.f30102 =StringUtil.trim(this.f304_10.text);
+				querywindow.f30105 =StringUtil.trim(this.f304_12.text);
+				querywindow.f30113 =StringUtil.trim(this.f301_13.text);
+				querywindow.f30132 =this.systemUser.institutionCode;
+				PopUpManager.addPopUp(querywindow,this);
+				var x:Number =(this.parentApplication.mdiCanvas.width-querywindow.width)/ 2 + 50;
+				var y:Number =(this.parentApplication.mdiCanvas.height -querywindow.height)/ 2;
+				querywindow.move(x,y);
+			}
+			/*----------------加载妇女档案信息---------------*/
+			public function load(vf301:VF301):void
+			{
+				this.f304.f30402 =vf301.f30101;  //产妇档案主键     F302_02
+				this.F304_10.text =vf301.f30102;  //产妇姓名   F302_03
+				this.F304_12.text =vf301.f30105;  //证件号码     F302_05
+				
+				//证件类型     F302_04
+				var f304_11DataPrivider:ArrayCollection =ArrayCollection(this.F304_11.dataProvider);
+				var f30411Index:int =this.getDroupDownListSelectedIndex(f304_11DataPrivider,vf301.f30104);
+				this.F304_11.selectedIndex =f30411Index;	
+				this.saveF304.enabled =true;
+			}
+			private function validateAreaCode(areaCode:String):Boolean
+			{
+				if(areaCode == "" || areaCode.length == 0){
+					return false;
+				} else if(areaCode.length < 9){
+					return false;
+				} else {
+					return true;
+				}
+			}
+			public function validate1():void{
+				if(this.F304_10.text == "")
+				{
+					Alert.show("请输入孕产妇姓名","系统提示");
+					return;
+				}
+				if(this.F304_11.selectedItem.data == 0){
+					Alert.show("请选择孕产妇证件类别","系统提示");
+					return;
+				}
+				if(this.F304_05.text == ""){
+					Alert.show("请输入生育联系卡卡号","系统提示");
+					return;
+				}
+				if(this.F304_12.text == "")
+				{
+					Alert.show("请输入孕产妇的证件号码","系统提示");
+					return;
+				}
+				if(this.F304_08.selectedItem.data ==0){
+					Alert.show("请选择建卡单位!","系统提示");
+					return;
+				}
+				if(this.F304_03.text == "")
+				{
+					Alert.show("请选择发卡日期!","系统提示");
+					return;
+				}
+				if(this.F304_04.text == "")
+				{
+					Alert.show("请输入街道生育科电话!","系统提示");
+					return;
+				}
+				if(!validateAreaCode(this.F304_06.getAreaCode())){
+					Alert.show("居委会地址要选到最下级！","系统提示");
+					return;
+				}
+				this.saveCard();
+			}
+			public function saveCard():void{
+				if(this.F304_03.text ==null){
+					this.f304.f30403 =null;
+				}else{
+					this.f304.f30403 =DateField.stringToDate(this.F304_03.text, "YYYY-MM-DD");
+				}
+				this.f304.f30404 =this.F304_04.text;
+				this.f304.f30405 =this.F304_05.text;
+				this.f304.f30406 =this.F304_06.getAreaCode();
+				this.f304.f30407 =this.F304_07.text;
+				this.f304.f30408 =this.F304_08.selectedItem.data;
+				this.f304.f30409 =this.F304_09.text;
+				this.f304.f30410 =this.F304_10.text;
+				this.f304.f30411 =this.F304_11.selectedItem.data;
+				this.f304.f30412 =this.F304_12.text;
+				
+				this.f304Service.saveF304(f304);	
+			}
+			public function saveF304Handler(event:ResultEvent):void{
+				var f304Response:Object =event.result;
+				if(!f304Response.state){
+					Alert.show(f304Response.errorMessage,"系统提示");
+					return;
+				}
+				this.saveF304.enabled =false;
+				Alert.show("保存成功！ ","系统提示");
+				removeRecord();
+			}
+			private function removeRecord():void{
+				this.F304_03.selectedDate =new Date();
+				this.F304_04.text="";
+				this.F304_05.text="";
+				this.F304_07.text="";
+				this.F304_08.selectedIndex=this.getDroupDownListSelectedIndex(ArrayCollection(this.F304_08.dataProvider),this.systemUser.institutionCode);
+				this.F304_09.text="";
+				this.F304_10.text="";
+				this.F304_11.selectedIndex=this.getDroupDownListSelectedIndex(ArrayCollection(this.F304_11.dataProvider),"1");
+				this.F304_12.text="";
+				this.f304_10.text ="";
+				this.f304_12.text ="";
+				this.f301_13.text ="";
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator  id="content" width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="孕产妇查询">			
+					<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" verticalAlign="middle" paddingBottom="5">
+							<s:Label text="请先查询妇女档案信息" styleName="mustQuery"/>
+							<s:HGroup visible="true" id="fmload" verticalAlign="middle">
+								<s:Label text="请输入妇女姓名" paddingLeft="8"/><s:TextInput id="f304_10"/>
+								<s:Label text="证件号码" /><s:TextInput id="f304_12" width="140"/>
+								<s:Label text="身份证号" /><s:TextInput id="f301_13" width="140"/>
+								<s:Button click="queryfnbjdj()" label="查询"/>	
+								<s:Button label="读卡" id="duka1" enabled="false" width="60" click="readCard_B(event)"/>	
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent label="基本情况" width="100%">	
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>	
+								<s:Label text="孕妇姓名"/>	
+								<s:TextInput id="F304_10" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件类别" paddingLeft="15"/>	
+								<s:DropDownList id="F304_11" width="140" enabled="false"/>		
+								<s:Label text="*" styleName="must"/>	
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="生育联系卡" paddingLeft="15"/>
+								<s:TextInput id="F304_05" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证    件    号    码" paddingLeft="15"/>
+								<s:TextInput id="F304_12" width="140" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+								<s:Button label="读卡" id="duka2" enabled="false" width="60" click="readCard_mother(event)"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="建卡单位"/>
+								<s:DropDownList id="F304_08" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="发卡日期" paddingLeft="15"/>
+								<mx:DateField yearNavigationEnabled="true" id="F304_03" width="140" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>	
+								<s:Label text="所在居委会" paddingLeft="15"/>	
+								<s:TextInput id="F304_09" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="街道生育科电话" paddingLeft="15"/>
+								<s:TextInput id="F304_04" width="140" maxChars="12" restrict="0-9"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem colSpan="5">
+								<s:Label text="居委会地址"/>
+								<component:AreaComboBoxCommon id="F304_06" width="880"/>
+								<s:Label text="*" styleName="must"/>
+								<s:Label text="村"/>
+								<s:TextInput id="F304_07" width="140"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<s:HGroup paddingBottom="10" verticalAlign="middle" width="80%" horizontalAlign="right">
+				<s:Button label="保存" id="saveF304" click="validate1()" enabled="false"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>
+

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="1075" height="100%"
+		  creationComplete="init(event)" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="governmentService" destination="governmentService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveD402" result="saveD402Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:right;
+			verticalAlign:middle;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.submitQuestion.model.D402;
+			import com.xyw.module.submitQuestion.model.D402Request;
+			import com.xyw.sys.model.SystemUser;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.ResultEvent;
+			
+			public var systemUser:SystemUser = null;
+			
+			protected function init(event:FlexEvent):void
+			{
+				
+				this.d402_20.dataProvider = new ArrayCollection([{label:"选择", data:""},{label:"未打印", data:"0"},{label:"已打印", data:"1"}]);
+				this.d402_20.selectedIndex = 0;
+				var date:Date = new Date();
+				var matter:DateFormatter = new DateFormatter();
+				matter.formatString = "YYYY-MM-DD";
+				
+				this.d402_12.text = matter.format(date);
+				this.d402_12.enabled = false;
+			}
+			
+			protected function saveD402(event:MouseEvent):void
+			{
+				
+				if(this.d402_02.text == ""){
+					Alert.show("请输入婴儿姓名！","系统提示");
+					return;
+				}
+				if(this.d402_03.text == ""){
+					Alert.show("请输入出生证号！","系统提示");
+					return;
+				}
+				if(this.d402_15.text == ""){
+					Alert.show("申请人姓名不能为空！","系统提示");
+					return;
+				}
+				if(this.d402_14.text == ""){
+					Alert.show("申请人电话不能为空！","系统提示");
+					return;
+				}
+				if(this.d402_20.selectedItem.data == ""){
+					Alert.show("请选择是否打印！","系统提示");
+					return;
+				}
+				if(this.d402_08.text == ""){
+					Alert.show("错误信息不能为空！","系统提示");
+					return;
+				}
+				if(this.d402_09.text == ""){
+					Alert.show("修改信息不能为空！","系统提示");
+					return;
+				}
+				
+				if(this.d402_11.getLastSelectedInstitutionCode() == ""){
+					Alert.show("请选择申请医院！","系统提示");
+					return;
+				}
+				Alert.yesLabel = "确定";
+				Alert.noLabel = "取消";	
+				Alert.show("确认提交？","提交信息",1|2,this,saveD402A);
+			}
+			
+			private function saveD402A(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+					this.systemUser = this.parentApplication.systemUser;
+					
+					var d402:D402 = new D402();
+					d402.d402_02 = this.d402_02.text;
+					d402.d402_03 = this.d402_03.text;
+					d402.d402_04 = this.d402_04.text;
+					d402.d402_05 = this.d402_05.text;
+					d402.d402_06 = this.d402_06.text;
+					d402.d402_07 = this.d402_07.text;
+					d402.d402_08 = this.d402_08.text;
+					d402.d402_09 = this.d402_09.text;
+					d402.d402_10 = "0";
+					d402.d402_11 = this.d402_11.getLastSelectedInstitutionCode();
+					d402.d402_12 = DateFormatter.parseDateString(this.d402_12.text);
+					d402.d402_14 = this.d402_14.text;
+					d402.d402_15 = this.d402_15.text;
+					d402.d402_19 = "0";
+					d402.d402_20 = this.d402_20.selectedItem.data;
+					
+					var d402Request:D402Request = new D402Request();
+					d402Request.d402 = d402;
+					
+					this.governmentService.saveD402(d402Request);
+				}
+			}
+			
+			protected function saveD402Handler(event:ResultEvent):void
+			{
+				var d402Response:Object = event.result;
+				if(d402Response.promptMessage == ""){
+					Alert.show(d402Response.errorMessage,"系统提示");
+				}else{
+					Alert.show(d402Response.promptMessage,"系统提示");
+					this.validateRenewBirth.enabled = false;
+				}
+				
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="100%">
+				<s:NavigatorContent  label="基本信息" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid width="100%">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="婴儿姓名"/><s:TextInput id="d402_02"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出  生  证  号"/><s:TextInput id="d402_03" width="135"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="申请人姓名"/><s:TextInput id="d402_15"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="申 请 人 电 话"/><s:TextInput id="d402_14" width="135"/>
+								</mx:GridItem>
+								<mx:GridItem >
+									<s:Label text="出生证是否打印"/><s:DropDownList id="d402_20" width="100"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="母亲姓名"/><s:TextInput id="d402_04"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="母亲身份证号"/><s:TextInput id="d402_05" width="135"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="父 亲 姓 名"/><s:TextInput id="d402_06"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="父亲身份证号"/><s:TextInput id="d402_07" width="135"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="填    表    时    间"/><s:TextInput id="d402_12" width="100"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="4" horizontalAlign="left">
+									<s:Label text="申请医院"/><component:InstitutionComboBox id="d402_11"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="100%">
+				<s:NavigatorContent label="错误信息描述" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:TextArea id="d402_08" width="1030" height="150"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="100%">
+				<s:NavigatorContent label="修改信息描述" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:TextArea id="d402_09" width="1030" height="150"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="center" paddingBottom="20" paddingTop="10" paddingLeft="10" width="100%" height="30">
+				<s:Button label="确定" click="saveD402(event)" id="validateRenewBirth"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

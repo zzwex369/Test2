@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   close="removeWindow()" chromeColor="#429edd"
+			   width="800" height="460" title="{this.d807.d80702}"
+			   creationComplete="init(event)"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getHelpArticleA" result="getHelpArticleAHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.model.D807;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.AssistRequest;
+			import com.xyw.sys.model.SessionException;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			public var idStr:String;
+			
+			[Bindable]
+			public var d807:D807;
+			
+			private function init(event:FlexEvent):void
+			{
+				var assistRequest:AssistRequest = new AssistRequest();
+				assistRequest.path = "policyPaper/help/";
+				assistRequest.fileName = this.d807.d80703;
+				
+				this.systemService.getHelpArticleA(assistRequest);
+			}
+			
+			private function getHelpArticleAHandler(event:ResultEvent):void
+			{
+				var noticeResponse:Object = event.result;
+				//this.textArea.textFlow = TextConverter.importToFlow(noticeResponse.message,TextConverter.TEXT_FIELD_HTML_FORMAT);
+				this.textArea.htmlText = noticeResponse.message;
+			}
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup>
+		<mx:TextArea id="textArea" width="800" height="400" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10"/>
+		<s:HGroup paddingLeft="700">
+			<s:Button label="关闭" click="removeWindow()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 initialize="init()"
+		 width="350" height="150" backgroundColor="#BEAB73" 
+		 skinClass="com.xyw.sys.custom.skin.panelskin" title="系统处理中" >
+	<s:VGroup width="100%" paddingLeft="10" paddingTop="10" paddingRight="10" height="80%" 
+			  id="vgroup"
+			  verticalAlign="middle">
+		<mx:ProgressBar id="progressBar" visible="true" y="52" width="100%" height="25"
+						label=" 努力处理中请稍候...."  color="#000000" direction="right"
+						fontSize="14" fontWeight="normal" labelPlacement="center" maximum="100"
+						minimum="0" mode="manual"  trackHeight="15"/>
+		
+		
+	</s:VGroup> 
+	<fx:Script>
+ 
+		<![CDATA[
+			
+			import flash.utils.Timer;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			public function close():void{
+				PopUpManager.removePopUp(this);
+				timer.stop();
+			}
+			private var timer:Timer;
+			
+			public function init():void {
+			/* 	timer = new Timer(10);
+				timer.addEventListener(TimerEvent.TIMER, timer_timer);
+				playProgressBar(); */
+			}
+			
+			private function timer_timer(evt:TimerEvent):void {
+				progressBar.setProgress(progressBar.value + 1, 100);
+				if(progressBar.value>=100){
+					
+					resetProgressBar();
+				}
+			}
+			
+			private function progressBar_complete(evt:Event):void {
+				timer.stop();
+			}
+			
+			public function resetProgressBar():void {
+				progressBar.setProgress(0, 100);
+				progressBar.scaleX = 1.0; // 100%
+				progressBar.scaleY = 1.0; // 100%
+				progressBar.alpha = 1.0; // 100%
+			}
+			private function playProgressBar():void {
+				resetProgressBar();
+				timer.start();
+			}
+			
+		
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+</s:Panel> 

@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:gja="com.xyw.module.msss.la.fngjadacx.*"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%"
+		  creationComplete="vgroup1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="l302Service" destination="l302Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL302" result="saveOrRenewL302Handler(event)"/>
+			<s:method name="renewL302" result="saveOrRenewL302Handler(event)"/>
+		</s:RemoteObject>
+
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="saveSuccess", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import com.xyw.module.msss.la.model.L302;
+			import com.xyw.module.msss.la.model.L302Request;
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			include "customLA.as";
+			public var l302:L302=null;
+			private var systemUser:SystemUser;
+			public var l30202:String;
+			private var l302102:String;
+			public var state:String;
+			public var vl302:VL302=null;
+			private var i:int=0;
+			[Bindable]
+			private var l302108Ebd:Boolean=false;
+			[Bindable]
+			private var l302110Ebd:Boolean=false;
+			private function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.enabled=false;
+				systemUser=this.parentApplication.systemUser;
+				l30202=l302?l302.l30202:vl302.l30202;
+				l302102=l302?l302.l302102:vl302.l302102;
+				if("0"==state)
+					callLater(updatesfzl);
+				else{
+					if(!l302102)
+						return;
+					var result:Array=getCheckEnabled(['1','2'],l302102.split(','),true);
+					l302108Ebd=result[0];
+					l302110Ebd=getCheckEnabled(['3','13','17','18','19','20'],result[1])[0];
+					if(!l302108Ebd&&!l302110Ebd)
+						Alert.show("最后诊断为癌前病变或恶性肿瘤者才能填写此表！","系统提示");
+					else
+						this.enabled=!this.enabled;
+				}
+				
+			}
+			
+			
+			private function jcdjCreationComplete():void
+			{
+				check.institution.text="随访机构";
+				check.Checkname.text="随访人员";
+				check.time.text="随访日期";
+				if('1'==state)
+					check._initializeComboBox('3');
+			}
+			
+			public function updatesfzl():void
+			{
+				l302108Ebd=vl302.l302108;
+				l302110Ebd=vl302.l302110;
+				CompMethod.setRadioButtonSelect([L302_108],vl302.l302108);
+				CompMethod.setRadioButtonSelect([L302_109],vl302.l302109);
+				CompMethod.setRadioButtonSelect([L302_110],vl302.l302110);
+				CompMethod.setRadioButtonSelect([L302_111],vl302.l302111);
+				L302_116.text=vl302.l302116;
+				L302_117.text=vl302.l302117;
+				L302_174.selectedIndex=CompMethod.getDropDownListSelectedIndex(L302_174.dataProvider,vl302.l302174);
+				L302_175.text=vl302.l302175;
+				callLater(institutionCodeDataProvider);
+				check.checker.text=vl302.l302113;
+				check.nowDate.text=vl302.l302114str;
+			}
+			
+			private function institutionCodeDataProvider():void
+			{
+				if(!(check.institutionCode.dataProvider))
+				{
+					callLater(institutionCodeDataProvider);
+					return ;				
+				}
+			
+				check.institutionCode.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(check.institutionCode.dataProvider),vl302.l302112);
+			}
+		
+			
+			/**
+			 *
+			 */
+			private function verification(_l302:L302):Boolean
+			{
+				
+				if(_l302.l302109!='1'&&_l302.l302111!='1')
+					L302_174.selectedIndex=0;
+				
+				
+				if(l302108Ebd)
+				{
+					if(!_l302.l302108)
+					{
+						Alert.show("请选择宫颈病变随访情况","系统提示");
+						return false;
+					}
+					if(L302_116.enabled&&!L302_116.text)
+					{
+						Alert.show("请输入宫颈病变接收治疗不详原因","系统提示");
+						return false;
+					}
+					
+				}
+				
+				if(l302110Ebd)
+				{
+					if(!_l302.l302110)
+					{
+						Alert.show("请选择其他肿瘤随访情况","系统提示");
+						return false;
+					}
+					
+					if(L302_117.enabled&&!L302_117.text)
+					{
+						Alert.show("请输入肿瘤接受治疗不详原因","系统提示");
+						return false
+					}
+					
+					
+				}
+				
+				if(L302_174.enabled&&L302_174.selectedIndex<1)
+				{
+					Alert.show("请选择治疗机构","系统提示");
+					return false;
+				
+				}		
+				
+				if(!check.checker.text)
+				{
+					Alert.show("请输入随访人员信息","系统提示");
+					return false
+				} 
+				save.enabled=false;
+				return true;
+			}
+			
+			private function savesfzl():void
+			{
+				var _l302:L302=new L302();
+				var l302Request:L302Request=new L302Request();
+				_l302.l302108=CompMethod.getRadioButtonValue([L302_108]);
+				_l302.l302109=CompMethod.getRadioButtonValue([L302_109]);
+				_l302.l302110=CompMethod.getRadioButtonValue([L302_110]);
+				_l302.l302111=CompMethod.getRadioButtonValue([L302_111]);
+				
+				if(!verification(_l302))
+					return ;
+				_l302.l302116=StringUtil.trim(L302_116.text);
+				_l302.l302117=StringUtil.trim(L302_117.text);
+				_l302.l302112=check.institutionCode.selectedItem.data;
+				_l302.l302113=StringUtil.trim(check.checker.text);
+				_l302.l302114=DateField.stringToDate(check.nowDate.text,"YYYY-MM-DD");
+				
+				_l302.l302174=L302_174.selectedItem?L302_174.selectedItem.data:null;
+				_l302.l302175=StringUtil.trim(L302_175.text);
+
+				l302Request.flag="8";
+				if("0"==state)
+				{
+					_l302.l30201=vl302.l30201;
+					l302Request.l302=_l302
+					l302Service.renewL302(l302Request);
+				}else
+				{	
+					_l302.l30202=l30202;
+					l302Request.l302=_l302;
+					l302Service.saveL302(l302Request);
+				}
+			}
+	
+			private function saveOrRenewL302Handler(event:ResultEvent):void
+			{
+				var l302Response:Object=event.result;
+				save.enabled=true;
+				if(l302Response.state)
+				{
+					Alert.show("0"==state?"修改成功":"保存成功！","系统提示",1,this,closeHandler);
+					return ;
+				}
+				Alert.show(l302Response.errorMessage,"系统提示");
+			}
+			
+			/**
+			 *
+			 */
+			private function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+					this.dispatchEvent(new Event("saveSuccess"));
+			}
+			
+			private function L302_108_01_changeHandler(hg:HGroup):void
+			{
+				if(!CompMethod.getRadioButtonValue([hg]))
+					CompMethod.setRadioButtonSelect([hg],'1');
+				
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:Scroller x="-6" y="1" width="100%" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<s:HGroup width="608" horizontalAlign="center">
+				<s:Label color="#F11616" fontSize="16" text="最后诊断为癌前病变或恶性肿瘤者填写此表"/>
+			</s:HGroup>
+			<mx:TabNavigator width="608" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="随访治疗情况">
+					<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="119" text="宫颈病变随访情况"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle"
+									  id="L302_108" enabled="{l302108Ebd}">
+								<s:RadioButton width="99" label="1.已随访" groupName="L302_108"  buttonMode="true"
+											   id="L302_108_01" value="1" change="L302_108_01_changeHandler(L302_109)"/>
+								<s:RadioButton width="81" label="2.失访" groupName="L302_108" buttonMode="true"
+											   id="L302_108_02" value="2" change="CompMethod.hasNumEles([L302109])"/>
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle"  id="L302109">
+							<s:Label width="119" text="宫颈病变接受治疗"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_109" enabled="{L302_108_01.selected}">
+								<s:RadioButton width="99" label="1.是" groupName="L302_109"  buttonMode="true" id="L302_109_01"
+											   change="L302_117.text=''"  value="1"/>
+								<s:RadioButton width="81" label="2.否" groupName="L302_109" buttonMode="true" id="L302_109_02"
+											   change="L302_117.text=''" value="2"/>
+								<s:RadioButton width="81" label="3.不详" groupName="L302_109" buttonMode="true" id="L302_109_03"
+											   value="3"/>
+							</s:HGroup>
+							<s:HGroup width="100%" height="100%" verticalAlign="middle">
+								<s:Label text="原因"/><s:TextInput width="130" id="L302_116" enabled="{L302_109_03.selected}"/>
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle" >
+							<s:Label width="119" text="其他肿瘤随访情况"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_110"
+									  enabled="{l302110Ebd}">
+								<s:RadioButton width="99" label="1.已随访" groupName="L302_110"
+											   buttonMode="true" id="L302_110_01" value="1"
+											   change="L302_108_01_changeHandler(L302_111)"/>
+								<s:RadioButton width="81" label="2.失访" groupName="L302_110" buttonMode="true" id="L302_110_02"
+											   value="2" change="CompMethod.hasNumEles([L302111])"/>
+							</s:HGroup>	
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle"   id="L302111">
+							<s:Label width="119" text="其他肿瘤接受治疗"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle" id="L302_111"   enabled="{L302_110_01.selected}">
+								<s:RadioButton width="99" label="1.是" groupName="L302_111"  buttonMode="true" 
+											   id="L302_111_01" value="1"
+											   change="L302_117.text=''"/>
+								<s:RadioButton width="81" label="2.否" groupName="L302_111" buttonMode="true"
+											   id="L302_111_02" change="L302_117.text=''" value="2"/>
+								<s:RadioButton width="81" label="3.不详" groupName="L302_111" buttonMode="true" 
+											   id="L302_111_03" value="3"/>
+							</s:HGroup>
+							<s:HGroup width="100%" height="100%" verticalAlign="middle">
+								<s:Label text="原因" /><s:TextInput width="130" id="L302_117" enabled="{L302_111_03.selected}"/>
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label text="治疗机构"  width="119"/>
+							<component:institutionCodeComboBox id="L302_174" width="300" excludeLable="['计生委','委员会','卫生局','公安部门']"
+															   enabled="{L302_109_01.selected||L302_111_01.selected}"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" >
+							<s:Label text="备注"  />
+							<s:TextArea width="100%" maxChars="200" id="L302_175"/>
+						</s:HGroup>  
+					</s:VGroup>
+				</s:NavigatorContent>
+				
+			</mx:TabNavigator>
+			<gja:gjajcdj width="608" chromeColor="#ffffff" creationPolicy="all" creationComplete="jcdjCreationComplete()" id="check" />
+			<s:HGroup width="608" height="30" contentBackgroundColor="#FF0000" horizontalAlign="center"
+					  paddingBottom="20" paddingLeft="10" paddingTop="10" verticalAlign="middle">
+				<s:Button label="保存" buttonMode="true" id="save" click="savesfzl()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:VGroup>

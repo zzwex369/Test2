@@ -1,0 +1,45 @@
+<%@ page contentType="text/html; charset=utf-8"%>
+<%@ include file = "../../GenXmlData.jsp" %>
+<%
+ //  System.out.println(">>>>>>>>>>");
+String timeStr=request.getParameter("timeStr");
+String timeEnd=request.getParameter("timeEnd");
+String institution=request.getParameter("institution");
+String e70208=request.getParameter("e70208");
+
+ /*
+   System.out.println(timeStr);
+   System.out.println(timeEnd);
+   System.out.println(institution);
+   System.out.println(e70208);*/
+StringBuffer sql = new StringBuffer("select ");
+sql.append("t.E701_06,t.E701_07,t.E701_09,t.E702_09zh,t.E701_17,t.e702_08,t.E701_20,t.E702_73,t.E70107_ZH,");
+sql.append("t.E702_71,t.E702_60ZH,t.E702_68zh,t.E702_71ZH,");
+sql.append("a.E70408_ZH from ");
+sql.append("v_e702 t , V_E704 a where t.e702_02 = a.e704_02(+)  ");
+if(institution.length()==14){
+	sql.append(" and t.E702_71 = '"+institution+"'");
+}else{
+	sql.append(" and t.E702_71 like '"+institution+"%'");
+}
+
+sql.append(" and t.e702_73>=to_date('"+timeStr+"','yyyy-mm-dd')  and  t.e702_73<=to_date('"+timeEnd+"','yyyy-mm-dd')");
+
+
+if("".equals(e70208)){
+	sql.append(" and t.e702_08 >='0' and t.e702_08 <= '35'");
+}else {
+	sql.append("  and t.e702_08 = "+ e70208 +"");
+}
+
+
+	 //System.out.println(sql);
+ /*  System.out.println(timeStr);
+   System.out.println(timeEnd);
+   System.out.println(institution);
+   System.out.println(e70208);*/
+
+%>
+<%
+XML_GenOneRecordset(response,sql.toString());
+%>

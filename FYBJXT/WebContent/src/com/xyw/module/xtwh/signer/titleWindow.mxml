@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" title="添加信息"
+			   xmlns:s="library://ns.adobe.com/flex/spark"  
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   backgroundColor="#5CACEE" width="500" 
+			   cornerRadius="5"
+			   chromeColor="#5CACEE" close = "removeWindow()" 
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	
+	
+	<fx:Declarations>
+		<s:RemoteObject id="signerService" destination="signerService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="save" result="saveHandler(event)" />
+			<s:method name="update" result="updateHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.S301_10;
+			import com.xyw.module.xtwh.model.S301_10Request;
+			import com.xyw.module.xtwh.model.S301_10Response;
+			import com.xyw.sys.custom.component.SingleUploadPic;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.validators.Validator;
+			
+			import org.hamcrest.object.nullValue;
+			
+			import spark.events.TextOperationEvent;
+			
+			public var systemUser:SystemUser =null;
+			[Bindable]
+			public var s02:String;
+			[Bindable]
+			public var s05:String;
+			[Bindable]
+			public var vs301_10:Object = null;
+			[Bindable]
+			private var byteArray:ByteArray;
+			private var s301_10:S301_10 = new S301_10();
+			private var s301_10Request:S301_10Request = new S301_10Request();
+			private function init():void
+			{   
+				if(s05!='1')
+				{
+					grid.removeElement(s06GridRow);
+				}
+				this.systemUser = this.parentApplication.systemUser;
+				this.S_03.text=this.systemUser.institution;
+			}
+			
+			private function add(event:MouseEvent):void
+			{
+				
+				s301_10.s3011002 = this.S_02.text;
+				s301_10.s3011003 = this.systemUser.institutionCode;
+				s301_10.s3011004 = this.systemUser.userCode;
+				s301_10.s3011005 = s05;
+				if(s05=='1'){
+					s301_10.s3011006=S_06.text;
+					s301_10.s3011007=byteArray;
+				}
+				s301_10Request.s301_10 = s301_10;
+				if(this.currentState==this.states[0].name)
+					this.signerService.save(s301_10Request);
+				else
+				{
+					
+					this.signerService.update(s301_10Request);
+				}
+			}
+			
+			private function saveHandler(event:ResultEvent):void
+			{	
+				resultEvetHandler(event);
+			}
+			
+			private function updateHandler(event:ResultEvent):void
+			{
+				resultEvetHandler(event);
+				
+			}
+			
+			private function resultEvetHandler(event:ResultEvent):void
+			{
+				var s301_10Response:Object = event.result;
+				if(!s301_10Response.errorMessage)
+					Alert.show(s301_10Response.promptMessage, "系统提示",1,this,closeHandler);
+				else
+					Alert.show(s301_10Response.errorMessage, "系统提示");
+			}
+			
+			private function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail)
+				{
+					this.removeWindow();
+					var parentIndex:Object = this.owner;
+					parentIndex.refrashPage();
+				}
+			}
+			
+			private function reset(event:MouseEvent):void
+			{
+				this.S_02.text = "";
+				if(s05=='1')
+					byteArray=null;
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			
+			
+			protected function modify_enterStateHandler(event:FlexEvent):void
+			{
+				S_02.text = vs301_10.s3011002;
+				S_03.text = vs301_10.s3011003_zh;
+				s301_10.s3011001=S_01.text=vs301_10.s3011001;	
+				if(s05=='1')
+					S_06.text = vs301_10.s3011006;
+
+				
+			}
+			
+			private function savePicHandler():void
+			{
+					var singleUploadPic:SingleUploadPic=new SingleUploadPic();	
+					singleUploadPic.addEventListener("byteArray",
+						function (event:Event):void
+						{
+							byteArray=singleUploadPic.byteArray;
+						});
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="add"/>
+		<s:State name="modify" enterState="modify_enterStateHandler(event)"/>
+	</s:states>
+	<s:VGroup width="100%" paddingBottom="10" paddingLeft="20" paddingRight="10" paddingTop="10"   creationComplete="init()">
+		<mx:Grid verticalAlign="middle" horizontalAlign="center"  id="grid" width="100%">
+				<mx:GridRow excludeFrom="add">
+					<mx:GridItem verticalAlign="middle">
+						<s:Label text="{s02+'编码'}"/>
+					</mx:GridItem>
+					<mx:GridItem verticalAlign="middle">
+						<s:TextInput  id="S_01" editable="false" width="200"/>
+					</mx:GridItem>
+				</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem verticalAlign="middle">
+					<s:Label text="{s02+'姓名'}"/>
+				</mx:GridItem>
+				<mx:GridItem verticalAlign="middle">
+					<s:TextInput  id="S_02" width="200"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			
+			<mx:GridRow id="s06GridRow">
+				<mx:GridItem verticalAlign="middle">
+					<s:Label text="身 份 证 号"/>
+				</mx:GridItem>
+				<mx:GridItem verticalAlign="middle">
+					<s:TextInput  id="S_06" width="200" restrict="0-9-X"/>
+					<s:Button label="上传图片(1张)" click="savePicHandler()" enabled="{!byteArray}"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			
+			<mx:GridRow>
+				<mx:GridItem verticalAlign="middle">
+					<s:Label text="所 在 医 院"/>
+				</mx:GridItem>
+				<mx:GridItem verticalAlign="middle">
+					<s:TextInput  id="S_03" editable="false" width="200" />
+				</mx:GridItem>
+			</mx:GridRow>
+			
+			
+		</mx:Grid>
+		<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+			<s:Button label="保存" click="add(event)"/>
+			<s:Button label="清空" click="reset(event)"/>
+			<s:Button label="关闭" click="removeWindow()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

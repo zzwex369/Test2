@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="400" height="202" backgroundColor="#D8D5D5" borderAlpha="1.0"
+			   borderColor="#218CE6" borderVisible="true" chromeColor="#8D7E7E"
+			   close="closeWindow()" color="#FFFFFF" contentBackgroundColor="#CF2A2A"
+			   cornerRadius="4" creationComplete="init()" dropShadowVisible="true"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="功能">
+	<s:layout>
+		<s:BasicLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F401;
+			import com.xyw.module.fnbj.model.VF401;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			public var f40101:Number;
+			public var diqucode:String;
+			private var url:String ="";
+			private var womancheck:String="";
+			private function init():void{
+				
+			}
+			//打印婚前医学检查表
+			private function printcheck():void{
+				womancheck="1";//女性检查表
+				url=this.parentApplication.contextRoot + "/HqtjServlet?f40101=" + f40101+"&womancheck="+womancheck;
+				navigateToURL(new URLRequest(url), null);
+			}
+			//打印打印婚前医学检查证明及存根
+			private function printLicence():void{
+				womancheck="2";//女性婚前检查证明及存根
+				url=this.parentApplication.contextRoot + "/HqtjServlet?f40101=" + f40101+"&womancheck="+womancheck+"&diqucode="+diqucode;
+				navigateToURL(new URLRequest(url), null);
+			}
+			private function closeWindow():void{
+				Alert.show("是否要退出该窗口？","系统提示",1|2,this,_closeWindow);
+			}
+			private function _closeWindow(event:CloseEvent):void
+			{
+				if(event.detail==Alert.YES){
+					PopUpManager.removePopUp(this);
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:HGroup x="-67" y="-39" width="533" height="213" gap="70" horizontalAlign="center"
+			  verticalAlign="middle">
+		<s:VGroup>
+			<s:Button height="39" label="打印女性婚前医学检查表" chromeColor="#E0E250" color="#EA2C2C" cornerRadius="5"
+					  fontFamily="Courier New" fontSize="16" fontStyle="normal"
+					  fontWeight="bold" lineThrough="false" textDecoration="none" click="printcheck()" buttonMode="true"/>
+			<s:Button id="printLicense" height="38" label="打印婚前医学检查证明及存根" chromeColor="#E0E250" color="#EA2C2C" cornerRadius="5"
+					  fontFamily="Courier New" fontSize="16" fontStyle="normal" buttonMode="true"
+					  fontWeight="bold" lineThrough="false" textDecoration="none" click="printLicence()"/>
+		</s:VGroup>
+	</s:HGroup>
+	<s:HGroup x="-46" y="-39" width="444" height="213" gap="70" horizontalAlign="right"
+			  verticalAlign="bottom">
+		<s:VGroup>
+			<s:Button id="close" height="22" label="关闭" chromeColor="#E0E250" color="#EA2C2C" cornerRadius="5"
+					  fontFamily="Courier New" fontSize="16" fontStyle="normal" buttonMode="true"
+					  fontWeight="bold" lineThrough="false" textDecoration="none" click="closeWindow()"/>
+		</s:VGroup>
+	</s:HGroup>
+</s:TitleWindow>

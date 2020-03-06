@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e304Service" destination="e304Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryE304" result="queryE304Handler(event)"/>
+			<s:method name="deleteE304" result="deleteE304Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.model.E304Request;
+			import com.xyw.module.etbj.model.E304Response;
+			import com.xyw.module.etbj.model.VE304;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var ve304:VE304 = null;
+			public var e304Request:E304Request=null;
+			public var systemUser:SystemUser =null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+				} 
+				
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				this.e304Data.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+				this.F301_05.addEventListener(FocusEvent.FOCUS_IN,validateN);
+				this.F301_05.addEventListener(FocusEvent.FOCUS_OUT,validateCard);
+			}
+			
+			public function validateCard(event:Event):void{
+				var IC:String = this.F301_05.text;
+				if(IC.length>=15){
+					if(IC.length != 15 && IC.length != 18){
+						Alert.show("身份证号长度是15或18位","系统提示");
+						return;
+					}else{
+						var n:String = IC.substring(IC.length-1,IC.length);
+						if((n>='a'&&n<='z')){
+							IC.replace(n,n.toLowerCase());
+							this.F301_05.text = IC.substring(0,IC.length-1)+n.toUpperCase();
+						}
+					}
+				}
+			}
+			
+			public function validateN(event:Event):void{}
+			
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve304= DataGrid(event.target).selectedItem as VE304;
+			}
+			
+			private function initQueryParam():void
+			{
+				e304Request =new E304Request();
+				try{	
+					var type:String = this.e304_45.getLastSelectedInstitution();
+					var e304_45_:String = this.e304_45.getLastSelectedInstitutionCode();
+					
+//					if(this.systemUser.institutionType == "1")
+//					{
+//						e304Request.e30445 = this.systemUser.institutionCode;
+//					}else{
+//						if(type == "8")
+//						{
+//							e304Request.e30445 = e304_45_;
+//						}else if(type == "6")
+//						{
+//							e304Request.e30445 = e304_45_.substring(0,6);
+//						}else if(type == "4")
+//						{
+//							e304Request.e30445 = e304_45_.substring(0,4);
+//						}else if(type == "2")
+//						{
+//							e304Request.e30445 = e304_45_.substring(0,2);
+//						}
+//					}
+					
+					if(this.seleall.selectedIndex==1){
+						e304Request.e30405Start = null;
+						e304Request.e30405End = null;
+						e304Request.f301_02= this.F301_02.text;
+						e304Request.f301_05= this.F301_05.text;
+					}else{
+						e304Request.e30405Start = this.timeStart.selectedDate;
+						e304Request.e30405End = this.timeEnd.selectedDate;
+						e304Request.f301_02= null;
+						e304Request.f301_05= null;
+					}
+				}catch(error:Error) {		
+					
+				}
+			}
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F301_02.text = array[0];//姓名
+							this.F301_05.text = array[5];//身份证号
+						}else{
+							Alert.show("请读妇女信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			} 
+			
+			public function querye304(event:MouseEvent):void
+			{
+				e304Request = new E304Request();
+				this.initQueryParam();
+				e304Request.count_e30402=3;
+				e304Request.parameterPageindex=1;
+				e304Request.parameterPagesize=20;
+				this.e304Service.queryE304(e304Request);
+			}
+			private function queryE304Handler(event:ResultEvent):void{
+				var e304Response:Object = event.result;
+				var e304s:ArrayCollection =e304Response.ve304s;
+				var rowCount:Number = e304Response.rowCount;
+				this.e304Data.dataProvider=e304s;
+				this.pagerBar.pageSize = 20;
+				this.pagerBar.dataGrid = this.e304Data;  
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = e304s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}	
+			}
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				//var e304Request:E304Request = new E304Request();
+				initQueryParam();	
+				e304Request.count_e30402=3;
+				e304Request.parameterPageindex=currentPageIndex;
+				e304Request.parameterPagesize=pageSize;
+				this.e304Service.queryE304(e304Request);			
+			}		
+			public function update304(event:MouseEvent):void{
+				if(this.ve304 == null){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+				}
+				var window:title = new title();
+				window.ve304 = this.ve304;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			public function delete304(event:MouseEvent):void
+			{
+				//var e304Request:E304Request = new E304Request();
+				if(this.ve304 == null){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+//				e304Request.e30401 =this.ve304.e30401;
+				Alert.yesLabel = '是'; 
+				Alert.noLabel = '否';
+				Alert.show('确认删除信息？','删除检查信息',1|2,this,deleteValidate);
+				//this.e304Service.deleteE304(e304Request);
+			}
+			protected function deleteValidate(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES){
+					this.e304Service.deleteE304(e304Request);
+				}
+			}
+			public function deleteE304Handler(event:ResultEvent):void
+			{
+				var e304Response:Object = event.result;
+				if(e304Response.errorMessage == null){
+					if(e304Response.promptMessage != null){
+						Alert.show(e304Response.promptMessage, "系统提示");
+					}
+				} else {
+					Alert.show(e304Response.errorMessage, "系统提示");
+				}
+				e304Request = new E304Request();
+				this.initQueryParam();
+				e304Request.count_e30402=3;
+				e304Request.parameterPageindex=1;
+				e304Request.parameterPagesize=20;
+				this.e304Service.queryE304(e304Request);
+				this.ve304 =null;
+			}
+			public function refresh():void
+			{
+				e304Request = new E304Request();
+				this.initQueryParam();
+				e304Request.count_e30402=3;
+				e304Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				e304Request.parameterPagesize = 20;
+				this.e304Service.queryE304(e304Request);
+			}
+			public function detailse304(event:MouseEvent):void{
+				if(this.ve304 == null){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+				}
+				var window:title1 = new title1();
+				window.ve304 =this.ve304;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="seleall" width="100%" height="118" chromeColor="#ffffff"
+					 creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="检查机构"/><!--<s:DropDownList id="d304_45" width="150"/>-->
+					<component:InstitutionComboBox id="e304_45"/>
+				</s:HGroup>
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="检查时间"/><mx:DateField id="timeStart" width="120"
+														dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+					<s:Label text="至"/><mx:DateField id="timeEnd" width="120"
+													 dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+													 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+													 formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+					<s:Button label="查询" click="querye304(event)"/>
+					<s:Button label="修改" click="update304(event)"/>
+					<s:Button label="删除" click="delete304(event)"/>
+					<s:Button label="详细" click="detailse304(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" label="精确查询">
+			<s:VGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="产妇姓名"/><s:TextInput id="F301_02"/>
+					<s:Label text="证件号码"/><s:TextInput id="F301_05" width="200"/>
+					<s:Button id="duka1" width="60" label="读卡" click="readCard_mother(event)"
+							  enabled="false"/>
+					<s:Button label="查询" click="querye304(event)"/>
+					<s:Button label="修改" click="update304(event)"/>
+					<s:Button label="删除" click="delete304(event)"/>
+					<s:Button label="详细" click="detailse304(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="126" width="100%" height="560" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="e304Data" width="100%" height="340"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e30401" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号"
+									  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="100" dataField="e30403" headerText="婴儿姓名"/>
+						<s:GridColumn width="80" dataField="e30405" headerText="体重"/>
+						<s:GridColumn width="80" dataField="e30407" headerText="身长"/>
+						<s:GridColumn width="80" dataField="e30402ZH" headerText="月龄"/>
+						<s:GridColumn width="100" dataField="e30430ZH" headerText="发育评估"/>
+						<s:GridColumn width="80" dataField="e30433ZH" headerText="转诊建议"/>
+						<s:GridColumn width="200" dataField="e30434" headerText="转诊原因"/>
+						<s:GridColumn width="100" dataField="e30438" headerText="检查医生"/>
+						<s:GridColumn width="120" dataField="e30445ZH" headerText="检查机构"/>
+						<s:GridColumn width="120" dataField="e30404Str" headerText="检查时间"/>
+						<s:GridColumn dataField="e30437Str" headerText="下次检查时间"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+			<component:PagerBar id="pagerBar" enabled="false"  isExcel="false" isExcel2="false" isPrinter="false"/>
+		</s:VGroup>	
+	</s:Scroller>
+</s:Module>

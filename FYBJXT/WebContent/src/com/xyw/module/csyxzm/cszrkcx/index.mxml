@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="certificateRegistService" destination="certificateRegistService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="query" result="queryHandler(event)" />
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+			cornerRadius:3;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+			cornerRadius:5;
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D502;
+			import com.xyw.module.csyxzm.model.D502Request;
+			import com.xyw.module.csyxzm.model.D502Response;
+			import com.xyw.module.csyxzm.model.VD502;
+			import com.xyw.module.csyxzm.model.VD505;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.event.RefreshParentWindowDataEvent;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import spark.events.GridSelectionEvent;
+			import spark.events.IndexChangeEvent;
+			import spark.formatters.DateTimeFormatter;
+			
+			[Bindable]
+			public var vd502:VD502 = null;
+			
+			public var comboBoxDataListT:ArrayCollection;
+			
+			public var systemUser:SystemUser = null;
+			
+			public var flag:String ="";
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.initilizeComboBox();
+				this.certificateApplyDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE, onSelectionChange);
+			}
+			
+			private function initilizeComboBox():void
+			{
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t where t.D101_11 = '" + this.systemUser.institutionCode + "' or t.D101_01 = '" + this.systemUser.institutionCode + "'";
+				comboBoxDataRequest.flag = "D101";
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.S_01, t.S_02 from S505_01 t"
+				comboBoxDataRequest.flag = "S505_01";
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object = event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				/*if(flag == "D101") {
+					this.d502_02.dataProvider = comboBoxDataList;
+					if(this.systemUser.areaCode.length != 8) {
+						this.d502_02.selectedIndex = 0;
+					} else {
+						var label:String = this.systemUser.institutionCode;
+						var data:String = this.systemUser.institution;
+						this.d502_02.dataProvider = new ArrayCollection([{label : data}]);
+						this.d502_02.selectedIndex = 0;
+					}
+				}*/
+				if(flag == "S505_01") {
+					comboBoxDataList.addItemAt({label : "全部", data : "all"}, 0);
+					comboBoxDataListT = comboBoxDataList
+				}
+			}
+			
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				
+				var d502Request:D502Request = new D502Request();
+				var d502:D502 = new D502();
+				//var comboBoxData:Object = this.d502_02.selectedItem;
+				//d502.d50202 = comboBoxData.data;
+				d502.d50202 = this.institutionComboBox.getLastSelectedInstitutionCode();
+				d502.d50205 = this.d502_05.selectedDate;
+				d502.d50205End = this.d502_05End.selectedDate;
+
+				if(d502.d50205 != null && d502.d50205End != null) {
+					var r:int = ObjectUtil.compare(d502.d50205, d502.d50205End);
+					if(r == 1) {
+						Alert.show("查询起始时间不能大于终止时间!", "系统提示");
+						return;
+					}
+				}
+				
+				//d502.d50211 = this.d503_11.text;
+				
+				d502Request.parameterPageindex = 1;
+				d502Request.parameterPagesize = 20;
+				
+				d502Request.d502 = d502;
+				
+				d502Request.institutionCode = this.systemUser.institutionCode;
+				
+				this.certificateRegistService.query(d502Request);
+			}
+			
+			private function queryHandler(event:ResultEvent):void
+			{
+				var d502Response:Object = event.result;
+				var rowCount:Number = d502Response.rowCount;
+				if(d502Response.errorMessage == null) {
+					var vd502s:ArrayCollection = d502Response.vd502s;
+					this.pagerBar.dataGrid = this.certificateApplyDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = vd502s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					} else {
+						Alert.show("暂无数据!", "系统提示");
+					}
+				} else {
+					Alert.show(d502Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				var d502Request:D502Request = new D502Request();
+				var d502:D502 = new D502();
+				//var comboBoxData:Object = this.d502_02.selectedItem;
+				//d502.d50202 = comboBoxData.data;
+				d502.d50202 = this.institutionComboBox.getLastSelectedInstitutionCode();
+				d502.d50205 = this.d502_05.selectedDate;
+				d502.d50205End = this.d502_05End.selectedDate;
+				d502Request.parameterPageindex = currentPageIndex;
+				d502Request.parameterPagesize = pageSize;
+				
+				d502Request.d502 = d502;
+				this.certificateRegistService.query(d502Request);
+			}
+			
+			public function refresh():void
+			{
+				var d502Request:D502Request = new D502Request();
+				var d502:D502 = new D502();
+				//var comboBoxData:Object = this.d502_02.selectedItem;
+				//d502.d50202 = comboBoxData.data;
+				d502.d50202 = this.institutionComboBox.getLastSelectedInstitutionCode();
+				d502.d50205 = this.d502_05.selectedDate;
+				d502.d50205End = this.d502_05End.selectedDate;
+				//d502.d50211 = this.d503_11.text;
+				d502Request.d502 = d502;
+				d502Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				d502Request.parameterPagesize = 20;
+				
+				this.certificateRegistService.query(d502Request);
+				
+			}
+			
+			private function formatDateToStringD50205(vd502:Object, column:GridColumn):String
+			{
+				var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+				dateTimeFormatter.dateTimePattern = "yyyy-MM-dd";
+				var columnDataField:String = column.dataField;
+				if("d50205" == columnDataField) {
+					var date_D50205:Date = vd502.d50205;
+					var date_D50205_Text:String = dateTimeFormatter.format(date_D50205);
+					return date_D50205_Text;
+				}
+				return null;
+			}
+			
+			private function onOperationSuccess(event:RefreshParentWindowDataEvent):void
+			{
+				this.refresh();
+			}
+			
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.vd502 = DataGrid(event.target).selectedItem as VD502;
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+			
+			public function detail(event:MouseEvent):void
+			{
+				if(this.vd502 == null) {
+					Alert.show("请选择要查看的行!","系统提示");
+					return;
+				}
+				
+				
+				
+				var detailTitleWindow:DetailTitleWindow = new DetailTitleWindow();
+				detailTitleWindow.owner = this;
+				PopUpManager.addPopUp(detailTitleWindow, this);
+				var x:Number = (this.width - detailTitleWindow.width) / 2;
+				var y:Number = (this.height - detailTitleWindow.height) / 2;
+				detailTitleWindow.move(x, y);
+				
+				var idB:String = Button(event.target).id;
+				if(idB == "wsy") {
+					detailTitleWindow.d505_05 = "1";
+					this.flag = "1";
+				} else {
+					this.flag = "";
+					detailTitleWindow.d505_05 = "";
+				}
+				
+				detailTitleWindow.d505_02 = this.vd502.d50201;
+				//detailTitleWindow.areaCode = this.vd505.d50212;
+			}
+			
+			public function ddlIndexChangeHandler(event:IndexChangeEvent):void
+			{
+				Alert.show("good", "abc");
+				this.detail(null);
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="出生证入库查询" width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="单位"/><!--s:DropDownList id="d502_02" width="200"/-->
+					<component:InstitutionComboBox id="institutionComboBox"/>
+					<!--s:Label text="首字母"/><s:TextInput width="80" id="d503_11"/-->
+					<s:Label text="时间"/><mx:DateField id="d502_05" yearNavigationEnabled="true" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																   formatString="YYYY-MM-DD"/>
+					<s:Label text="至"/>
+					<mx:DateField id="d502_05End" yearNavigationEnabled="true" width="120" dayNames='["日","一","二","三","四","五","六"]'
+														monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														formatString="YYYY-MM-DD"/>
+					<s:Button label="查询" click="query(event)"/>
+				</s:HGroup>	
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:DataGrid id="certificateApplyDataGrid" editable="true" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">  
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+					<s:GridColumn dataField="d50201" headerText="主键" visible="false"/>
+					<s:GridColumn dataField="d50202" headerText="入库单位" visible="false"/>
+					<s:GridColumn dataField="d50202Zh" headerText="申请单位"/>
+					<s:GridColumn dataField="d50203" headerText="入库人"/>
+					<s:GridColumn dataField="d50211" headerText="首字母"/>
+					<s:GridColumn dataField="d50209" headerText="起始编号"/>
+					<s:GridColumn dataField="d50210" headerText="终止编号"/>
+					<s:GridColumn dataField="d50204" headerText="入库数量"/>
+					<s:GridColumn dataField="d50205" headerText="入库日期" editable="false" labelFunction="formatDateToStringD50205"/>
+					<s:GridColumn dataField="d50206" headerText="原库存数" visible="false"/>
+					<s:GridColumn dataField="d50207" headerText="被申请单位" visible="false"/>
+					<s:GridColumn dataField="d50207Zh" headerText="审核人单位"/>
+					<s:GridColumn dataField="d50208" headerText="审核人"/>
+					<s:GridColumn dataField="d50212" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50213" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50214" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50214Zh" headerText="是否调剂"/>
+					<s:GridColumn dataField="d50215" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50216" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50217" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50218" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50219" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50220" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50221" headerText="备注" visible="false"/>
+					
+					<s:GridColumn dataField="d50222" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50223" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50224" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50225" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50226" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50227" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50228" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50229" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50230" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50231" headerText="备注" visible="false"/>
+					
+					<s:GridColumn dataField="d50232" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50233" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50234" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50235" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50236" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50237" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50238" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50239" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50240" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50241" headerText="备注" visible="false"/>
+					
+					<s:GridColumn dataField="d50242" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50243" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50244" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50245" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50246" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50247" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50248" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50249" headerText="备注" visible="false"/>
+					<s:GridColumn dataField="d50250" headerText="备注" visible="false"/>
+					<s:GridColumn headerText="详情" width="100" editable="false">
+						<s:itemRenderer>
+							<fx:Component>
+								<s:GridItemRenderer>
+									<s:HGroup width="100%">
+										<s:Button label="已用" cornerRadius="0" id="ysy" width="100%" height="100%" skinClass="com.xyw.sys.custom.skin.CustomButtonSkin" click="outerDocument.detail(event);"/>
+										<s:Button label="未用" cornerRadius="0" id="wsy" width="100%" height="100%" skinClass="com.xyw.sys.custom.skin.CustomButtonSkin" click="outerDocument.detail(event);"/>
+									</s:HGroup>
+								</s:GridItemRenderer>
+							</fx:Component>
+						</s:itemRenderer>	
+					</s:GridColumn>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+		<component:PagerBar id="pagerBar" enabled="false"/>
+	</s:VGroup>
+</s:Module>

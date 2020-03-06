@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="deliveryService" destination="deliveryService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryDeliveryInfo" result="queryHandler(event)"/>
+			<s:method name="deleteD601" result="deleteD601Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.QueryBirthRequest;
+			import com.xyw.module.csyxzm.model.QueryBirthResponse;
+			import com.xyw.module.delivery.model.D601;
+			import com.xyw.module.delivery.model.VD601;
+			import com.xyw.sys.custom.component.ExportExcel;
+			import com.xyw.sys.custom.component.SecurityControler;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.utils.flash_proxy;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.messaging.AbstractConsumer;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var d601:D601 =null;
+			public var vd601:VD601 = null;
+			public var vD601:VD601 = null;
+			public var queryBirthRequest:QueryBirthRequest = null;
+			public var systemUser:SystemUser = null;
+			
+			//****************启动按钮权限控制****************//
+			private function security():void{
+				SecurityControler.start(null,'visible');
+				SecurityControler.addAllPerms(this.parentApplication.permissionList);
+				//this.duka1.enabled=SecurityControler.isPermitted('duka.swf');
+				//this.duka2.enabled=SecurityControler.isPermitted('duka.swf');
+			}
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+		//		this.pagerBar.exportEXCEL = exportEXCEL;
+		//		this.pagerBar.exportEXCELAll = exportEXCELall;
+				//security();
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+					this.duka2.enabled = true;
+				}
+				
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			public function exportEXCEL():void{
+				ExportExcel.loadDGInExcel(this.certificateDataGrid,"分娩登记重要信息",this.parentApplication.contextRoot + '/print/ExcelExport.jsp');
+			}
+/* 			public function exportEXCELall():void{
+				ExportExcel.loadDGInExcel(this.certificateDataGridAll,"分娩登记重要信息",this.parentApplication.contextRoot + '/print/ExcelExport.jsp');
+			} */
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vD601 = DataGrid(event.target).selectedItem as VD601;
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				queryBirthRequest = new QueryBirthRequest();
+				try
+				{	
+					var type:String = this.d601_02.getLastSelectedInstitution();
+					var d601_02_:String = this.d601_02.getLastSelectedInstitutionCode();
+					
+					if(this.systemUser.institutionType == "1")
+					{
+						queryBirthRequest.d601_02 = this.systemUser.institutionCode;
+					}else{
+						if(type == "8")
+						{
+							queryBirthRequest.d601_02 = d601_02_;
+						}else if(type == "6")
+						{
+							queryBirthRequest.d601_02 = d601_02_.substring(0,6);
+						}else if(type == "4")
+						{
+							queryBirthRequest.d601_02 = d601_02_.substring(0,4);
+						}else if(type == "2")
+						{
+							queryBirthRequest.d601_02 = d601_02_.substring(0,2);
+						}
+					}
+					
+					queryBirthRequest.d60103Start = this.timeStart.selectedDate;
+					queryBirthRequest.d60103End = this.timeEnd.selectedDate;
+					queryBirthRequest.d601_05 = StringUtil.trim(this.d601_05.text);
+					queryBirthRequest.d601_55 = StringUtil.trim(this.d601_55.text);
+					queryBirthRequest.d601_56 = StringUtil.trim(this.d601_56.text);
+					queryBirthRequest.d601_65 = StringUtil.trim(this.d601_65.text);
+					queryBirthRequest.d601_72 = StringUtil.trim(this.d601_72.text);
+					queryBirthRequest.d601_75 = StringUtil.trim(this.d601_75.text);
+				} 
+				catch(error:Error) 
+				{
+					
+				}
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				queryBirthRequest = new QueryBirthRequest();
+				this.initQueryParam();
+				queryBirthRequest.flag = "now";
+				queryBirthRequest.parameterPageindex = 1;
+				queryBirthRequest.parameterPagesize = 20;
+				this.deliveryService.queryDeliveryInfo(queryBirthRequest);
+				
+	/* 			queryBirthRequest = new QueryBirthRequest();
+				this.initQueryParam();
+				queryBirthRequest.flag = "all";
+				queryBirthRequest.parameterPageindex = 1;
+				queryBirthRequest.parameterPagesize = 100000;
+				this.deliveryService.queryDeliveryInfo(queryBirthRequest); */
+			}
+			
+			protected function queryHandler(event:ResultEvent):void
+			{
+				var queryBirthResponse:Object = event.result;
+				var flag:String = queryBirthResponse.flag;
+				var listVD601:ArrayCollection = queryBirthResponse.d601s;
+				var rowCount:Number = queryBirthResponse.rowCount;
+		//		this.certificateDataGridAll.dataProvider = listVD601;
+				if(queryBirthResponse.errorMessage == null)
+				{ 
+				//	if(flag == "now"){
+						this.pagerBar.pageSize = 20;
+						this.pagerBar.dataGrid = this.certificateDataGrid;
+						this.pagerBar.rowCount = rowCount;
+						this.pagerBar.resultData = listVD601;
+						this.pagerBar.dataBind();
+						this.pagerBar.pagerFunction = pagerFunction;
+						if(rowCount > 0) {
+							this.pagerBar.enabled = true;
+						}
+					/* }else if(flag == "all"){
+						this.certificateDataGridAll.dataProvider = listVD601;
+						if(rowCount > 0) {
+							this.pagerBar.enabled = true;
+						}
+					} */
+				} else {
+					Alert.show(queryBirthResponse.errorMessage, "系统提示");
+				}
+			}
+			protected function deleteD601Handler(event:ResultEvent):void
+			{
+				var queryBirthResponse:Object = event.result;
+				if(queryBirthResponse.errorMessage == null){
+					if(queryBirthResponse.promptMessage != null){
+						Alert.show(queryBirthResponse.promptMessage, "系统提示");
+					}
+					refresh();
+				} else {
+					Alert.show(queryBirthResponse.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				queryBirthRequest = new QueryBirthRequest();
+				this.initQueryParam();
+				queryBirthRequest.flag = "now";
+				queryBirthRequest.parameterPageindex = currentPageIndex;
+				queryBirthRequest.parameterPagesize = pageSize;
+				
+				this.deliveryService.queryDeliveryInfo(queryBirthRequest);
+			}
+			
+			public function refresh():void
+			{
+				queryBirthRequest = new QueryBirthRequest();
+				this.initQueryParam();
+				queryBirthRequest.flag = "now";
+				queryBirthRequest.parameterPageindex = this.pagerBar.currentPageIndex;
+				queryBirthRequest.parameterPagesize = 20;
+				this.deliveryService.queryDeliveryInfo(queryBirthRequest);
+				
+			/* 	queryBirthRequest = new QueryBirthRequest();
+				this.initQueryParam();
+				queryBirthRequest.flag= "";
+				queryBirthRequest.parameterPageindex = this.pagerBar.currentPageIndex;
+				queryBirthRequest.parameterPagesize = 20;
+				this.deliveryService.queryDeliveryInfo(queryBirthRequest); */
+			}
+			public function update(event:MouseEvent):void
+			{
+				if(this.vD601 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:tittle = new tittle();
+					window.vd601 = this.vD601;
+					PopUpManager.addPopUp(window,this);
+					var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+					var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+					window.move(x, y);
+				}
+			}
+			
+			public function deleteD601(event:MouseEvent):void
+			{
+				if(this.vD601 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				
+				queryBirthRequest.d601_01 = this.vD601.d60101;
+				queryBirthRequest.d601_02 = this.vD601.d60102;
+				queryBirthRequest.d601_05 = this.vD601.d60105;
+				queryBirthRequest.d601_55 = this.vD601.d60155;
+				this.deliveryService.deleteD601(queryBirthRequest);
+			}
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.d601_05.text = array[0];//姓名
+							this.d601_65.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			//读卡(父亲)
+			protected function readCard_father(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="男"){
+							this.d601_72.text = array[0];//姓名
+							this.d601_75.text = array[5];//身份证号
+						}else{
+							Alert.show("请读父亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+		]]>
+	</fx:Script>
+		<mx:TabNavigator width="100%" height="118" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent label="综合查询" width="100%">
+				<s:VGroup width="100%">
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="助产机构" id="my"/>
+						<component:InstitutionComboBox id="d601_02"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="分娩日期"/><mx:DateField yearNavigationEnabled="true" id="timeStart" width="120" dayNames='["日","一","二","三","四","五","六"]'
+															monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+															formatString="YYYY-MM-DD"/>
+						<s:Label text="至"/><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="120" dayNames='["日","一","二","三","四","五","六"]'
+														 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														 formatString="YYYY-MM-DD"/>
+						<s:Button label="查询" click="query(event)"/>
+						<s:Button label="修改" click="update(event)"/>
+						<s:Button label="删除" click="deleteD601(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="精确查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="产妇姓名"/><s:TextInput id="d601_05"/>
+						<s:Label text="产妇身份证号"/><s:TextInput id="d601_65" width="200"/>
+						<s:Button label="读卡" id="duka1" enabled="false" width="60" click="readCard_mother(event)"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="丈夫姓名"/><s:TextInput id="d601_72"/>
+						<s:Label text="丈夫身份证号"/><s:TextInput id="d601_75" width="200"/>
+						<s:Button label="读卡" id="duka2" enabled="false" width="60" click="readCard_father(event)"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="婴儿姓名"/><s:TextInput id="d601_55"/>
+						<s:Label text="出生证号"/><s:TextInput id="d601_56"/>
+						<s:Button label="查询" click="query(event)"/>
+						<s:Button label="修改" click="update(event)"/>
+						<s:Button label="删除" click="deleteD601(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	    <s:Scroller y="126" width="100%" height="560" horizontalScrollPolicy="auto"
+					verticalScrollPolicy="auto">
+		  <s:VGroup width="100%" paddingBottom="10">
+			  <s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="100%" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				  <s:columns>
+					  <s:ArrayList>
+						  <s:GridColumn dataField="d60101" headerText="主键" visible="false"/>
+						  <s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						  <s:GridColumn dataField="d60105" headerText="产妇姓名" width="80"/>
+						  <s:GridColumn dataField="d60165" headerText="产妇身份证号" width="150"/>
+						  <s:GridColumn dataField="d60103" headerText="分娩日期" width="80"/>
+						  <s:GridColumn dataField="d60155" headerText="婴儿姓名" width="80"/>
+						  <s:GridColumn dataField="d60140ZH" headerText="性别" width="40"/>
+						  <s:GridColumn dataField="d60156" headerText="出生证号" width="90"/>
+						  <s:GridColumn dataField="d60172" headerText="丈夫姓名" width="80"/>
+						  <s:GridColumn dataField="d60175" headerText="丈夫身份证号" width="150"/>
+						  <s:GridColumn dataField="d60159" headerText="领证人" width="80"/>
+						  <s:GridColumn dataField="d60158" headerText="签发人" width="80"/>
+						  <s:GridColumn dataField="d60164" headerText="接生员" width="80"/>
+						  <s:GridColumn dataField="d60102ZH" headerText="助产机构" width="150"/>
+						  <s:GridColumn dataField="d60104" headerText="住院号" width="80"/>
+					  </s:ArrayList>
+				  </s:columns>
+			  </s:DataGrid>
+			  <component:PagerBarF id="pagerBar" enabled="false"/>
+<!--			  <s:DataGrid id="certificateDataGridAll" visible="false" editable="false" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				  <s:columns>
+					  <s:ArrayList>
+						  <s:GridColumn dataField="d60101" headerText="主键" visible="false"/>
+						  <s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						  <s:GridColumn dataField="d60105" headerText="产妇姓名" width="80"/>
+						  <s:GridColumn dataField="" headerText="产妇身份证号" width="150"/>
+						  <s:GridColumn dataField="" headerText="分娩日期" width="80"/>
+						  <s:GridColumn dataField="" headerText="婴儿姓名" width="80"/>
+						  <s:GridColumn dataField="" headerText="性别" width="40"/>
+						  <s:GridColumn dataField="" headerText="出生证号" width="90"/>
+						  <s:GridColumn dataField="" headerText="丈夫姓名" width="80"/>
+						  <s:GridColumn dataField="" headerText="丈夫身份证号" width="150"/>
+						  <s:GridColumn dataField="" headerText="领证人" width="80"/>
+						  <s:GridColumn dataField="" headerText="签发人" width="80"/>
+						  <s:GridColumn dataField="" headerText="接生员" width="80"/>
+						  <s:GridColumn dataField="" headerText="助产机构" width="150"/>
+						  <s:GridColumn dataField="" headerText="住院号" width="80"/>
+					  </s:ArrayList>
+				  </s:columns>
+			  </s:DataGrid>-->
+	   </s:VGroup>	
+	</s:Scroller>	
+</s:Module>

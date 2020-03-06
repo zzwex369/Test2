@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e702Service" destination="e702Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE702" result="queryE702Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|ComboBox{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomComboBoxSkin");
+			
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+		
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.etsl.model.E702;
+			import com.xyw.module.etbj.etsl.model.E702Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			
+			[Bindable]
+			private var systemUser:SystemUser =null;
+			private var e702Request:E702Request;
+			[Bindable]
+			private var ve702:Object;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				
+				this.systemUser = this.parentApplication.systemUser;
+			}
+			
+			private function query_():void
+			{
+				e702Request=new E702Request();
+				this.initQueryParam();
+				e702Request.parameterPageindex = 1;
+				e702Request.parameterPagesize = 20;
+				this.e702Service.queryE702(e702Request);
+			}
+			private function queryE702Handler(event:ResultEvent):void{
+				var e702Response:Object = event.result;
+				var rowCount:Number = e702Response.rowCount;
+				if(e702Response.errorMessage == null){
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = e702Response.ve702s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}else{
+						Alert.show("暂无数据!","系统提示");
+					}
+					this.certificateDataGrid.dataProvider = e702Response.ve702s;
+					this.ve702 = null;
+				}else{
+					Alert.show(e702Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				e702Request=new E702Request();
+				this.initQueryParam();
+				e702Request.parameterPageindex = currentPageIndex;
+				e702Request.parameterPagesize = pageSize;
+				this.e702Service.queryE702(e702Request);
+			}
+			private function initQueryParam():void
+			{
+				
+				e702Request.institution = jigou.getInstitutionCode();
+				var e702:E702=new E702();
+				e702.e70261="3";
+				e702Request.e702=e702;
+				e702Request.suffixSql=" and e703_16 is null";
+				e702Request.parent_name =StringUtil.trim(this.parent_name.text);
+				e702Request.parent_idcard =StringUtil.trim(this.parent_idcard.text);
+				e702Request.parent_phone =StringUtil.trim(this.parent_phone.text);
+				if(e702Request.parent_name!=""||e702Request.parent_idcard!=""||e702Request.parent_phone!=""){
+					return;
+				}
+				var obj_:Object = new Object();
+				if(check.selected){
+					obj_.dateField="e702_70";
+				}else{
+					obj_.dateField="e702_73";
+				}
+				obj_.codeField="e702_71";
+				e702Request.fieldMap=obj_;
+				e702Request.timeStr=DateField.stringToDate(timeStart.text,'YYYY-MM-DD');
+				e702Request.timeEnd=DateField.stringToDate(timeEnd.text,'YYYY-MM-DD');
+			}
+			public function zzdj(event:Event):void{
+				if(this.ve702 == null){
+					Alert.show("请选择要操作的行！","系统提示");
+					return;
+				}
+				var window:title = new title();
+				window.ve702 = this.ve702;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			
+			public function refresh1(event:Event):void{
+				this.ve702=null;
+				refresh();
+			}
+			public function refresh():void
+			{
+				e702Request = new E702Request();
+				this.initQueryParam();
+				e702Request.e702=new E702();
+				e702Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				e702Request.parameterPagesize = 20;
+				this.e702Service.queryE702(e702Request);
+			}
+			private function onSelected(event:Event):void{
+				this.ve702 = DataGrid(event.target).selectedItem;
+			}
+			protected function readCard_B(event:MouseEvent):void
+			{
+				try
+				{
+					var array:Array = CompMethod.read_card(null);//性别
+					if(!array)
+						return ;
+					var sex:String = array[1];//性别
+						
+					this.parent_name.text = array[0];//姓名
+					this.parent_idcard.text = array[5];//身份证号
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			private function setStringDate(item:Object, column:GridColumn):String
+			{
+				var date:Date=item[column.dataField];
+				return DateField.dateToString(date,"YYYY-MM-DD");
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller x="1" y="1" width="100%" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%">
+			<mx:TabNavigator width="1154" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="综合查询">
+					<s:VGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="7" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="录入机构"/>
+							<component:InstitutionComboBox id="jigou"  width="942" villageVisible="true"/>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingLeft="7" verticalAlign="middle">
+							<s:Label paddingBottom="2" text="日期查询"/>
+							<s:RadioButton id="check" y="3" label="检查日期" buttonMode="true"
+										   groupName="date_button" selected="true"/>
+							<s:RadioButton label="录入日期" buttonMode="true" groupName="date_button"/>
+							<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" />
+							
+							<s:Label text="至"/>
+							<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="7" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="家长姓名"/><s:TextInput id="parent_name"/>
+							<s:Label text="证件号码"/><s:TextInput id="parent_idcard" width="173"/>
+							<s:Label text="电话号码"/><s:TextInput id="parent_phone" width="146"/>
+							<s:Button id="duka1" label="读卡" click="readCard_B(event)" icon="{CustomIcon.READCARD}" enabled="{systemUser.duka=='1'}"/>
+							<s:Button label="查询" click="query_()" icon="{CustomIcon.QUERY}"/>
+							<s:Button label="转诊登记" click="zzdj(event)" enabled="{ve702}" icon="{CustomIcon.ADD}"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:VGroup id="vgroupDataGrid" height="385" paddingRight="5"  width="1155">
+				<s:DataGrid id="certificateDataGrid" height="328"
+							alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="false"
+							rowHeight="22" selectionChange="onSelected(event)"
+							width="1155">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+							<s:GridColumn width="80" dataField="e70106" headerText="儿童姓名"/>
+							<s:GridColumn width="150" dataField="e70108" headerText="身份证号"/>
+							<s:GridColumn width="100" dataField="e70109" headerText="出生日期" labelFunction="setStringDate" />
+							<s:GridColumn width="70" dataField="e70117" headerText="母亲姓名"/>
+							<s:GridColumn width="150" dataField="e70119" headerText="母亲身份证号"/>
+							<s:GridColumn width="120" dataField="e70120" headerText="联系方式"/>
+							<s:GridColumn width="100" dataField="e70273" headerText="录入日期" labelFunction="setStringDate" />
+							<s:GridColumn width="150" dataField="e70271zh" headerText="录入单位"/>
+							<s:GridColumn width="150" dataField="e70268zh" headerText="检查单位"/>
+							<s:GridColumn width="100" dataField="e70270" headerText="检查日期" labelFunction="setStringDate" />
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>					
+				<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+			</s:VGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

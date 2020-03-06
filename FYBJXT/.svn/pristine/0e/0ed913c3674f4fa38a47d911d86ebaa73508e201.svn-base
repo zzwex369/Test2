@@ -1,0 +1,61 @@
+import com.xyw.sys.custom.component.CompMethod;
+
+import flash.events.Event;
+
+import mx.core.FlexGlobals;
+import mx.events.CloseEvent;
+import mx.rpc.events.ResultEvent;
+
+/**
+ * 得到月龄 
+ * birth 小孩出生日期
+ * return 0 月 1 天
+ */
+private function getDiffMoth(birth:Date):Array
+{
+	var totalM:int=0;
+	var now:Date=FlexGlobals.topLevelApplication.serviceNow;
+	var year:Number=now.fullYear;
+	var moth:Number=now.month+1;//
+	var date:Number=now.date;//
+	var birthYear:Number=birth.fullYear;
+	var birthMoth:Number=birth.month+1;//
+	var birthDate:Number=birth.date;//
+	var diffDate:Number=0;
+	var diffMonth:Number=(year-birthYear)*12+moth;
+	if(date-birthDate>-1)
+	{
+		diffDate=date-birthDate;
+	}else
+	{
+		--moth;
+		--diffMonth;
+		if(!moth)
+		{
+			moth=12;
+			--year;
+		}
+		diffDate=CompMethod.dayCount(year,moth)+date-birthDate;
+	}
+	diffMonth-=birthMoth;
+	return [diffMonth.toString(),diffDate.toString()];
+}	
+
+/**
+ *
+ */
+public function getSelectItem(ve301:Object):void
+{
+	this.ve301=ve301;
+	var moth:Array=getDiffMoth(ve301.e30106);
+	E304_56_1.text=moth[0];
+	E304_56_2.text=moth[1];
+}
+
+private function saveOrUpdateE304Handler(event:ResultEvent):void
+{   
+	CompMethod.CUDHandler(event.result,['errorMessage',
+		this.ve301?"保存":"修改"],
+		function():void{dispatchEvent(new Event("saveSuccess"))},
+		saveButton);
+}

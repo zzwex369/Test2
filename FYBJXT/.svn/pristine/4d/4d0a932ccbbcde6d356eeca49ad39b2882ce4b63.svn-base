@@ -1,0 +1,855 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleComplete(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e301Service" destination="e301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveE301" result="saveE301Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[			
+			import com.xyw.module.assist.index;
+			import com.xyw.module.etbj.etbjdj.QueryWindow;
+			import com.xyw.module.etbj.etbjdj.tittle;
+			import com.xyw.module.etbj.model.E301;
+			import com.xyw.module.fnbj.model.VF301;
+			import com.xyw.sys.custom.component.ClearText1;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.containers.Form;
+			import mx.containers.ViewStack;
+			import mx.controls.Alert;
+			import mx.controls.Text;
+			import mx.core.Container;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.components.BorderContainer;
+			
+			private var e301:E301 =new E301();
+			public var systemUser:SystemUser = null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;			
+			
+			private var newFontStyle:String;    
+			private var newFontSize:int;  
+			
+			private var clearText:ClearText1;
+			
+			
+			private function moduleComplete(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka =="1"){
+					this.duka1.enabled =true;
+				}				
+				var now:Date =new Date();
+				this.e301_06.selectedDate =now;
+				this.e301_14.selectedDate =now;
+				//this.e301_05.addEventListener(FocusEvent.FOCUS_IN,validateN);
+				//this.e301_05.addEventListener(FocusEvent.FOCUS_OUT,validateIC);
+				this.f304_12.addEventListener(FocusEvent.FOCUS_IN,validateN);
+				this.f304_12.addEventListener(FocusEvent.FOCUS_OUT,validateCard);
+				this.initializeComboBox();
+				this.e301_22.addEventListener(FocusEvent.FOCUS_IN,clearWeight2);
+				this.e301_23.addEventListener(FocusEvent.FOCUS_IN,clearWeight3);
+				this.e301_19.addEventListener(FocusEvent.FOCUS_IN,clearData1);
+				this.e301_30.addEventListener(FocusEvent.FOCUS_IN,clearData2);
+				this.e301_18_1.addEventListener(FocusEvent.FOCUS_IN,clearData3);
+				this.e301_18_2.addEventListener(FocusEvent.FOCUS_IN,clearData4);
+			}
+			
+			private function clearWeight2(event:Event):void
+			{
+				this.e301_22.text = "";
+				this.e301_22.removeEventListener(FocusEvent.FOCUS_IN,clearWeight2);
+			}
+			
+			private function clearWeight3(event:Event):void
+			{
+				this.e301_23.text = "";
+				this.e301_23.removeEventListener(FocusEvent.FOCUS_IN,clearWeight3);
+			}
+			
+			private function clearData1(event:Event):void{
+				this.e301_19.text = "";
+				this.e301_19.removeEventListener(FocusEvent.FOCUS_IN,clearData1);
+			}
+			
+			private function clearData2(event:Event):void{
+				this.e301_30.text = "";
+				this.e301_30.removeEventListener(FocusEvent.FOCUS_IN,clearData2);
+			}
+			
+			private function clearData3(event:Event):void{
+				this.e301_18_1.text = "";
+				this.e301_18_1.removeEventListener(FocusEvent.FOCUS_IN,clearData3);
+			}
+			
+			private function clearData4(event:Event):void{
+				this.e301_18_2.text = "";
+				this.e301_18_2.removeEventListener(FocusEvent.FOCUS_IN,clearData4);
+			}
+			
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t "; //where t.d101_01 ="+this.systemUser.institutionCode+"or t.d101_11 ="+this.systemUser.institutionCode;
+				comboBoxDataRequest.flag = "D101";//单位
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_01";//性别
+				comboBoxDataRequest.sql = "select * from S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_03";//国籍
+				comboBoxDataRequest.sql = "select * from S301_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_04";//民族
+				comboBoxDataRequest.sql = "select * from S301_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from S301_06";
+				comboBoxDataRequest.flag ="S301_06";	
+				this.systemService..getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_10";//胎数
+				comboBoxDataRequest.sql = "select * from S601_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_06";//月龄
+				comboBoxDataRequest.sql = "select * from Z304_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S301_01")//性别
+				{
+					this.e301_04.dataProvider = comboBoxDataList;
+					this.e301_04.selectedIndex = 0;
+				}else if(flag =="S301_03"){  //国籍
+					var countryIndex:int =this.getCountrySelectedIndex(comboBoxDataList);
+					this.F301_08.dataProvider =comboBoxDataList;
+					this.F301_08.selectedIndex =countryIndex;
+					this.e301_07.dataProvider = comboBoxDataList;
+					this.e301_07.selectedIndex = countryIndex;
+				}else if(flag == "S301_04")//民族
+				{
+					this.e301_08.dataProvider = comboBoxDataList;
+					this.e301_08.selectedIndex = 1;
+				}else if(flag =="S301_06"){  //证件类型
+					var TypeIndex:int =this.getDropDownListSelectedIndex(comboBoxDataList,"1");
+					this.F301_04.dataProvider =comboBoxDataList;
+					this.F301_04.selectedIndex =TypeIndex;
+				}else if(flag == "D101")//单位
+				{
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.e301_16.dataProvider = comboBoxDataList;
+					this.e301_16.selectedIndex = index;
+					this.e301_21.dataProvider = comboBoxDataList;
+					this.e301_21.selectedIndex = index;
+				}else if(flag == "S601_10")//胎数
+				{
+					this.e301_20.dataProvider = comboBoxDataList;
+					this.e301_20.selectedIndex = 1;
+				}
+			}
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}	
+				return index;
+			}
+			/*-----------------默认国籍 中国---------------------*/
+			private function getCountrySelectedIndex(arrayCollection:ArrayCollection):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == "CHN") {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			protected function readCard_B(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.f304_10.text = array[0];//姓名
+							this.f304_12.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			/*----------------加载妇女档案信息---------------*/
+			public function load(vf301:Object):void
+			{
+				this.e301.e30102 =vf301.f30101;  //产妇档案主键     F302_02
+				//this.F301_02.text =vf301.f30102;
+				var f30104dataProvide:ArrayCollection =ArrayCollection(this.F301_04.dataProvider);
+				var f30104Index:int =this.getDropDownListSelectedIndex(f30104dataProvide,vf301.f30104);
+				this.F301_04.selectedIndex =f30104Index;
+				//this.F301_05.text =vf301.f30105;
+				this.F301_06.text = vf301.f30106Str;
+				var f30108dataProvide:ArrayCollection =ArrayCollection(this.F301_08.dataProvider);
+				var f30108Index:int =this.getDropDownListSelectedIndex(f30108dataProvide,vf301.f30108);
+				this.F301_08.selectedIndex =f30108Index;
+				this.e301_11.text =vf301.f30113;
+				this.e301_17.text =vf301.f30117;  //保健卡号  F301_17
+				this.e301_26.text =vf301.f30102;
+				this.e301_27.text =vf301.f30105;
+				this.e301_28.text =vf301.f30118;
+				this.e301_29.text =vf301.f30121;
+				this.e301_32.text =vf301.f30137;
+				if(vf301.f30135 != null){
+					if(vf301.f30135.length >= 9){
+						this.e301_12.setAreaCode(vf301.f30135);
+					}
+				}
+				//Alert.show(vf301.f30136 );
+				if(vf301.f30136 != null){
+					if(vf301.f30136.length >= 9){
+						this.e301_09.setAreaCode(vf301.f30136);
+					}
+				}
+				
+				
+				this.saveE301.enabled = true;
+			}
+			private function queryfnbjdj():void
+			{
+				if(this.f304_10.text =="" && this.f304_12.text =="" && this.f301_13.text ==""){
+					Alert.show("请输入产妇姓名，身份证号或者电话号码！","系统提示");
+					return;
+				}		
+				var querywindow:QueryWindow =new QueryWindow();
+				querywindow.f30102 =StringUtil.trim(this.f304_10.text);
+				querywindow.f30105 =StringUtil.trim(this.f304_12.text);
+				querywindow.f30113 =StringUtil.trim(this.f301_13.text);
+				querywindow.f30132 =this.systemUser.institutionCode;
+				CompMethod.popUpTitleWindow(querywindow,this,true);
+			}
+			
+			public function validateCard(event:Event):void{
+				var IC:String = this.f304_12.text;
+				if(IC.length>=15){
+					if(IC.length != 15 && IC.length != 18){
+						Alert.show("身份证号长度是15或18位","系统提示");
+						return;
+					}else{
+						var n:String = IC.substring(IC.length-1,IC.length);
+						if((n>='a'&&n<='z')){
+							IC.replace(n,n.toLowerCase());
+							this.f304_12.text = IC.substring(0,IC.length-1)+n.toUpperCase();
+						}
+					}
+				}
+			}
+			
+			public function validateN(event:Event):void{}
+			
+			//public function validateIC(event:Event):void{
+			//var IC:String = this.e301_05.text;
+			//if(IC !==""){
+			//if(IC.length != 15 && IC.length != 18){
+			//Alert.show("身份证号长度是15或18位","系统提示");
+			//return;
+			//}else{
+			//if(IC.substring(IC.length-1,IC.length)=="x"){
+			//this.e301_05.text = IC.replace("x","X");
+			//}
+			//var n:String = IC.substring(IC.length-1,IC.length);
+			//if((n>='a'&&n<='z')){
+			//IC.replace(n,n.toLowerCase());
+			//this.e301_05.text = IC.substring(0,IC.length-1)+n.toUpperCase();
+			//}
+			//}
+			//}
+			//}
+			
+			private function validate1():void
+			{
+				if(this.e301_26.text ==""){
+					Alert.show("请输入产妇的姓名","系统提示");
+					return;
+				}
+				if(this.F301_04.selectedItem.data ==0){
+					Alert.show("请选择产妇证件类别","系统提示");
+					return;
+				}
+				if(this.e301_27.text ==""){
+					Alert.show("请输入产妇证件号码","系统提示");
+					return;
+				}
+				if(this.F301_06.text ==""){
+					Alert.show("请输入产妇出生日期","系统提示");
+					return;
+				}
+				if(this.F301_08.selectedItem.data ==0){
+					Alert.show("请选择产妇国籍！","系统提示");
+					return;
+				}
+				if(this.e301_03.text == ""){
+					Alert.show("请输入儿童姓名!","系统提示");
+					return;
+				}
+				if(this.e301_04.selectedItem.data == 0){
+					Alert.show("请选择儿童性别!","系统提示");
+					return;
+				}
+				/* if(this.e301_05.text == ""){
+				Alert.show("请输入儿童身份证号!","系统提示");
+				return;
+				} */ 
+				if(this.e301_18_1.text == ""){
+					this.e301_18_1.text = "0";
+				}
+				if(this.e301_18_1.text !="0"){
+					if(Number(this.e301_18_1.text) > 45 || Number(this.e301_18_1.text) < 20){
+						Alert.show("胎龄不能大于45周或者小于20周！","系统提示");
+						return;
+					}
+				}
+				if(this.e301_18_2.text == ""){
+					this.e301_18_2.text = "0";
+				}
+				//if(this.e301_19.text == "0"){
+					//Alert.show("请输入儿童的体重！","系统提示");
+					//return;
+				//}
+				if(this.e301_20.selectedItem.data == 0){
+					Alert.show("请选择胎数","系统提示");
+					return;
+				}
+				if(this.e301_19.text == "0" || this.e301_19.text ==""){
+					Alert.show("请输入儿童的体重！","系统提示");
+					return;
+				}
+				
+				if(this.e301_30.text == "0" || this.e301_30.text ==""){
+					Alert.show("请输入儿童的身高！","系统提示");
+					return;
+				}
+				
+				if(Number(this.e301_19.text) >= 100 || Number(this.e301_19.text) <= 1){
+					Alert.show("体重应该在1到100之间","系统提示");
+				}
+				
+				if(Number(this.e301_30.text) >= 200 || Number(this.e301_30.text) <= 10){
+					Alert.show("儿童身高应该在20到200cm之间！","系统提示");
+					return;
+				}
+				
+				if(!validateAreaCode12(this.e301_12.getAreaCode())){
+					Alert.show("孕产妇现住地址要选到最下级！","系统提示");
+					return;
+				}
+				//else{
+				//if(this.e301_12.getAreaCode().substr(0,6) != "419001"){
+				//Alert.show("孕产妇现住地址不能选外地！","系统提示");
+				//return;
+				//}
+				//}
+				if(!validateAreaCode(this.e301_09.getAreaCode())){
+					Alert.show("孕产妇户口地址要选到最下级！","系统提示");
+					return;
+				} 
+				/* if(this.e301_19.value >= 10000){
+				Alert.show("儿童的体重应小于10000g！","系统提示");
+				return;
+				} */
+				var dateFormatter:DateFormatter= new DateFormatter();
+				dateFormatter.formatString = "YYYY-MM-DD";
+				var nowData:String= dateFormatter.format(new Date());
+				if(this.e301_06.text ==""){
+					Alert.show("请输入出生日期（时）！","系统提示");
+					return;
+				}
+				if(this.e301_06.text>nowData){
+					Alert.show("出生日期大于当前日期","系统提示");
+					return;
+				} 
+				/* if(this.e301_13.text == ""){
+				Alert.show("请输入出生证号!","系统提示");
+				return;
+				} */
+				/*if(this.e301_21.selectedItem.data == 0){
+				Alert.show("请选择助产机构","系统提示");
+				return;
+				}8*/
+				if(this.e301_11.text == ""){
+					Alert.show("请输入联系电话!","系统提示");
+					return;
+				}
+				if(this.e301_17.text == ""){
+					Alert.show("请输入保健卡号!","系统提示");
+					return;
+				}
+				if(this.e301_16.selectedItem.data == 0){
+					Alert.show("请选择建档单位","系统提示");
+					return;
+				}
+				if(this.e301_14.text ==""){
+					Alert.show("请输入建档日期（时）！","系统提示");
+					return;
+				}
+				this.save();
+			}
+			
+			public function save():void{
+				this.e301.e30103 =this.e301_03.text;
+				this.e301.e30104 =this.e301_04.selectedItem.data; 
+				//this.e301.e30105 =this.e301_05.text;
+				this.e301.e30106 =DateField.stringToDate(this.e301_06.text, "YYYY-MM-DD"); 
+				this.e301.e30107 =this.e301_07.selectedItem.data;
+				this.e301.e30108 =this.e301_08.selectedItem.data;
+				this.e301.e30109 =this.e301_09.getAreaCode();
+				//this.e301.e30110 =this.e301_10.text;
+				this.e301.e30111 =this.e301_11.text;
+				this.e301.e30112 =this.e301_12.getAreaCode();
+				this.e301.e30113 =this.e301_13.text;
+				this.e301.e30114 =DateField.stringToDate(this.e301_14.text, "YYYY-MM-DD");   
+				this.e301.e30115 =this.e301_15.text;
+				this.e301.e30116 =this.e301_16.selectedItem.data; 
+				this.e301.e30117 =this.e301_17.text;
+				this.e301.e30118 =this.e301_18_1.text+","+this.e301_18_2.text;
+				this.e301.e30119 =Number(this.e301_19.text);
+				this.e301.e30120 =this.e301_20.selectedItem.data; 
+				this.e301.e30121 =this.e301_21.selectedItem.data; 
+				this.e301.e30122 =Number(this.e301_22.text);
+				this.e301.e30123 =Number(this.e301_23.text);
+				//this.e301.e30124 =Number(this.e301_24.text);
+				this.e301.e30126 =this.e301_26.text;
+				this.e301.e30127 =this.e301_27.text;
+				this.e301.e30128 =this.e301_28.text;
+				this.e301.e30129 =this.e301_29.text;
+				this.e301.e30130 =this.e301_30.text;
+				this.e301.e30132 =this.e301_32.text;
+				//this.e301.e30133 =this.e301_33.text;
+				this.e301Service.saveE301(e301);
+			}     
+			private function saveE301Handler(event:ResultEvent):void{   
+				var e301Response:Object =  event.result;
+				if(!e301Response.state) {
+					Alert.show(e301Response.errorMessage,"系统提示");
+					return;
+				}
+				Alert.show("保存成功！","系统提示");
+				removeRecord();
+			}
+			
+			private function removeRecord():void
+			{
+				//this.f304_10.text = "";
+				//this.f304_12.text = "";
+				//this.F301_02.text = "";
+				//this.F301_05.text = "";
+				//this.e301_03.text = "";
+				//this.e301_19.value = 0;
+				//this.e301_18.text = "";
+				//this.e301_13.text = "";
+				//this.e301_22.text = "";
+				//this.e301_23.text = "";
+				//this.e301_24.text = "";
+				//this.e301_11.text = "";
+				//this.e301_10.text = "";
+				//this.e301_17.text = "";
+				//this.e301_15.text = "";
+				//this.e301_05.text = "";
+				var now:Date =new Date();
+				this.e301_06.selectedDate =now;
+				this.e301_14.selectedDate =now;
+				this.F301_06.text = null;
+				this.e301_19.text = "0";
+				//this.e301_09.repeater;
+				//this.e301_18.text = "0";
+				//this.e301_33.text = "0";
+				this.saveE301.enabled = false;
+				this.initializeComboBox();
+				clearText=new ClearText1();
+				clearText._clearText(this);
+			}
+			
+			private function copy1():void
+			{
+				var areaCode:String = this.e301_09.getAreaCode();
+				this.e301_12.setAreaCode(areaCode);
+			} 
+			private function foundupfnbjdj():void{
+				var tt:tittle =new tittle();
+				CompMethod.popUpTitleWindow(tt,this,true);
+
+			}
+			
+			private function validateAreaCode12(areaCode:String):Boolean
+			{
+				if(areaCode == "" || areaCode.length == 0){
+					return false;
+				} else if(areaCode.length < 9){
+					return false;
+				} else if(areaCode.length == 9){
+					if(areaCode.substr(0,4) == "4190"){
+						return false;
+					} else {  
+						return true;
+					}  
+				} else {
+					return true;
+				}
+			}
+			
+			private function validateAreaCode(areaCode:String):Boolean
+			{
+				if(areaCode == "" || areaCode.length == 0){
+					return false;
+				} else if(areaCode.length < 9){
+					return false;
+				} else if(areaCode.length == 9){
+					return true;
+				} else {
+					return true;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller id="no1" width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup id="no2" paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator  id="content" width="1170" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="产妇查询">			
+					<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" verticalAlign="middle" paddingBottom="5">
+							<s:Label text="请先查询产妇档案" styleName="mustQuery"/>
+							<s:HGroup visible="true" id="fmload" verticalAlign="middle">
+								<s:Label text="请输入母亲姓名" paddingLeft="8"/><s:TextInput id="f304_10"/>
+								<s:Label text="证件号码" /><s:TextInput id="f304_12" width="140"/>
+								<s:Label text="电话号码" /><s:TextInput id="f301_13" width="140"/>
+								<s:Button click="queryfnbjdj()" label="查询"/>
+								<s:Button click="foundupfnbjdj()" label="添加产妇档案"/>
+								<s:Button label="读卡" id="duka1" enabled="false" width="60" click="readCard_B(event)"/>	
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="儿童信息">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="儿  童   姓  名"/>
+								<s:TextInput id="e301_03" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="性　           别" />
+								<s:DropDownList id="e301_04" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出生日期"  paddingLeft="15"/>
+								<mx:DateField  id="e301_06" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											   formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="国　    籍"  paddingLeft="15"/>
+								<s:DropDownList id="e301_07" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="民　　族"  paddingLeft="15"/>
+								<s:DropDownList id="e301_08" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<!--<mx:GridItem>
+							<s:Label text="体        重(kg)" />
+							<s:NumericStepper minimum="0" stepSize="0.1" maximum="10000" id="e301_19" width="130"/>
+							<s:Label text="*" styleName="must"/>
+							</mx:GridItem>-->
+							
+							<mx:GridItem>
+								<s:Label text="身      高(cm)" />
+								<s:TextInput id="e301_30" restrict="0-9." text="0"  width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="体        重(kg)" />
+								<s:TextInput id="e301_19" restrict="0-9." text="0"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							
+							<!--<mx:GridItem>
+							<s:Label paddingLeft="15" text="胎        龄" />
+							<s:TextInput id="e301_18" width="130" />
+							</mx:GridItem>-->
+							<mx:GridItem>
+								<s:Label paddingLeft="15" text="胎        龄"/>
+								<s:TextInput id="e301_18_1" width="60" text="40" restrict="0-9"/>
+								<s:Label text="周"/>
+								<s:TextInput id="e301_18_2" width="20" text="0" restrict="0-7"/><s:Label text="天"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="胎        数"  paddingLeft="15" />
+								<s:DropDownList id="e301_20" width="130"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>  
+								<s:Label text="出生证号" paddingLeft="15"/>
+								<s:TextInput id="e301_13" width="130"/>
+								<!--<s:Label text="*" styleName="must"/>-->
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="孕               次" />
+								<s:TextInput id="e301_22" x="59" width="130" text="0" maxChars="2" restrict="0-9"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="产               次"/>
+								<s:TextInput id="e301_23" x="56"  width="130"  text="0" maxChars="2" restrict="0-9"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="妇保卡号" paddingLeft="15"/>
+								<s:TextInput id="e301_17" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出生机构" paddingLeft="15"/>
+								<s:DropDownList id="e301_21" width="130"/>
+								<!--<s:Label text="*" styleName="must"/>-->
+							</mx:GridItem>
+							<!--<mx:GridItem>
+							<s:Label paddingLeft="15" text="住  院  号" />
+							<s:TextInput id="e301_24" width="140" />
+							</mx:GridItem>-->
+							
+							<!--<mx:GridItem>		
+							<s:Label text="联系电话" paddingLeft="15"/>
+							<s:TextInput id="e301_11" width="130" maxChars="12" restrict="0-9"/>
+							<s:Label text="*" styleName="must"/>
+							</mx:GridItem>-->
+						</mx:GridRow>
+						<!--<mx:GridRow>-->
+						<!--<mx:GridItem>
+						<s:Label text="联      系     人"/>
+						<s:TextInput id="e301_10" width="130"/>
+						</mx:GridItem>-->
+						
+						
+						<!--</mx:GridRow>-->
+						<!--<mx:GridRow>
+						<mx:GridItem colSpan="5">
+						<s:Label text="现  住  址"/>
+						<component:AreaComboBoxCommon id="e301_09" width="880"/>
+						<s:Button label="同下" click="copy1()"/>
+						</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+						<mx:GridItem colSpan="5">
+						<s:Label text="户口地址"/>
+						<component:AreaComboBoxCommon id="e301_12" width="880"/>
+						</mx:GridItem>
+						</mx:GridRow>-->
+						<mx:GridRow>
+							<mx:GridItem colSpan="6">
+								<s:Label text="现住地址"/>
+								<component:AreaComboBoxCommon3 id="e301_12" width="1029"/>
+								<s:Label text="*" styleName="must"/>
+								<!--<s:Button label="同下" click="copy1()"/>-->
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<!--<mx:GridItem colSpan="6">
+							<s:Label text="户口地址"/>
+							<component:AreaComboBoxVillage id="e301_09" width="865"/>
+							<s:Label text="村"/>
+							<s:TextInput id="F301_37" width="150"/>
+							<s:Label text="*" styleName="must"/>
+							</mx:GridItem>-->
+							<mx:GridItem width="1130" colSpan="6">
+								<s:Label text="户口地址"/>
+								<component:AreaComboBoxCommon4 id="e301_09" width="845"/>
+								<s:Label text="村"/>
+								<s:TextInput id="e301_32" width="178"/>
+								<!--<s:Label text="*" styleName="must"/>-->
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="其他信息">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="母  亲   姓  名"/>	
+								<s:TextInput id="e301_26" width="130" enabled="false"/>	
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证  件  类  型" />
+								<s:DropDownList id="F301_04" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label  paddingLeft="15" text="证  件   号  码"/>
+								<s:TextInput id="e301_27" width="190" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label  text="出  生   日  期"/>
+								<mx:DateField  id="F301_06" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											   formatString="YYYY-MM-DD" yearNavigationEnabled="true" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							
+							
+							<mx:GridItem>
+								<s:Label text="国               籍"/>
+								<s:DropDownList id="F301_08" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="父  亲  姓  名"/>
+								<s:TextInput id="e301_28" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="父亲证件号码" paddingLeft="13"/>
+								<s:TextInput id="e301_29" width="190" />
+							</mx:GridItem>
+							<mx:GridItem>		
+								<s:Label text="联   系  电  话"/>
+								<s:TextInput id="e301_11" width="130" maxChars="12" restrict="0-9"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label text="建   档  单  位"/>
+								<s:DropDownList id="e301_16" width="130" labelField="label" selectedIndex="0"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="建      档    人"/>
+								<s:TextInput id="e301_15" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="建   档   日  期" paddingLeft="13"/>
+								<mx:DateField  id="e301_14" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											   formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<s:HGroup paddingBottom="10" verticalAlign="middle" width="74%" horizontalAlign="right">
+				<s:Button label="保存"  id="saveE301" click="validate1()" enabled="true"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 2015-4-7 10:19:25 by Hibernate Tools 3.4.0.CR1 -->
+<hibernate-mapping>
+    <class name="com.xyw.medical.fnbj.model.F304" table="F304">
+      <id name="f30401" type="long">
+        <column name="F304_01" precision="10" scale="0"/>
+    	<generator class="sequence">
+    		<param name="sequence">F304_01_SEQ</param>
+    	</generator>
+     </id>
+     <property name="f30402" type="long">
+         <column name="F304_02">
+         </column>
+     </property>
+     <property name="f30403" type="date">
+         <column name="F304_03">
+         </column>
+     </property>
+     <property name="f30404" type="string">
+         <column name="F304_04" length="100">
+         </column>
+     </property>
+     <property name="f30405" type="string">
+         <column name="F304_05" length="100">
+         </column>
+     </property>
+     <property name="f30406" type="string">
+         <column name="F304_06" length="12" >
+         </column>
+     </property>
+     <property name="f30407" type="string">
+         <column name="F304_07" length="100">
+         </column>
+     </property>
+     <property name="f30408" type="string">
+         <column name="F304_08" length="14">
+         </column>
+     </property>
+     <property name="f30409" type="string">
+         <column name="F304_09" length="100">
+         </column>
+     </property> 
+     <property name="f30410" type="string">
+         <column name="F304_10" length="50">
+         </column>
+     </property>  
+     <property name="f30411" type="string">
+         <column name="F304_11" length="2">
+         </column>
+     </property> 
+     <property name="f30412" type="string">
+         <column name="F304_12" length="18">
+         </column>
+     </property> 
+     <property name="f30413" type="string">
+         <column name="F304_13" length="200">
+         </column>
+     </property>  
+     <property name="f30414" type="string">
+         <column name="F304_14" length="200">
+         </column>
+     </property> 
+     <property name="f30415" type="string">
+         <column name="F304_15" length="200">
+         </column>
+     </property> 
+     <property name="f30416" type="string">
+         <column name="F304_16" length="200">
+         </column>
+     </property> 
+      <property name="f30417" type="string">
+         <column name="F304_17" length="200">
+         </column>
+     </property>
+      <property name="f30418" type="string">
+         <column name="F304_18" length="200">
+         </column>
+     </property>
+      <property name="f30419" type="string">
+         <column name="F304_19" length="200">
+         </column>
+     </property> 
+      <property name="f30420" type="string">
+         <column name="F304_20" length="200">
+         </column>
+     </property>
+     <property name="f30421" type="string">
+         <column name="F304_21" length="200">
+         </column>
+     </property> 
+     <property name="f30422" type="string">
+         <column name="F304_22" length="200">
+         </column>
+     </property> 
+     <property name="f30423" type="string">
+         <column name="F304_23" length="200">
+         </column>
+     </property> 
+     <property name="f30424" type="string">
+         <column name="F304_24" length="200">
+         </column>
+     </property>
+     <property name="f30425" type="string">
+         <column name="F304_25" length="200">
+         </column>
+     </property>                                        
+    </class>
+</hibernate-mapping>

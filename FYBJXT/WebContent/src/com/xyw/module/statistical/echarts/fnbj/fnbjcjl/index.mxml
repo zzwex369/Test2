@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="creationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="statisticalDataService" destination="statisticalDataService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getPieData" result="getPieDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			private var systemUser:SystemUser = null;
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.timeStart.text=DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeEnd.text=DateField.dateToString(new Date(),"YYYY-MM-DD");
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function getPieDataHandler(event:ResultEvent):void
+			{
+				try
+				{
+					query.enabled=true;
+					var response:Object=event.result;
+					if(!response.state)
+					{
+						Alert.show("出现异常，请从新尝试！","系统提示");
+						return;
+					}
+					var resultData:ArrayCollection=response.echartsDataList;
+					if(!resultData[0])//总数 
+					{
+						Alert.show("查询的数据暂无，请从新尝试！","系统提示");
+						return;
+					}
+					var different:String=(resultData[0]-resultData[1]).toString();
+					var urlRequest:URLRequest = new URLRequest();
+					var variables:URLVariables = new URLVariables();
+					variables.data=[
+						['800',
+							encodeURIComponent('产检率统计'),
+							encodeURIComponent('活产总数：'+resultData[0]+"(人)"),
+							encodeURIComponent('详细信息'),'55%',
+							resultData[1],encodeURIComponent('产检人数'),
+							different,encodeURIComponent('未产检人数'),
+						]
+					];
+					urlRequest.data=variables;
+					urlRequest.method=URLRequestMethod.POST;
+					urlRequest.url=this.parentApplication.contextRoot +"/statistical/echarts_pie/common/pie.jsp";
+					navigateToURL(urlRequest); 
+					
+				} 
+				
+				catch(error:Error) 
+				{
+					
+					trace(error.getStackTrace());
+				}
+				
+			}
+			
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				var timeStr:String = this.timeStart.text;
+				var timeEnd:String = this.timeEnd.text;
+				if(CompMethod.getTimeSpace(timeStr,timeEnd))
+				{
+					Alert.show("开始时间不能大于结束时间！","系统提示");
+					return;
+				}
+				query.enabled=false;
+				var institutionCode:String;
+				var type:String = this.Institution.getLastSelectedInstitution();
+				var institution:String = this.Institution.getLastSelectedInstitutionCode();
+			
+				institutionCode=type == "10"? institution:institution.substring(0,Number(type));
+				
+				creatSql(institutionCode,timeStr,timeEnd);
+			}
+			
+			/**
+			 *
+			 */
+			private function creatSql(code:String,timeStr:String,timeEnd:String):void
+			{
+				var d307Sql:String=doCreatSql("count(*) d601count,0 f303count","d307",
+					['d307_23',timeStr,timeEnd,code,'d307_24']
+				);
+				
+				var d601Sql:String=doCreatSql("count(*) d601count,0 f303count","d601",
+					['d601_03',timeStr,timeEnd,code,'d601_02']
+				);
+				
+				d601Sql+=" and d601_48='1'";
+				var f303sql:String=doCreatSql("0 d601count,count(*) f303count","f303",
+					['f303_14',timeStr,timeEnd,code,'f303_15']
+				);
+				
+				var sql:String="select sum(d601count) 活产数,sum(f303count) 产检数 FROM("+d601Sql+
+					" union all "+d307Sql+" union all "+f303sql+")";
+				trace(sql);
+				statisticalDataService.getPieData(sql);
+			}
+			
+			
+			/**
+			 *fields 0 timeField  1 timeStr 2 timeEnd 3code 4 codeField
+			 */
+			private function doCreatSql(resultField:String,table:String,fields:Array):String
+			{
+				return "select "+resultField+" from "+table+" where "+
+					getTimeSql(fields[0],fields[1],fields[2])+
+					setCodeSql(fields[3],fields[4]);
+			}
+			
+			/**
+			 *
+			 */
+			private function setCodeSql(code:String,field:String):String
+			{
+				var isFull:Boolean=code.length==14;
+				var codeSql:String=' and '+field ;
+				codeSql+=isFull?'=':' like '
+				codeSql+="'"+code;
+				codeSql+=isFull?"'":"%'";
+				return codeSql;
+			}
+			
+			/**
+			 *
+			 */
+			private function getTimeSql(field:String,timeStr:String,timeEnd:String):String
+			{
+				return setTimeSql(field,">=",timeStr)+' and'+setTimeSql(field,"<=",timeEnd);
+			}
+			
+			/**
+			 *
+			 */
+			private function setTimeSql(field:String,symbol:String,time:String):String
+			{
+				return " to_char("+field+",'yyyy-mm-dd')"+symbol+"'"+time+"'";
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:VGroup width="100%" >
+			<mx:TabNavigator id="xuanze" width="100%" chromeColor="#ffffff"
+							 creationPolicy="all">
+				<s:NavigatorContent width="100%" label="检查率查询">
+					<s:VGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="查询单位"/>
+							<component:InstitutionComboBox id="Institution"  width="730" villageVisible="true"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="查询日期"/><mx:DateField id="timeStart" width="120"
+																dayNames="[&quot;日&quot;,&quot;一&quot;,&quot;二&quot;,&quot;三&quot;,&quot;四&quot;,&quot;五&quot;,&quot;六&quot;]"
+																formatString="YYYY-MM-DD"
+																monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+																yearNavigationEnabled="true"/>
+							<s:Label text="至"/><mx:DateField id="timeEnd" width="120"
+															 dayNames="[&quot;日&quot;,&quot;一&quot;,&quot;二&quot;,&quot;三&quot;,&quot;四&quot;,&quot;五&quot;,&quot;六&quot;]"
+															 formatString="YYYY-MM-DD"
+															 monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+															 yearNavigationEnabled="true"/>
+							<s:Button label="查询" id="query" click="button1_clickHandler(event)"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingLeft="5">
+							<s:Label color="#D91A1A" fontSize="16" text="注意，活产数查询机构为助产机构，时间为分娩时间！"/>
+						</s:HGroup>  
+						
+						<s:HGroup width="100%" height="100%" paddingLeft="5">
+							<s:Label color="#D91A1A" fontSize="16" text="注意，产检数查询机构为检查机构，时间为检查时间！"/>
+						</s:HGroup> 
+						
+						<s:HGroup width="100%" height="100%" paddingLeft="5">
+							<s:Label color="#D91A1A" fontSize="16" text="产检率=某年某地区产妇检查人数 / 某年某地区活产数 *100%"/>
+						</s:HGroup>
+					</s:VGroup>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>  
+	</s:VGroup>  
+	
+	
+</s:Module>

@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.xyw.medical.birth.model.VD503" table="V_D503">
+        <id name="d50301" type="long">
+           <column name="D503_01" precision="10" scale="0" />
+           <generator class="sequence">
+           	<param name="sequence">D503_01_SEQ</param>
+           </generator>
+       </id>
+       <property name="d50302" type="string">
+           <column name="D503_02" length="14" />
+       </property>
+       <property name="d50303" type="string">
+           <column name="D503_03" length="20" />
+       </property>
+       <property name="d50304" type="java.lang.Long">
+           <column name="D503_04" precision="10" scale="0" />
+       </property>
+       <property name="d50305" type="date">
+           <column name="D503_05" length="7" />
+       </property>
+       <property name="d50306" type="java.lang.Long">
+           <column name="D503_06" precision="10" scale="0" />
+       </property>
+       <property name="d50307" type="string">
+           <column name="D503_07" length="14" />
+       </property>
+       <property name="d50308" type="string">
+           <column name="D503_08" length="20" />
+       </property>
+       <property name="d50309" type="string">
+           <column name="D503_09" length="20" />
+       </property>
+       <property name="d50310" type="string">
+           <column name="D503_10" length="20" />
+       </property>
+       <property name="d50311" type="string">
+           <column name="D503_11" length="100" />
+       </property>
+       <property name="d50312" type="string">
+           <column name="D503_12" length="100" />
+       </property>
+       <property name="d50313" type="string">
+           <column name="D503_13" length="100" />
+       </property>
+       <property name="d50314" type="string">
+           <column name="D503_14" length="100" />
+       </property>
+       <property name="d50315" type="string">
+           <column name="D503_15" length="100" />
+       </property>
+       <property name="d50316" type="string">
+           <column name="D503_16" length="100" />
+       </property>
+       <property name="d50317" type="string">
+           <column name="D503_17" length="100" />
+       </property>
+       <property name="d50318" type="string">
+           <column name="D503_18" length="100" />
+       </property>
+       <property name="d50319" type="string">
+           <column name="D503_19" length="100" />
+       </property>
+       <property name="d50320" type="string">
+           <column name="D503_20" length="100" />
+       </property>
+       <property name="d50321" type="string">
+           <column name="D503_21" length="100" />
+       </property>
+       <property name="d50322" type="string">
+           <column name="D503_22" length="100" />
+       </property>
+       <property name="d50323" type="string">
+           <column name="D503_23" length="100" />
+       </property>
+       <property name="d50324" type="string">
+           <column name="D503_24" length="100" />
+       </property>
+       <property name="d50325" type="string">
+           <column name="D503_25" length="100" />
+       </property>
+       <property name="d50326" type="string">
+           <column name="D503_26" length="100" />
+       </property>
+       <property name="d50327" type="string">
+           <column name="D503_27" length="100" />
+       </property>
+       <property name="d50328" type="string">
+           <column name="D503_28" length="100" />
+       </property>
+       <property name="d50329" type="string">
+           <column name="D503_29" length="100" />
+       </property>
+       <property name="d50330" type="string">
+           <column name="D503_30" length="100" />
+       </property>
+       <property name="d50331" type="string">
+           <column name="D503_31" length="100" />
+       </property>
+       <property name="d50332" type="string">
+           <column name="D503_32" length="100" />
+       </property>
+       <property name="d50333" type="string">
+           <column name="D503_33" length="100" />
+       </property>
+       <property name="d50334" type="string">
+           <column name="D503_34" length="100" />
+       </property>
+       <property name="d50335" type="string">
+           <column name="D503_35" length="100" />
+       </property>
+       <property name="d50336" type="string">
+           <column name="D503_36" length="100" />
+       </property>
+       <property name="d50337" type="string">
+           <column name="D503_37" length="100" />
+       </property>
+       <property name="d50338" type="string">
+           <column name="D503_38" length="100" />
+       </property>
+       <property name="d50339" type="string">
+           <column name="D503_39" length="100" />
+       </property>
+       <property name="d50340" type="string">
+           <column name="D503_40" length="100" />
+       </property>
+       <property name="d50341" type="string">
+           <column name="D503_41" length="100" />
+       </property>
+       <property name="d50342" type="string">
+           <column name="D503_42" length="100" />
+       </property>
+       <property name="d50343" type="string">
+           <column name="D503_43" length="100" />
+       </property>
+       <property name="d50344" type="string">
+           <column name="D503_44" length="100" />
+       </property>
+       <property name="d50345" type="string">
+           <column name="D503_45" length="100" />
+       </property>
+       <property name="d50346" type="string">
+           <column name="D503_46" length="100" />
+       </property>
+       <property name="d50347" type="string">
+           <column name="D503_47" length="100" />
+       </property>
+       <property name="d50348" type="string">
+           <column name="D503_48" length="100" />
+       </property>
+       <property name="d50349" type="string">
+           <column name="D503_49" length="100" />
+       </property>
+       <property name="d50350" type="string">
+           <column name="D503_50" length="100" />
+       </property>
+       <property name="d50302Zh" type="string">
+           <column name="D503_02_ZH" length="50" />
+       </property>
+       <property name="d50307Zh" type="string">
+           <column name="D503_07_ZH" length="50" />
+       </property>
+    </class>
+</hibernate-mapping>

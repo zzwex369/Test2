@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.xyw.ws.model.Fp" table="D501">
+        <id name="fp01" type="long">
+            <column name="D501_01" precision="10" scale="0" />
+            <generator class="sequence">
+            	<param name="sequence">D501_01_SEQ</param>
+            </generator>
+        </id>
+        <property name="fp02" type="string">
+            <column name="D501_02" length="14">
+                <comment>&#201;&#234;&#199;&#235;&#181;&#165;&#206;&#187;</comment>
+            </column>
+        </property>
+        <property name="fp03" type="string">
+            <column name="D501_03" length="20">
+                <comment>&#201;&#234;&#199;&#235;&#200;&#203;</comment>
+            </column>
+        </property>
+         <property name="fp04" type="string">
+            <column name="D501_04" length="20">
+                <comment>&#201;&#234;&#199;&#235;&#200;&#203;</comment>
+            </column>
+        </property>
+        <property name="fp05" type="long">
+            <column name="D501_05" length="10">
+                <comment>&#201;&#234;&#199;&#235;&#202;&#177;&#188;&#228;</comment>
+            </column>
+        </property>
+        <property name="fp06" type="string">
+            <column name="D501_06" length="20">
+                <comment>&#177;&#187;&#201;&#234;&#199;&#235;&#181;&#165;&#206;&#187;</comment>
+            </column>
+        </property>
+        <property name="fp07" type="string">
+            <column name="D501_07" length="20">
+                <comment>&#201;&#243;&#197;&#250;&#200;&#203;</comment>
+            </column>
+        </property>
+       <property name="fp08" type="string">
+            <column name="D501_08" length="20">
+                <comment>&#201;&#243;&#197;&#250;&#200;&#203;</comment>
+            </column>
+        </property>
+         <property name="fp09" type="string">
+            <column name="D501_09" length="14">
+                <comment>&#201;&#234;&#199;&#235;&#181;&#165;&#206;&#187;</comment>
+            </column>
+        </property>
+        <property name="fp10" type="string">
+            <column name="D501_10" length="20">
+                <comment>&#179;&#246;&#201;&#250;&#214;&#164;&#198;&#240;&#202;&#188;&#177;&#224;&#186;&#197;</comment>
+            </column>
+        </property>
+        <property name="fp11" type="string">
+            <column name="D501_11" length="20">
+                <comment>&#179;&#246;&#201;&#250;&#214;&#164;&#214;&#213;&#214;&#185;&#177;&#224;&#186;&#197;</comment>
+            </column>
+        </property>
+        <property name="fp12" type="date">
+            <column name="D501_12">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="fp13" type="string">
+            <column name="D501_13" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="fp14" type="string">
+            <column name="D501_14" length="12">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        <property name="fp18" type="string">
+            <column name="D501_18" length="100">
+                <comment>&#177;&#184;&#176;&#184;</comment>
+            </column>
+        </property>
+        
+    </class>
+</hibernate-mapping>

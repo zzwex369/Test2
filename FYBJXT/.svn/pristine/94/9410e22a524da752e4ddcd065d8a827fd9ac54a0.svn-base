@@ -1,0 +1,665 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  xmlns:local="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationComplete()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="ycfswService" destination="ycfswService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveD604" result="saveD604Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:right;
+			verticalAlign:middle;
+		}
+		s|HGroup
+		{
+			horizontalAlign:right;
+			verticalAlign:middle;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.mustQuery {
+			color:red;
+			fontSize:14px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.delivery.model.D604;
+			import com.xyw.module.delivery.model.D604Response;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.controls.Text;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+
+			
+			
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var systemUser:SystemUser = null;
+			private var d604:D604;
+			
+			public function moduleCreationComplete():void{
+				this.systemUser = this.parentApplication.systemUser;
+				this.initializeComboBox();
+			
+			}
+			public function initializeComboBox():void{
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t";
+				comboBoxDataRequest.flag = "D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from s301_04";
+				comboBoxDataRequest.flag = "s301_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s601_01";
+				comboBoxDataRequest.sql = "select * from s601_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s601_12";
+				comboBoxDataRequest.sql = "select * from s601_12";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_01";
+				comboBoxDataRequest.sql = "select * from s604_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_02";
+				comboBoxDataRequest.sql = "select * from s604_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_03";
+				comboBoxDataRequest.sql = "select * from s604_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_04";
+				comboBoxDataRequest.sql = "select * from s604_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_05";
+				comboBoxDataRequest.sql = "select * from s604_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_09";
+				comboBoxDataRequest.sql = "select * from s604_09";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_10";
+				comboBoxDataRequest.sql = "select * from s604_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_11";
+				comboBoxDataRequest.sql = "select * from s604_11";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_12";
+				comboBoxDataRequest.sql = "select * from s604_12";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_13";
+				comboBoxDataRequest.sql = "select * from s604_13";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag == "s301_04")
+				{
+					this.D604_10.dataProvider = comboBoxDataList;
+					this.D604_10.selectedIndex = 0;
+				}else if(flag == "s601_01")
+				{
+					this.D604_11.dataProvider = comboBoxDataList;
+					this.D604_11.selectedIndex = 0;
+				}else if(flag == "s601_12")
+				{
+					this.D604_12.dataProvider = comboBoxDataList;
+					this.D604_12.selectedIndex = 0;
+				}else if(flag == "s604_01")
+				{
+					this.D604_13.dataProvider = comboBoxDataList;
+					this.D604_13.selectedIndex = 0;
+				}else if(flag == "s604_02")
+				{
+					this.D604_14.dataProvider = comboBoxDataList;
+					this.D604_14.selectedIndex = 0;
+				}else if(flag == "s604_03")
+				{
+					this.D604_15.dataProvider = comboBoxDataList;
+					this.D604_15.selectedIndex = 0;
+				}else if(flag == "s604_04")
+				{
+					this.D604_22.dataProvider = comboBoxDataList;
+					this.D604_22.selectedIndex = 0;
+					this.D604_23.dataProvider = comboBoxDataList;
+					this.D604_23.selectedIndex = 0;
+				}else if(flag == "s604_05")
+				{
+					this.D604_24.dataProvider = comboBoxDataList;
+					this.D604_24.selectedIndex = 0;
+				}else if(flag == "s604_09")
+				{
+					this.D604_34.dataProvider = comboBoxDataList;
+					this.D604_34.selectedIndex = 0;
+				}else if(flag == "s604_10")
+				{
+					this.D604_36.dataProvider = comboBoxDataList;
+					this.D604_36.selectedIndex = 0;
+					this.D604_39.dataProvider = comboBoxDataList;
+					this.D604_39.selectedIndex = 0;
+					this.D604_42.dataProvider = comboBoxDataList;
+					this.D604_42.selectedIndex = 0;
+					this.D604_45.dataProvider = comboBoxDataList;
+					this.D604_45.selectedIndex = 0;
+					this.D604_48.dataProvider = comboBoxDataList;
+					this.D604_48.selectedIndex = 0;
+				}else if(flag == "s604_11")
+				{
+					this.D604_38.dataProvider = comboBoxDataList;
+					this.D604_38.selectedIndex = 0;
+					this.D604_41.dataProvider = comboBoxDataList;
+					this.D604_41.selectedIndex = 0;
+					this.D604_44.dataProvider = comboBoxDataList;
+					this.D604_44.selectedIndex = 0;
+					this.D604_47.dataProvider = comboBoxDataList;
+					this.D604_47.selectedIndex = 0;
+				}else if(flag == "s604_12")
+				{
+					this.D604_40.dataProvider = comboBoxDataList;
+					this.D604_40.selectedIndex = 0;
+					this.D604_43.dataProvider = comboBoxDataList;
+					this.D604_43.selectedIndex = 0;
+					this.D604_46.dataProvider = comboBoxDataList;
+					this.D604_46.selectedIndex = 0;
+					this.D604_49.dataProvider = comboBoxDataList;
+					this.D604_49.selectedIndex = 0;
+			    }else if(flag == "D101")
+				{
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.D604_51.dataProvider = comboBoxDataList;
+					this.D604_51.selectedIndex = index;
+					this.D604_51.enabled = false;
+				}else if(flag == "s604_13")
+				{
+					this.D604_26.dataProvider = comboBoxDataList;
+					this.D604_26.selectedIndex = 0;
+				}
+			}
+			
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			public function saveD604():void{
+				this.d604 = new D604();
+				//d604.d60403 = this.D604_03.text;
+				d604.d60404 = this.D604_04.text;
+				d604.d60405 = this.D604_05.selectedDate;
+				var patternMonther:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+				if( !patternMonther.test(this.D604_06.text))
+				{	//验证身份证格式是否正确
+					Alert.show("孕产妇身份证号码有误!","系统提示");
+					return;
+				}
+				d604.d60406 = this.D604_06.text;
+				d604.d60407 = this.D604_07.text;
+				d604.d60408 = this.D604_08.text;
+				d604.d60409 = Number(this.D604_09.text);
+				d604.d60410 = this.D604_10.selectedItem.data;
+				d604.d60411 = this.D604_11.selectedItem.data;
+				d604.d60412 = this.D604_12.selectedItem.data;
+				d604.d60413 = this.D604_13.selectedItem.data;
+				d604.d60414 = this.D604_14.selectedItem.data;
+				d604.d60415 = this.D604_15.selectedItem.data;
+				d604.d60416 = Number(this.D604_16.text);
+				d604.d60417 = Number(this.D604_17.text);
+				d604.d60418 = Number(this.D604_18.text);
+				d604.d60419 = this.D604_19.selectedDate;
+				d604.d60420 = this.D604_20.selectedDate;
+				d604.d60421 = this.D604_21.selectedDate;
+				d604.d60422 = this.D604_22.selectedItem.data;
+				d604.d60423 = this.D604_23.selectedItem.data;
+				d604.d60424 = this.D604_24.selectedItem.data;
+				d604.d60425 = this.D604_25.text;
+				d604.d60426 = this.D604_26.selectedItem.data;
+				d604.d60427 = this.D604_27.text;
+				
+				d604.d60428 = Number(this.D604_28.text);
+				d604.d60429 = Number(this.D604_29.text);
+				d604.d60430 = this.D604_30.text;
+				d604.d60431 = this.D604_31.text;
+				d604.d60432 = this.D604_32.text;
+				d604.d60433 = this.D604_33.text;
+				d604.d60434 = this.D604_34.selectedItem.data;
+				d604.d60435 = this.D604_35.text;
+				d604.d60436 = this.D604_36.selectedItem.data;
+				d604.d60437 = this.D604_37.text;
+				d604.d60438 = this.D604_38.selectedItem.data;
+				d604.d60439 = this.D604_39.selectedItem.data;
+				d604.d60440 = this.D604_40.selectedItem.data;
+				d604.d60441 = this.D604_41.selectedItem.data;
+				d604.d60442 = this.D604_42.selectedItem.data;
+				d604.d60443 = this.D604_43.selectedItem.data;
+				d604.d60444 = this.D604_44.selectedItem.data;
+				d604.d60445 = this.D604_45.selectedItem.data;
+				d604.d60446 = this.D604_46.selectedItem.data;
+				d604.d60447 = this.D604_47.selectedItem.data;
+				d604.d60448 = this.D604_48.selectedItem.data;
+				d604.d60449 = this.D604_49.selectedItem.data;
+				d604.d60450 = this.D604_50.text;
+				d604.d60451 = this.D604_51.selectedItem.data;
+				d604.d60452 = this.D604_52.text;
+				d604.d60453 = this.D604_53.selectedDate;
+				this.ycfswService.saveD604(d604);
+			}
+			public function saveD604Handler(event:ResultEvent):void{
+				var d604Response:Object = event.result;
+				if(d604Response.errorMessage == null || d604Response.errorMessage == ""){
+					Alert.show(d604Response.promptMessage,"系统提示");
+					this.saveButton.enabled = false;
+					var url:String = this.parentApplication.contextRoot + "/YcfswServlet?flagF=0&d60406=" + this.d604.d60406 ;
+					if(this.d604.d60404!=null && this.d604.d60404!=""){
+						url = url+"&d60404=" + encodeURIComponent(this.d604.d60404);
+					}
+					navigateToURL(new URLRequest(url), null);
+				}else {
+					Alert.show(d604Response.errorMessage,"系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller  width="100%" height="650" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10" width="100%" height="100%">
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all"  width="100%">
+				<s:NavigatorContent  label="基本信息" width="100%">
+				  <s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="姓   名"/><s:TextInput id="D604_04"/>
+							</mx:GridItem>
+						<!--	<mx:GridItem>
+								<s:Label text="编号"/><s:TextInput id="D604_03"/>
+							</mx:GridItem>-->
+							<mx:GridItem>
+								<s:Label text="身份证号"/><s:TextInput id="D604_06"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="民         族 "/><s:DropDownList id="D604_10"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="户籍本地外地"/><s:DropDownList id="D604_12"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出 生 日 期"/><mx:DateField yearNavigationEnabled="true" id="D604_05" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+																	   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																	   formatString="YYYY-MM-DD"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label text="年    龄"/><s:TextInput id="D604_09"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="文化程度"/><s:DropDownList id="D604_11" x="58" width="128"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="居住地区"/><s:DropDownList id="D604_15"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="家庭年人均收入"/><s:DropDownList id="D604_14"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem colSpan="2">
+								<s:Label text="暂住址"/><s:TextInput id="D604_08" x="44" width="320"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:Label text="常  住  址"/><s:TextInput id="D604_07" x="58" width="325"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						</mx:Grid>
+					  </s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+						<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" paddingLeft="10" paddingBottom="10" width="100%">
+							<s:NavigatorContent  label="死亡分析" width="100%">	
+								<s:VGroup>
+									<mx:Grid>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="孕      次"/><s:TextInput id="D604_16"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="产      次"/><s:TextInput id="D604_17"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="计划内外"/><s:DropDownList id="D604_13"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="末次月经"/><mx:DateField id="D604_19" x="116" width="112"
+																	dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+																	formatString="YYYY-MM-DD"
+																	monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+																	yearNavigationEnabled="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="D-10 编 码"/><s:TextInput id="D604_37"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="接 生 者"/><s:DropDownList id="D604_26" x="71"
+																	   width="129"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="新法接生"/><s:TextInput id="D604_25"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="分娩方式"/><s:DropDownList id="D604_24"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="分娩时间"/><mx:DateField id="D604_20" x="116" width="112"
+																	dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+																	formatString="YYYY-MM-DD"
+																	monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+																	yearNavigationEnabled="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="分 娩 地 点"/><s:DropDownList id="D604_22" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="产前检查"/><s:TextInput id="D604_27"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="初检孕周"/><s:TextInput id="D604_28"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="死亡地点"/><s:DropDownList id="D604_23"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="死亡时间 "/><mx:DateField id="D604_21" x="116" width="112"
+																	 dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+																	 formatString="YYYY-MM-DD"
+																	 monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+																	 yearNavigationEnabled="true"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="人工 流 产、引 产 次"/><s:TextInput id="D604_18"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="产检次数"/><s:TextInput id="D604_29"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="根本死因"/><s:TextInput id="D604_35"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="死因分类"/><s:DropDownList id="D604_36"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="死因诊断依据 "/><s:DropDownList id="D604_34"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="死亡摘要或调查小结"/><s:TextInput id="D604_50"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="(a)导致死亡"/><s:TextInput id="D604_30"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="区县评审"/><s:DropDownList id="D604_38"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="调查结论"/><s:DropDownList id="D604_40"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="影响死亡的主要因素"/><s:DropDownList id="D604_39"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="填报日期 "/><mx:DateField id="D604_53" x="140" width="128"
+																	 dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+																	 formatString="YYYY-MM-DD"
+																	 monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+																	 yearNavigationEnabled="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="(b) 引 起 (a)"/><s:TextInput id="D604_31"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="市地评审"/><s:DropDownList id="D604_41"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="调查结论"/><s:DropDownList id="D604_43"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="影响死亡的主要因素 "/><s:DropDownList id="D604_42"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="填报单位"/><s:DropDownList id="D604_51" x="139"
+																	  width="129"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="(c) 引 起 (b)"/><s:TextInput id="D604_32"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="省级评审"/><s:DropDownList id="D604_44"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="调查结论"/><s:DropDownList id="D604_46"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="影响死亡的主要因素"/><s:DropDownList id="D604_45"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="填  报  人"/><s:TextInput id="D604_52"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="(d) 引 起 (c)"/><s:TextInput id="D604_33"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="国家评审"/><s:DropDownList id="D604_47"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="调查结论"/><s:DropDownList id="D604_49"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="影响死亡的主要因素"/><s:DropDownList id="D604_48"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					<!--	<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_54"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_55"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_56"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_57"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_58"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_59"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_60"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_61"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_62"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_63"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_64"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_65"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_66"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_67"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_68"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_69"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_70"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_71"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_72"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_73"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_74"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_75"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_76"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_77"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_78"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_79"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="备注"/><s:TextInput id="D604_80"/>
+							</mx:GridItem>
+						</mx:GridRow>-->
+					</mx:Grid>
+				   </s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" width="80%" paddingRight="50" height="30">
+				<s:Button label="确定" id="saveButton" click="saveD604()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

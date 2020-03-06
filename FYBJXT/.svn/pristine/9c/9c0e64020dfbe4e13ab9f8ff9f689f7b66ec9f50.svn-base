@@ -1,0 +1,1448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:sl="com.xyw.module.etbj.etjc.etjcdj.componet.*"
+		 xmlns:component="com.xyw.sys.custom.component.*"
+		 width="100%" height="100%"  creationComplete="moduleComplete(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e304Service" destination="e304Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveE304" result="saveOrUpdateE304Handler(event)"/>
+			<s:method name="updateE304" result="saveOrUpdateE304Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="resizejcdj", type="flash.events.Event")]
+		[Event(name="saveSuccess", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.etsl.etjc.ccjc.componet.etjc;
+			import com.xyw.module.etbj.model.E301Request;
+			import com.xyw.module.etbj.model.E304;
+			import com.xyw.module.etbj.model.VE301;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.event.CustomDataEvent;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.components.CheckBox;
+			import spark.components.RadioButton;
+			import spark.events.GridSelectionEvent;
+			import spark.events.IndexChangeEvent;
+			private var e304:E304;
+			private var count:int=12;
+			[Bindable]
+			public var ve304:Object;
+			[Bindable]
+			public var ve301:Object;
+			private var oldTgTab:Number=0;
+			[Bindable]
+			private var e30470Arr:Array=new Array();
+			public var systemUser:SystemUser = null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var e30410Full:ArrayCollection=new ArrayCollection();
+			private var e30410:ArrayCollection=new ArrayCollection();
+			private var e30422:ArrayCollection=new ArrayCollection();
+			private function moduleComplete(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				addListener();
+				this.initializeComboBox();
+				CompMethod.getDefaultCode([E304_35,E304_45]);
+			
+			}
+			
+			/**
+			 *
+			 */
+			private function addListener():void
+			{
+				slsc.addEventListener(CustomDataEvent.CUSTOM_DATA,saveOrUpdate);
+				this.E304_13.addEventListener(FocusEvent.FOCUS_OUT,checkData);
+				this.E304_14.addEventListener(FocusEvent.FOCUS_OUT,checkData);
+			}
+			
+			
+	
+			private function checkData(event:Event):void{
+				var num1:Number = Number(StringUtil.trim(this.E304_13.text));
+				var num2:Number = Number(StringUtil.trim(this.E304_14.text));
+				if(num1 == 0 && num2 == 0){
+					this.E304_12.selectedIndex = 1;
+				}else{
+					this.E304_12.selectedIndex = 2;
+				} 
+			}
+			
+		
+			
+			
+			public function initializeComboBox():void
+			{
+
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_01";//闭合
+				comboBoxDataRequest.sql = "select * from Z304_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_01";//性别
+				comboBoxDataRequest.sql = "select * from S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_02";//通过
+				comboBoxDataRequest.sql = "select * from Z304_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_03";//可疑佝偻症状
+				comboBoxDataRequest.sql = "select * from Z304_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_04";//可疑佝偻病症
+				comboBoxDataRequest.sql = "select * from Z304_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_06";//月龄
+				comboBoxDataRequest.sql = "select s_01,s_02 from Z304_06 t where t.s_01 in(1,3,6,8) ";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_07";//上中下
+				comboBoxDataRequest.sql = "select * from Z304_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z305_05";//面色
+				comboBoxDataRequest.sql = "select * from Z305_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_03";//皮肤
+				comboBoxDataRequest.sql = "select * from Z303_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_03";//患病未患病
+				comboBoxDataRequest.sql = "select * from S601_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z305_09";//患病未患病
+				comboBoxDataRequest.sql = "select * from z305_09";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.flag = "Z304_10";//月龄
+				comboBoxDataRequest.sql = "select s_01,s_02 from Z304_10 where s_01<13";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S301_01")//
+				{
+					this.E304_54.dataProvider = comboBoxDataList;
+					this.E304_54.selectedIndex = 0;
+				}
+				else if(flag == "Z304_01")
+				{
+					this.E304_12.dataProvider = comboBoxDataList;
+					this.E304_12.selectedIndex = 1;
+				}else if(flag == "Z304_02")//民族
+				{
+					this.E304_18.dataProvider = comboBoxDataList;
+					this.E304_18.selectedIndex = 1;
+					
+				}
+				else if(flag == "Z304_06")//胎数
+				{
+					this.E304_02.dataProvider = comboBoxDataList;
+					this.E304_02.selectedIndex = 1;
+				}else if(flag == "Z304_07")//胎数
+				{
+					this.E304_06.dataProvider = comboBoxDataList;
+					this.E304_06.selectedIndex = 1;
+					this.E304_08.dataProvider = comboBoxDataList;
+					this.E304_08.selectedIndex = 1;
+				}else if(flag == "Z303_03")//胎数
+				{
+					this.E304_11.dataProvider = comboBoxDataList; 
+					this.E304_16.dataProvider = comboBoxDataList;
+					this.E304_17.dataProvider = comboBoxDataList;
+					this.E304_19.dataProvider = comboBoxDataList;
+					this.E304_20.dataProvider = comboBoxDataList;
+					this.E304_21.dataProvider = comboBoxDataList;
+					this.E304_23.dataProvider = comboBoxDataList;
+					this.E304_26.dataProvider = comboBoxDataList;
+					this.E304_11.selectedIndex = 3; 
+					this.E304_16.selectedIndex = 3;
+					this.E304_17.selectedIndex = 3;
+					this.E304_19.selectedIndex = 3;
+					this.E304_20.selectedIndex = 3;
+					this.E304_21.selectedIndex = 3;
+					this.E304_23.selectedIndex = 3;
+					this.E304_26.selectedIndex = 3;
+				}else if(flag == "S601_03")//胎数
+				{
+					this.E304_15.dataProvider = comboBoxDataList;
+					this.E304_31.dataProvider = comboBoxDataList;
+					this.E304_33.dataProvider = comboBoxDataList;
+					this.E304_15.selectedIndex = 1;
+					this.E304_31.selectedIndex = 1;
+					this.E304_33.selectedIndex = 1;
+				}
+				
+				else if(flag == "Z305_05")
+				{
+					e30410=CompMethod.cloneObject(comboBoxDataList);
+					e30410.removeItemAt(2);
+					this.E304_10.dataProvider =e30410Full= comboBoxDataList;
+					this.E304_10.selectedIndex = 1;
+				}
+				else if(flag == "Z305_09")//
+				{
+					this.E304_22.dataProvider =e30422= comboBoxDataList;
+					this.E304_22.selectedIndex = 0;
+				}
+				else if(flag == "Z304_10")//
+				{
+					var arr:Array= comboBoxDataList.source;
+					for(var i:int=1;i<=arr.length;i++)
+					{
+						if(!(i%4))
+							e30470Arr.push(arr.slice(i-4,i))
+					}
+					
+				}
+				--count;
+				if(!count&&ve304)
+					load();
+			}
+			/*----------建档单位-----------------*/
+			
+			
+			public function load():void
+			{
+				slsc.ve304=this.ve304;
+				this.E304_02.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_02.dataProvider),ve304.e30402);
+				this.E304_03.text=ve304.e30403;
+				this.E304_04.text=DateField.dateToString(ve304.e30404, "YYYY-MM-DD");
+				this.E304_05.value=ve304.e30405;
+				this.E304_06.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_06.dataProvider),ve304.e30406);
+				this.E304_07.value=ve304.e30407;
+				this.E304_08.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_08.dataProvider),ve304.e30408);
+				this.E304_09.value=ve304.e30409;
+				this.E304_10.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_10.dataProvider),ve304.e30410);
+				this.E304_11.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_11.dataProvider),ve304.e30411);
+				this.E304_12.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_12.dataProvider),ve304.e30412);
+				this.E304_13.text=ve304.e30413;
+				this.E304_14.text=ve304.e30414;
+				this.E304_15.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_15.dataProvider),ve304.e30415);
+//				this.E304_16.selectedIndex=CompMethod.getDropDownListSelectedIndex
+//					(ArrayCollection(E304_16.dataProvider),ve304.e30416);
+				this.E304_17.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_17.dataProvider),ve304.e30417);
+				this.E304_18.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_18.dataProvider),ve304.e30418);
+				this.E304_19.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_19.dataProvider),ve304.e30419);
+				this.E304_20.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_20.dataProvider),ve304.e30420);
+				this.E304_21.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_21.dataProvider),ve304.e30421);
+				this.E304_22.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_22.dataProvider),ve304.e30422);
+				this.E304_23.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_23.dataProvider),ve304.e30423);
+				CompMethod.setCheckBoxAutomationName([E304_24],ve304.e30424);
+				CompMethod.setCheckBoxAutomationName([E304_25],ve304.e30425);
+			
+				this.E304_26.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_26.dataProvider),ve304.e30426);
+				this.E304_27.text=ve304.e30427;
+				this.E304_28.text=ve304.e30428;
+				this.E304_29.text=ve304.e30429;
+				
+				this.E304_31.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_31.dataProvider),ve304.e30431);
+			
+				this.E304_32.text=ve304.e30432;
+				this.E304_33.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_33.dataProvider),ve304.e30433);
+				this.E304_34.text=ve304.e30434;
+				this.E304_35.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_35.dataProvider),ve304.e30435);
+				CompMethod.setCheckBoxAutomationName([E304_36],ve304.e30436);
+				this.E304_37.text=DateField.dateToString(ve304.e30437, "YYYY-MM-DD");
+				this.E304_38.text=ve304.e30438;
+				this.E304_39.text=ve304.e30439;
+			
+				this.E304_41.text=ve304.e30441;
+				this.E304_42.text=ve304.e30442;
+				this.E304_43.text=ve304.e30443;
+				this.E304_45.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_45.dataProvider),ve304.e30445);
+				this.E304_47.text=ve304.e30447;
+				this.E304_49.text=ve304.e30449;
+				this.E304_50.text=ve304.e30450;
+				this.E304_51.text=DateField.dateToString(ve304.e30451, "YYYY-MM-DD");
+				CompMethod.setCheckBoxAutomationName([E304_52],ve304.e30452);
+				this.E304_54.selectedIndex=CompMethod.getDropDownListSelectedIndex
+					(ArrayCollection(E304_54.dataProvider),ve304.e30454);
+				this.E304_55.text=DateField.dateToString(ve304.e30455, "YYYY-MM-DD");
+				var e30456Arr:Array=ve304.e30456.split(',');
+				this.E304_56_1.text=e30456Arr[0];
+				this.E304_56_2.text=e30456Arr[1];
+
+				this.E304_57.text=ve304.e30457;
+				this.E304_58.text=ve304.e30458;
+				this.E304_59.text=ve304.e30459;
+				this.E304_60.text=ve304.e30460;
+				//this.E304_61.text=ve304.e30461;
+				this.E304_62.text=ve304.e30462;
+				this.E304_63.text=ve304.e30463;
+				this.E304_65.text=ve304.e30465;
+				this.E304_66.text=ve304.e30466;
+				this.E304_67.text=ve304.e30467;
+				this.E304_68.text=ve304.e30468;
+				this.E304_69.text=ve304.e30469;
+				this.E304_71.text=ve304.e30471;
+				this.E304_72.text=ve304.e30472;
+				this.E304_73.text=ve304.e30473;
+				
+				callLater(setE304_70Value);
+				
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function setE304_70Value():void
+			{
+				CompMethod.setCheckBoxAutomationName([E304_70],ve304.e30470);
+			}
+			
+			
+			
+			private function validate1():void
+			{
+				
+				if(!E304_56_1.text)
+				{
+					Alert.show("请输入年龄！","系统提示");
+					return;
+				}
+				
+				if(!E304_56_2.text)
+				{
+					Alert.show("请输入年龄！","系统提示");
+					return;
+				}
+				if(!E304_05.value)
+				{
+					Alert.show("请输入体重值！","系统提示");
+					return;
+				}
+				if(!E304_07.value)
+				{
+					Alert.show("请输入身长值！","系统提示");
+					return;
+				}
+				if(!E304_06.selectedIndex){
+					Alert.show("请选择体重范围!","系统提示");
+					return;
+				}
+				if(!E304_08.selectedIndex){
+					Alert.show("请选择身长范围!","系统提示");
+					return;
+				}
+				if(!E304_09.value)
+				{
+					Alert.show("请输入头围值！","系统提示");
+					return;
+				}
+				if(!E304_10.selectedIndex){
+					Alert.show("请选择面色!","系统提示");
+					return;
+				}
+				if(E304_59.enabled&&!E304_59.text){
+					Alert.show("请输入面色其他!","系统提示");
+					return;
+				}
+				if(!E304_11.selectedIndex){
+					Alert.show("请选择皮肤！","系统提示");
+					return;
+				}
+				
+				if(!E304_13.text){
+					Alert.show("请输入前卤值!","系统提示");
+					return;
+				}
+				if(!E304_14.text){
+					Alert.show("请输入前卤值!","系统提示");
+					return;
+				}
+				
+				if(!E304_12.selectedIndex){
+					Alert.show("请选择前卤评判","系统提示");
+					return;
+				}
+				
+				if(!E304_28.text){
+					Alert.show("请输入户外活动时间!","系统提示");
+					return;
+				}
+				if(!E304_29.text){
+					Alert.show("请输入服用维生素D!","系统提示");
+					return;
+				}
+				if(E304_27.enabled&&!E304_27.text){
+					Alert.show("请输入血红蛋白值!","系统提示");
+					return;
+				}
+				
+				if(E304_60.enabled&&!E304_60.text){
+					Alert.show("请输入颈部包块说明!","系统提示");
+					return;
+				}
+				
+//				if(E304_61.enabled&&!E304_61.text){
+//					Alert.show("请输入眼外观异常说明!","系统提示");
+//					return;
+//				}
+				
+				if(E304_62.enabled&&!E304_62.text){
+					Alert.show("请输入听力异常说明!","系统提示");
+					return;
+				}
+				
+				if(E304_63.enabled&&!E304_63.text){
+					Alert.show("请输入口腔异常说明!","系统提示");
+					return;
+				}
+				
+				if(E304_47.enabled&&!E304_47.text){
+					Alert.show("请输入出牙数!","系统提示");
+					return;
+				}
+				
+				if(E304_65.enabled&&!E304_65.text){
+					Alert.show("请输入心肺异常说明!","系统提示");
+					return;
+				}
+				
+				
+				if(E304_66.enabled&&!E304_66.text){
+					Alert.show("请输入腹部异常说明!","系统提示");
+					return;
+				}
+				
+				
+				if(E304_67.enabled&&!E304_67.text){
+					Alert.show("请输入"+E304_67Label.text+"说明!","系统提示");
+					return;
+				}
+				
+				if(E304_68.enabled&&!E304_68.text){
+					Alert.show("请输入四肢异常说明!","系统提示");
+					return;
+				}
+				
+				if(E304_69.enabled&&!E304_69.text){
+					Alert.show("请输入肛门异常说明!","系统提示");
+					return;
+				}
+				
+				
+				if(E304_71.enabled&&!E304_71.text){
+					Alert.show("请输入耳外观异常说明!","系统提示");
+					return;
+				}
+				
+				if(E304_73.enabled&&!E304_73.text){
+					Alert.show("请输入皮肤异常说明!","系统提示");//
+					return;
+				}
+				
+				if(E304_36_9.selected&&!E304_72.text)
+				{
+					Alert.show("请输入指导其他!","系统提示");//
+					return;
+				}
+				if(E304_31.selectedIndex==2){
+					if(!E304_41.text&&!E304_42.text&&
+						!E304_43.text&&!E304_32.text)
+					{
+						Alert.show("请输入患病次数或其他!","系统提示");//
+						return;
+					}
+				}
+				if(E304_33.selectedIndex==2){
+					if(!E304_34.text)
+					{
+						Alert.show("请输入转诊原因!","系统提示");//
+						return;
+					}
+					if(!E304_35.selectedIndex){
+						Alert.show("请选择转诊机构","系统提示");
+						return;
+					}
+					if(!E304_39.text)
+					{
+						Alert.show("请输入转诊科室!","系统提示");//
+						return;
+					}
+				}
+				
+				
+				if(!E304_04.text){
+					Alert.show("请输入检查时间","系统提示");
+					return;
+				}
+				
+				if(!E304_37.text){
+					Alert.show("请输入下次检查时间","系统提示");
+					return;
+				}
+				
+				if(!E304_38.text){
+					Alert.show("请输入检查医生","系统提示");
+					return;
+				}
+				slsc.verifica(new E304());
+			}
+			
+			public function save():void{
+				this.e304.e30402=this.E304_02.selectedItem.data;
+				this.e304.e30403=StringUtil.trim(this.E304_03.text);
+				this.e304.e30404=DateField.stringToDate(this.E304_04.text, "YYYY-MM-DD"); 
+				this.e304.e30405=this.E304_05.value;
+				this.e304.e30406=this.E304_06.selectedItem.data;
+				this.e304.e30407=this.E304_07.value;
+				this.e304.e30408=this.E304_08.selectedItem.data;
+				this.e304.e30409=this.E304_09.value;
+				this.e304.e30410=this.E304_10.selectedItem.data;
+				this.e304.e30411=this.E304_11.selectedItem.data;
+				this.e304.e30412=this.E304_12.selectedItem.data;
+				this.e304.e30413=Number(this.E304_13.text);
+				this.e304.e30414=Number(this.E304_14.text);
+				this.e304.e30415=this.E304_15.selectedItem.data;
+				//this.e304.e30416=this.E304_16.selectedItem.data;
+				this.e304.e30417=this.E304_17.selectedItem.data;
+				this.e304.e30418=this.E304_18.selectedItem.data;
+				this.e304.e30419=this.E304_19.selectedItem.data;
+				this.e304.e30420=this.E304_20.selectedItem.data;
+				this.e304.e30421=this.E304_21.selectedItem.data;
+				this.e304.e30422=this.E304_22.selectedItem.data;
+				this.e304.e30423=this.E304_23.selectedItem.data;
+				this.e304.e30424=CompMethod.getCheckBoxAutomationName([E304_24])[1];
+				this.e304.e30425=CompMethod.getCheckBoxAutomationName([E304_25])[1];
+				this.e304.e30426=this.E304_26.selectedItem.data;
+				this.e304.e30427=Number(this.E304_27.text);
+				this.e304.e30428=Number(this.E304_28.text);
+				this.e304.e30429=Number(this.E304_29.text);
+				
+				this.e304.e30431=this.E304_31.selectedItem.data;
+				this.e304.e30432=StringUtil.trim(this.E304_32.text);
+				this.e304.e30433=this.E304_33.selectedItem.data;
+				this.e304.e30434=this.E304_34.text;
+				this.e304.e30435=this.E304_35.selectedItem.data;
+				this.e304.e30436=CompMethod.getCheckBoxAutomationName([E304_36])[1];;
+				this.e304.e30437=DateField.stringToDate(this.E304_37.text, "YYYY-MM-DD"); 
+				this.e304.e30438=this.E304_38.text;
+				this.e304.e30439=this.E304_39.text;
+				this.e304.e30441=StringUtil.trim(this.E304_41.text);
+				this.e304.e30442=StringUtil.trim(this.E304_42.text);
+				this.e304.e30443=StringUtil.trim(this.E304_43.text);
+				this.e304.e30445=this.E304_45.selectedItem.data;
+				this.e304.e30447=this.E304_47.text;
+				this.e304.e30449=StringUtil.trim(this.E304_49.text);
+				this.e304.e30450=StringUtil.trim(this.E304_50.text);
+				this.e304.e30451=DateField.stringToDate(this.E304_51.text, "YYYY-MM-DD"); 
+				this.e304.e30452=CompMethod.getCheckBoxAutomationName([E304_52])[1];;
+				this.e304.e30454=this.E304_54.selectedItem.data;
+				this.e304.e30455=DateField.stringToDate(this.E304_55.text, "YYYY-MM-DD"); 
+				this.e304.e30456=StringUtil.trim(this.E304_56_1.text)+','+StringUtil.trim(this.E304_56_2.text);
+				this.e304.e30457=this.E304_57.text;
+				this.e304.e30458=this.E304_58.text;
+				this.e304.e30459=StringUtil.trim(this.E304_59.text);
+				this.e304.e30460=StringUtil.trim(this.E304_60.text);
+				//this.e304.e30461=StringUtil.trim(this.E304_61.text);
+				this.e304.e30462=StringUtil.trim(this.E304_62.text);
+				this.e304.e30463=StringUtil.trim(this.E304_63.text);
+				this.e304.e30465=StringUtil.trim(this.E304_65.text);
+				this.e304.e30466=StringUtil.trim(this.E304_66.text);
+				this.e304.e30467=StringUtil.trim(this.E304_67.text);
+				this.e304.e30468=StringUtil.trim(this.E304_68.text);
+				this.e304.e30469=StringUtil.trim(this.E304_69.text);
+				this.e304.e30470=CompMethod.getCheckBoxAutomationName([E304_70])[1];;
+				this.e304.e30471=StringUtil.trim(this.E304_71.text);
+				this.e304.e30472=StringUtil.trim(this.E304_72.text);
+				this.e304.e30473=StringUtil.trim(this.E304_73.text);
+				if(ve301)
+				{
+					this.e304.e30440=ve301.e30101;
+					this.e304Service.saveE304(e304);
+				}else
+				{
+					
+					e304.e30401=ve304.e30401;
+					e304.e30440=ve304.e30440;
+					this.e304Service.updateE304(e304); 
+				}
+			}   
+			
+			/**
+			 *
+			 */
+			private function saveOrUpdate(event:CustomDataEvent):void
+			{
+				this.e304=event.data as E304;
+				this.save();
+			}
+			
+			
+			
+			private function saveOrUpdateE304Handler(event:ResultEvent):void
+			{   
+				var e304Response:Object =  event.result;
+				if(!e304Response.state) {
+					Alert.show(e304Response.errorMessage,"系统提示");
+					return;
+				}
+				var message:String=this.ve301?"保存":"修改";
+				Alert.show(message+"成功！ ","系统提示",1,this,dispatchSuccessEvent);
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function dispatchSuccessEvent(event:CloseEvent):void
+			{
+				this.dispatchEvent(new Event("saveSuccess"));
+			}
+			
+			/**
+			 *清空输入内容
+			 */
+			private function selectRange(event:IndexChangeEvent,val:*,id:*):void
+			{
+				var valArr:Array=val is int?[val]:val;
+				doSelectRange(event.newIndex,valArr,id);
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function doSelectRange(newIdx:int,val:Array,id:*):void
+			{
+				var isSame:Boolean=false;
+				for(var i:String in val)
+				{
+					if(val[i]==newIdx)
+						isSame=true;
+				}
+				if(!isSame)
+					setEleNull(id);
+			}
+			
+			/**
+			 *清空输入内容
+			 */
+			private function setEleNull(id:*,enabled:Boolean=false):void
+			{
+				var idArr:Array=id is UIComponent?[id]:id;
+				for(var i:String in idArr)
+				{
+					if(idArr[i] is DropDownList)
+						idArr[i].selectedIndex=0;
+					else if(idArr[i] is TextInput)
+						idArr[i].text='';
+					else if(idArr[i] is spark.components.CheckBox)
+						idArr[i].selected=false;
+					idArr[i].enabled=enabled;
+				}
+				
+			}
+			
+			private function setRange():void{
+				getSelectIdx('Z304_11',E304_07);
+				getSelectIdx('Z304_12',E304_05);
+			}
+			
+			
+			
+			private function E304_02_changeHandler(event:IndexChangeEvent):void
+			{
+				slsc.slChange(E304_02.selectedItem.data);//儿童视力根据月龄变化
+				var newIdx:int=event.newIndex;
+				if(newIdx>0)
+					setRange();
+				CompMethod._walk(E304_24);
+				CompMethod._walk(E304_25);
+				CompMethod._walk(E304_70);
+				E304_15.selectedIndex=1;//颈部包块
+				E304_18.selectedIndex=0;//听力
+				E304_67.text='';//脐部清空
+				E304_67.enabled=false;//脐部 灰色
+				if(newIdx<3)
+				{
+					E304_10.dataProvider=e30410Full;//面色
+					E304_27.text='';//血红蛋白值g/L
+					E304_47.text='';//出牙数
+					if(newIdx==1)
+					{
+						E304_22.dataProvider=e30422;//脐部
+						E304_22.selectedIndex=1;
+					}else if(newIdx==2)
+					{
+						E304_22.dataProvider=E304_21.dataProvider;//脐部
+						E304_22.selectedIndex=3;
+					}
+					E304_19.selectedIndex=3;//口腔
+				}else if(newIdx>2)
+				{
+					E304_10.dataProvider=e30410;//面色
+					E304_22.selectedIndex=0;//脐部
+					E304_19.selectedIndex=0;//口腔
+					if(newIdx==4)
+					{
+						E304_15.selectedIndex=0;//颈部包块
+					}
+					
+					if(newIdx==3)
+					{
+						E304_18.selectedIndex=1;//听力
+					}
+				}
+				
+				E304_10.selectedIndex=1;
+			}
+			
+			
+			
+			/**
+			 *
+			 */
+			private function getSelectIdx(table:String,id:Object):void
+			{
+				var e30454:int=E304_54.selectedIndex;
+				if(e30454==1||e30454==2)
+					validateParam(table,id.value.toString());
+			}
+			
+			
+			/**
+			 *	验证性别  身高 体重 是否有参数
+			 */
+			private function validateParam(table:String,val:String):void
+			{
+				
+				
+				var label:String=E304_02.selectedItem.label;
+				var isOPeration:Boolean=label.indexOf('月')!=-1?false:true;
+				label=label.substring(0,label.length-1);
+				var month:Object=isOPeration?Number(label)*12:label;
+				setLevel(table,val,month.toString(),E304_54.selectedItem.data);
+				
+			}
+			
+			/**
+			 *用于身高 和体重
+			 * s
+			 */
+			private function setLevel(table:String,val:String,s01:String,s03:String,s02:String=''):void
+			{
+				var sql:String="select sum"+
+					"("+
+					"case "+ 
+					"when "+val+" between t.s_04 and t.s_05 then 5 "+
+					"when "+val+" between t.s_05 and t.s_06 then 4 "+
+					"when "+val+" between t.s_06 and t.s_08 then 3 "+
+					"when "+val+" between t.s_08 and t.s_09 then 2 "+
+					"when "+val+" between t.s_09 and t.s_10 then 1 "+
+					"else 0 "+
+					"end"+
+					") as result,0 as label from "+table+
+					" t where t.s_01="+s01+" and t.s_03="+s03 ;
+				sql+=s02?" and t.s_02="+s02:s02;
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.flag = table;
+				comboBoxDataRequest.sql = sql;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				CompMethod.customRemoteObject(["systemService","getComboBoxData",
+					getLevelHandler],comboBoxDataRequest);
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function getLevelHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				var obj:Object=comboBoxDataList.getItemAt(0);
+				var idx:int=Number(obj.data);
+				if(flag == "Z304_11")//身高
+					E304_08.selectedIndex=idx;
+				else if(flag == "Z304_12")//体重
+					E304_06.selectedIndex=idx;
+			}
+			
+			private function E304_22_changeHandler(event:IndexChangeEvent):void
+			{
+				var idx:int=event.newIndex;
+				if(E304_02.selectedIndex==1)
+				{
+					selectRange(event,4,E304_67)
+					if(idx==4)
+						setE304_67LabelText('脐 部  其 他',true);
+					else
+						setE304_67LabelText(E304_67Label.text);
+					
+				}else if(E304_02.selectedIndex==2)
+				{
+					selectRange(event,2,E304_67);
+					if(idx==2)
+						setE304_67LabelText('脐 部  异 常',true);
+					else
+						setE304_67LabelText(E304_67Label.text);	
+				}
+				
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function setE304_67LabelText(text:String,enabled:Boolean=false):void
+			{
+				E304_67Label.text=text;
+				E304_67.enabled=enabled;
+			}
+
+			
+			private function slsc_resizeHandler(event:Event):void
+			{
+				
+
+				var _diff:int;
+				if(!oldTgTab)
+					oldTgTab=tgTab.height;
+				var max:int=slsc.height>tgNav.height?slsc.height:tgNav.height;
+				max+=34;
+				_diff=max-oldTgTab;
+				slNav.height+=slNav.height?_diff:slsc.height;
+				tgTab.height=max;
+				oldTgTab=max;
+				this.height+=_diff;
+				dispatchEvent(new Event("resizejcdj"));
+			}
+		]]>
+	</fx:Script>
+	
+	
+	<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="100%" label="基本信息">
+			<mx:Grid paddingBottom="10" paddingLeft="8">
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label text="儿童姓名" styleName="label" />
+						<s:TextInput id="E304_03" width="130" enabled="false" text="{ve301.e30103}"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label enabled="false" paddingLeft="15"
+								 text="性        别" styleName="label" />
+						<s:DropDownList id="E304_54" width="140" enabled="false" selectedIndex="{ve301.e30104}"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label enabled="false" paddingLeft="15" 
+								 text="出生时间" styleName="label" />
+						<component:CustomRangeDateField id="E304_55" text="{DateField.dateToString(ve301.e30106,'YYYY-MM-DD')}" enabled="false"/>
+						
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label paddingLeft="15" text="年        龄" styleName="label" />
+						<s:BorderContainer  height="25"
+											width="130">
+							<s:TextInput   height="22"
+										   borderVisible="false"
+										   width="42" id="E304_56_1"/>
+							<s:Label text="月"  x="47" y="5"  />
+							<s:TextInput width="42" borderVisible="false"
+										 x="68" y="0" height="22" id="E304_56_2"/>
+							<s:Label x="115" y="5" text="天" />
+						</s:BorderContainer>
+						<s:Label styleName="must" text="*"/>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label paddingLeft="15" text="月龄" styleName="label" />
+						<s:DropDownList id="E304_02" width="130" change="E304_02_changeHandler(event)"/>
+						<s:Label styleName="must" text="*"/>
+						<s:Image width="18"  height="18" buttonMode="true" 
+								 source="@Embed('images/help.png')"
+								 toolTip="12 月（满 12 月至 12 月 29 天）； &#13;18 月（满 18 月至 18 月 29 天）；&#13;24 月（满 24 月 至 24 月 29 天）；&#13;30 月（满 30 月至 30 月 29 天），"/>
+					</mx:GridItem>
+					
+				</mx:GridRow>
+				
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label text="母亲姓名" styleName="label" />
+						<s:TextInput id="E304_49" width="130" enabled="false" text="{ve301.e30126}"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label text="证件号码" paddingLeft="15" styleName="label" />
+						<s:TextInput id="E304_50" width="140" enabled="false" text="{ve301.e30127}"/>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label paddingLeft="15"
+								 text="联系电话" styleName="label" />
+						<s:TextInput id="E304_57" width="130" enabled="false" text="{ve301.e30111}"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="2">
+						<s:Label paddingLeft="15"
+								 text="保健卡号" styleName="label" />
+						<s:TextInput id="E304_58"  width="98%" enabled="false" text="{ve301.e30117}"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				
+			</mx:Grid>  
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	
+	
+	<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all" enabled="{E304_02.selectedIndex!=0}">
+		<s:NavigatorContent width="100%" label="询问情况">
+			<mx:Grid paddingBottom="10" paddingLeft="8">
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label styleName="label"  text="体 重(kg)"/>
+						
+						<s:NumericStepper id="E304_05" width="130" maximum="13"
+										  minimum="3" stepSize="0.01"
+										  focusOut="getSelectIdx('Z304_12',E304_05)"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label" text="体  重   范  围" paddingLeft="15"/>
+						<s:DropDownList id="E304_06" width="130"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label" text="身高(cm)" paddingLeft="15"/>
+						<s:NumericStepper id="E304_07" width="127" maximum="80"
+										  minimum="48" stepSize="0.1"
+										  focusOut="getSelectIdx('Z304_11',E304_07)"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label" paddingLeft="15" text="身高范围"/>
+						<s:DropDownList id="E304_08" width="130"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label" paddingLeft="15" text="头 围(cm)"/>
+						<s:NumericStepper id="E304_09" width="130" maximum="10000" minimum="0" stepSize="0.1"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label styleName="label" text="面        色"/>
+						<s:DropDownList id="E304_10" width="130" change="selectRange(event,(E304_10.dataProvider.length-1),E304_59)"/>
+					</mx:GridItem>
+					<mx:GridItem >
+						<s:Label styleName="label" paddingLeft="15" text="面  色   其  他"/>
+						<s:TextInput id="E304_59" width="130" enabled="{E304_10.selectedIndex==(E304_10.dataProvider.length-1)}"/>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label"  paddingLeft="15" text="皮        肤"/>
+						<s:DropDownList id="E304_11" width="130" change="selectRange(event,2,E304_73)"/>
+					</mx:GridItem>
+					<mx:GridItem >
+						<s:Label styleName="label" paddingLeft="15" text="皮肤异常"/>
+						<s:TextInput id="E304_73" width="130" enabled="{E304_11.selectedIndex==2}"/>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label" paddingLeft="15" text="前          卤"/>
+						<s:TextInput id="E304_13" width="55" maxChars="3"/>
+						<s:Label styleName="label" text="/"/>
+						<s:TextInput id="E304_14" width="55" maxChars="3"/>
+					</mx:GridItem>
+					
+				</mx:GridRow>
+				
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label styleName="label" text="前卤评判"/>
+						<s:DropDownList id="E304_12" width="130" />
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label" text="服用维生素D" paddingLeft="15"/>
+						<s:BorderContainer width="130" height="23">
+							<s:HGroup verticalAlign="middle">
+								<s:TextInput id="E304_29" width="80" borderVisible="false" maxChars="5" textAlign="right" restrict="0-9|."/>
+								<s:Label styleName="label" text="IU/日"/>
+							</s:HGroup>
+						</s:BorderContainer>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label"  paddingLeft="15" text="户外活动"/>
+						<s:BorderContainer width="130" height="23">
+							<s:HGroup verticalAlign="middle">
+								<s:TextInput id="E304_28" width="80" borderVisible="false" maxChars="5" textAlign="right" restrict="0-9|."/>
+								<s:Label styleName="label" text="小时/日"/>
+							</s:HGroup>
+						</s:BorderContainer>
+					</mx:GridItem>
+					
+					
+					
+				</mx:GridRow> 
+			</mx:Grid>  
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	
+	
+	
+	<mx:TabNavigator id="tgTab" width="1170" chromeColor="#ffffff" creationPolicy="all"
+					 enabled="{E304_02.selectedIndex!=0}">
+		<s:NavigatorContent id="tgNav" width="100%" height="210" label="体格检查">
+			<mx:TabNavigator width="100%" height="100%">
+				<s:NavigatorContent width="100%" height="100%" label="体格检查">
+					<mx:Grid paddingBottom="10" paddingLeft="8">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="label" text="颈    部      包    块"/>
+								<s:DropDownList id="E304_15" width="130"
+												change="selectRange(event,2,E304_60)"
+												enabled="{E304_02.selectedIndex &lt; 4}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="包 块  说 明"/>
+								<s:TextInput id="E304_60" width="130"
+											 enabled="{E304_15.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="眼   外 观"/>
+								<s:DropDownList id="E304_16" width="130"
+												change="selectRange(event,2,E304_61)"
+												enabled="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="眼外观异常"/><!--{E304_16.selectedIndex==2}-->
+								<s:TextInput id="E304_61" width="130" enabled="false"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="耳     外    观"/>
+								<s:DropDownList id="E304_17" width="130"
+												change="selectRange(event,2,E304_71)"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="label" text="耳  外   观   异  常"/>
+								<s:TextInput id="E304_71" width="130"
+											 enabled="{E304_17.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="听            力"/>
+								<s:DropDownList id="E304_18" width="130"
+												change="selectRange(event,2,E304_62)"
+												enabled="{E304_02.selectedIndex==3}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="听力异常"/>
+								<s:TextInput id="E304_62" width="130"
+											 enabled="{E304_18.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="口            腔"/>
+								<s:DropDownList id="E304_19" width="130"
+												change="selectRange(event,2,E304_63)"
+												enabled="{E304_02.selectedIndex &lt;3}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="口  腔  异 常"/>
+								<s:TextInput id="E304_63" width="130"
+											 enabled="{E304_19.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label styleName="label" text="出      牙     数(颗)"/>
+								<s:TextInput id="E304_47" width="130"
+											 enabled="{E304_02.selectedIndex&gt;2}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="心            肺"/>
+								<s:DropDownList id="E304_20" width="130"
+												change="selectRange(event,2,E304_65)"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="心肺异常"/>
+								<s:TextInput id="E304_65" width="130"
+											 enabled="{E304_20.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="腹            部"/>
+								<s:DropDownList id="E304_21" width="130"
+												change="selectRange(event,2,E304_66)"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="腹 部   异 常"/>
+								<s:TextInput id="E304_66" width="130"
+											 enabled="{E304_21.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" text="脐                      部"/>
+								<s:DropDownList id="E304_22" width="130"
+												change="E304_22_changeHandler(event)"
+												enabled="{E304_02.selectedIndex &lt;3}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="label" id="E304_67Label" paddingLeft="15" text="脐 部  其 他"/>
+								<s:TextInput id="E304_67" width="130" enabled="false"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="四        肢"/>
+								<s:DropDownList id="E304_23" width="130"
+												change="selectRange(event,2,E304_68)"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="四 肢  异 常"/>
+								<s:TextInput id="E304_68" width="130"
+											 enabled="{E304_23.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="肛门/外生殖"/>
+								<s:DropDownList id="E304_26" width="130"
+												change="selectRange(event,2,E304_69)"/>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						
+						
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" text="肛门/外生 殖异常"/>
+								<s:TextInput id="E304_69" width="130"
+											 enabled="{E304_26.selectedIndex==2}"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label styleName="label" paddingLeft="15" text="血红蛋白值"/>
+								<s:BorderContainer width="130" height="23"
+												   enabled="{E304_02.selectedIndex&gt;2}">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="E304_27" width="80" borderVisible="false"
+													 enabled="{E304_02.selectedIndex&gt;2}"
+													 maxChars="5" restrict="0-9|." textAlign="right"/>
+										<s:Label styleName="label" text="g/L"/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							
+							<mx:GridItem visible="{E304_02.selectedIndex&gt;1}" colSpan="3">
+								<s:HGroup id="E304_25" gap="15" verticalAlign="middle">
+									
+									<s:Label styleName="label" paddingLeft="15" text="可疑佝偻病体征"/>
+									<s:CheckBox visible="{E304_02.selectedIndex&gt;2}" label="肋串珠"
+												automationName="7" buttonMode="true"
+												includeInLayout="{E304_02.selectedIndex&gt;2}"/>
+									<s:CheckBox visible="{E304_02.selectedIndex&gt;2}" label="肋软骨沟"
+												automationName="8" buttonMode="true"
+												includeInLayout="{E304_02.selectedIndex&gt;2}"/>
+									<s:CheckBox visible="{E304_02.selectedIndex&gt;2}" label="鸡胸"
+												automationName="9" buttonMode="true"
+												includeInLayout="{E304_02.selectedIndex&gt;2}"/>
+									<s:CheckBox visible="{E304_02.selectedIndex&gt;2}" label="手足镯"
+												automationName="10" buttonMode="true"
+												includeInLayout="{E304_02.selectedIndex&gt;2}"/>
+									<s:CheckBox visible="{E304_02.selectedIndex&gt;1}" label="颅骨软化"
+												automationName="2" buttonMode="true"
+												includeInLayout="{E304_02.selectedIndex&gt;1}"/>
+									<s:CheckBox visible="{E304_02.selectedIndex&gt;2}" label="方颅"
+												automationName="4" buttonMode="true"
+												includeInLayout="{E304_02.selectedIndex&gt;2}"/>
+								</s:HGroup>
+								
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						
+						<mx:GridRow enabled="{E304_02.selectedIndex&gt;1}">
+							<mx:GridItem colSpan="5">
+								<s:HGroup id="E304_24" gap="15" verticalAlign="middle">
+									<s:Label styleName="label" text="可疑佝偻病症状"/>
+									<s:CheckBox label="夜惊" automationName="1" buttonMode="true"/>
+									<s:CheckBox label="多汗" automationName="2" buttonMode="true"/>
+									<s:CheckBox label="烦躁" automationName="3" buttonMode="true"/>
+								</s:HGroup>
+							</mx:GridItem>
+							
+						</mx:GridRow>
+						
+					</mx:Grid>  
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:NavigatorContent>
+		<s:NavigatorContent id="slNav" width="100%" label="视力检查">
+			<sl:sldj id="slsc" width="1167" resizeSldj="slsc_resizeHandler(event)" ve304="{this.ve304}" age="2"/><!--resize="slsc_resizeHandler(event)"-->
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	
+	<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all"
+					 includeInLayout="{E304_02.selectedIndex>1}" visible="{E304_02.selectedIndex>1}">
+		<s:NavigatorContent width="100%" label="发育评估">
+			<s:HGroup paddingBottom="10" paddingLeft="8" gap="10" id="E304_70">
+				<s:Label styleName="label" text="发育评估" paddingTop="5"/>
+				<s:CheckBox automationName="{e30470Arr[E304_02.selectedIndex-2][0].data}" buttonMode="true" 
+							label="{e30470Arr[E304_02.selectedIndex-2][0].label}"/>
+				<s:CheckBox automationName="{e30470Arr[E304_02.selectedIndex-2][1].data}" buttonMode="true" 
+							label="{e30470Arr[E304_02.selectedIndex-2][1].label}"/>
+				<s:CheckBox automationName="{e30470Arr[E304_02.selectedIndex-2][2].data}" buttonMode="true"
+							label="{e30470Arr[E304_02.selectedIndex-2][2].label}"/>
+				<s:CheckBox automationName="{e30470Arr[E304_02.selectedIndex-2][3].data}" buttonMode="true" 
+							label="{e30470Arr[E304_02.selectedIndex-2][3].label}"/>
+			</s:HGroup>  
+		</s:NavigatorContent>
+	</mx:TabNavigator>		
+	
+	
+	<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all"  enabled="{E304_02.selectedIndex!=0}">
+		<s:NavigatorContent width="100%" label="两次随访间患病情况">
+			<mx:Grid paddingBottom="10" paddingLeft="8">
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label styleName="label" text="患病情况"/>
+						<s:DropDownList id="E304_31" width="130" change="selectRange(event,2,[E304_41,E304_42,E304_43,E304_32])"/>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label" text="肺炎"/>
+						<s:BorderContainer width="118" height="23" enabled="{E304_31.selectedIndex==2}">
+							<s:HGroup verticalAlign="middle">
+								<s:TextInput id="E304_41" width="80" borderVisible="false" maxChars="5" textAlign="right" restrict="0-9"/>
+								<s:Label styleName="label"  text="次"/>
+							</s:HGroup>
+						</s:BorderContainer>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label" text="腹泻"/>
+						<s:BorderContainer width="118" height="23" enabled="{E304_31.selectedIndex==2}">
+							<s:HGroup verticalAlign="middle">
+								<s:TextInput id="E304_42" width="80" borderVisible="false" maxChars="5" textAlign="right" restrict="0-9|."/>
+								<s:Label styleName="label"  text="次"/>
+							</s:HGroup>
+						</s:BorderContainer>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label" text="外伤"/>
+						<s:BorderContainer width="118" height="23" enabled="{E304_31.selectedIndex==2}">
+							<s:HGroup verticalAlign="middle">
+								<s:TextInput id="E304_43" width="80" borderVisible="false" maxChars="5" textAlign="right" restrict="0-9|."/>
+								<s:Label styleName="label"  text="次"/>
+							</s:HGroup>
+						</s:BorderContainer>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label"  paddingLeft="15" text="其他"/>
+						<s:TextInput id="E304_32" width="424"  enabled="{E304_31.selectedIndex==2}"/>
+					</mx:GridItem>
+					
+				</mx:GridRow>
+			</mx:Grid>  
+		</s:NavigatorContent>
+	</mx:TabNavigator>		
+	
+	<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all"  enabled="{E304_02.selectedIndex!=0}">
+		<s:NavigatorContent width="100%" label="转诊信息">
+			<mx:Grid paddingBottom="10" paddingLeft="8">
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label styleName="label"  text="转诊建议"/>
+						<s:DropDownList id="E304_33" width="130" change="selectRange(event,2,[E304_34,E304_35,E304_39])"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label"  paddingLeft="15" text="转诊原因"/>
+						<s:TextInput id="E304_34" width="424"  enabled="{E304_33.selectedIndex==2}"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label"  paddingLeft="15" text="转诊机构"/>
+						<s:DropDownList id="E304_35" width="130"  enabled="{E304_33.selectedIndex==2}"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label"   text="转诊科室"/>
+						<s:TextInput id="E304_39" width="130"  enabled="{E304_33.selectedIndex==2}"/>
+					</mx:GridItem>
+				</mx:GridRow>
+			</mx:Grid>  
+		</s:NavigatorContent>
+	</mx:TabNavigator>		
+	
+	
+	<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all"  enabled="{E304_02.selectedIndex!=0}">
+		<s:NavigatorContent width="100%" label="指 导与管理">
+			<mx:Grid paddingBottom="10" paddingLeft="8">
+				<mx:GridRow>
+					<mx:GridItem colSpan="3" id="E304_36">
+						<s:Label styleName="label"  text="指                   导"/>
+						<s:CheckBox buttonMode="true" automationName="10"   label="科学喂养" />
+						<s:CheckBox buttonMode="true" automationName="11"   label="生长发育" />
+						<s:CheckBox buttonMode="true" automationName="12"   label="疾病预防" />
+						<s:CheckBox buttonMode="true" automationName="13"   label="预防意外伤害" />
+						<s:CheckBox buttonMode="true" automationName="14"   label="口腔保健" />
+						<s:CheckBox buttonMode="true" automationName="9"   label="其他" id="E304_36_9" change="if(!E304_36_9.selected)setEleNull(E304_72)"/>
+					</mx:GridItem>
+					<mx:GridItem colSpan="2">
+						<s:Label styleName="label"  text="其他" paddingTop="5"/>
+						<s:TextInput id="E304_72" width="360" enabled="{E304_36_9.selected}"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				
+				<mx:GridRow>
+					<mx:GridItem colSpan="5" id="E304_52">
+						<s:Label styleName="label"   text="中 医 健康管 理" />
+						<s:CheckBox buttonMode="true" automationName="1"  label="饮食调养指导"/>
+						<s:CheckBox buttonMode="true" automationName="2"  label="起居调摄指导"/>
+						<s:CheckBox buttonMode="true" automationName="3"  label="摩腹、捏脊"/>
+						<s:CheckBox buttonMode="true" automationName="4"  label="揉肺经、揉足三里"/>
+						<s:CheckBox buttonMode="true" automationName="5"  label="揉四神聪"/>
+						<s:CheckBox buttonMode="true" automationName="6"  label="健康教育处方"/>
+					</mx:GridItem>
+					
+				</mx:GridRow>
+			</mx:Grid>  
+		</s:NavigatorContent>
+	</mx:TabNavigator>		
+	
+	
+	<mx:TabNavigator width="1170" chromeColor="#ffffff" creationPolicy="all"  enabled="{E304_02.selectedIndex!=0}">
+		<s:NavigatorContent width="100%" label="随访信息">
+			<mx:Grid paddingBottom="10" paddingLeft="8">
+				<mx:GridRow>
+					<mx:GridItem>
+						<s:Label styleName="label"  text="录入日期"/>
+						<component:CustomRangeDateField id="E304_51" isSelectNow="true" enabled="false"/>
+					
+						<s:Label  styleName="must label" text="*"/>
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label"  text="检查日期"/>
+						<component:CustomRangeDateField id="E304_04" isSelectNow="true" />
+
+						
+						<s:Label styleName="must label" text="*"/>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label"  text="下次检查日期"/>
+						<component:CustomRangeDateField id="E304_37" isDisabledRanges="false"/>
+
+						
+					</mx:GridItem>
+					<mx:GridItem>
+						<s:Label styleName="label"  paddingLeft="15" text="检查医生"/>
+						<s:TextInput id="E304_38" width="130"/>
+					</mx:GridItem>
+					
+					<mx:GridItem>
+						<s:Label styleName="label"  text="检查机构"/>
+						<s:DropDownList id="E304_45" width="130" enabled="false"/>
+						<s:Label styleName="must label" text="*"/>
+					</mx:GridItem>
+				</mx:GridRow>
+				
+			</mx:Grid>  
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	
+	<s:HGroup width="1170" horizontalAlign="right" paddingBottom="10" verticalAlign="middle"  enabled="{E304_02.selectedIndex!=0}">
+		<s:Button id="saveE301" label="保存" click="validate1()"/>
+	</s:HGroup>
+</s:VGroup>

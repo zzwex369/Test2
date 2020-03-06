@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="main.mxml" projectUUID="48cf824c-5a58-44d1-ac06-0c01936dc221" version="10">
+  <compiler additionalCompilerArguments="-locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="true" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
+    <compilerSourcePath/>
+    <libraryPath defaultLinkType="0">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/flex.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="1" linkType="1" path="libs"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/Common"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject_Extended"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LOCALE_LOCATION}/version4locale/"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="main.mxml"/>
+  </applications>
+  <modules>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/etbj/etsl/etybjjcdjb/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/etbj/etsl/etybjjcdjb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/etbj/etsl/etsljcdjb/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/etbj/etsl/etsljcdjb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/etbj/etsl/etslbljcdjb/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/etbj/etsl/etslbljcdjb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/etbj/etsl/etybjsljcfgl/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/etbj/etsl/etybjsljcfgl/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/etbj/etsl/etslbljcl/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/etbj/etsl/etslbljcl/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/etbj/etsl/etdqsltjb/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/etbj/etsl/etdqsltjb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/fnbj/gjaHPVjcsddqHPVscwcqktjb/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/fnbj/gjaHPVjcsddqHPVscwcqktjb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/fnbj/giaHPVjcsdjgscwcjktjb/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/fnbj/giaHPVjcsdjgscwcjktjb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/fnbj/fnbjdj/index.swf" optimize="true" sourcePath="src/com/xyw/module/fnbj/fnbjdj/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/fnbj/fnbjcx/index.swf" optimize="true" sourcePath="src/com/xyw/module/fnbj/fnbjcx/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/delivery/fmxxdj/index.swf" optimize="true" sourcePath="src/com/xyw/module/delivery/fmxxdj/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/delivery/fmxxcx/index.swf" optimize="true" sourcePath="src/com/xyw/module/delivery/fmxxcx/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/xtwh/yrywh/index.swf" optimize="true" sourcePath="src/com/xyw/module/xtwh/yrywh/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/deliverydj/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/deliverydj/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/fybjxt_report/record_23/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/fybjxt_report/record_23/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/report/etbj/etsl/etslhzb/index.swf" optimize="true" sourcePath="src/com/xyw/module/report/etbj/etsl/etslhzb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/csyxzm/zyfmdjb/index.swf" optimize="true" sourcePath="src/com/xyw/module/csyxzm/zyfmdjb/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/csyxzm/fmqktj/index.swf" optimize="true" sourcePath="src/com/xyw/module/csyxzm/fmqktj/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/etbj/etsl/etjc/ccjc/jccx/index.swf" optimize="true" sourcePath="src/com/xyw/module/etbj/etsl/etjc/ccjc/jccx/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/etbj/etsl/etjc/zdjc/jccx/index.swf" optimize="true" sourcePath="src/com/xyw/module/etbj/etsl/etjc/zdjc/jccx/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/etbj/etsl/slda/sldacx/index.swf" optimize="true" sourcePath="src/com/xyw/module/etbj/etsl/slda/sldacx/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/etbj/etsl/slsf/sfcx/index.swf" optimize="true" sourcePath="src/com/xyw/module/etbj/etsl/slsf/sfcx/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/etbj/etsl/slzz/zzcx/index.swf" optimize="true" sourcePath="src/com/xyw/module/etbj/etsl/slzz/zzcx/index.mxml"/>
+    <module application="src/main.mxml" destPath="com/xyw/module/etbj/etbjcx/index.swf" optimize="true" sourcePath="src/com/xyw/module/etbj/etbjcx/index.mxml"/>
+  </modules>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+</actionScriptProperties>

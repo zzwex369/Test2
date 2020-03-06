@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			public var systemUser:SystemUser = null;
+			private var code:String;
+			
+			
+			
+			private function query():void
+			{
+				var code:String = this.institution.getInstitutionCode();	
+				var _dateStr:Date=DateField.stringToDate(date_satrt.text,'YYYY-MM-DD');
+				var _dateEnd:Date=DateField.stringToDate(date_end.text,'YYYY-MM-DD');
+				
+				if(!date_satrt.text)
+				{
+					Alert.show("请选择开始时间!","系统提示!");
+					return;
+				}
+				if(!date_end.text)
+				{
+					Alert.show("请选择结束时间!","系统提示!");
+					return;
+				}
+				if(Number(_dateEnd)<Number(_dateStr))
+				{
+					Alert.show("开始时间不能大于结束时间!","系统提示!");
+					return;
+				}
+				
+				
+				if(code.length==4)
+				{
+					Alert.show("最少选择到卫计委级别!","系统提示!");
+					return;
+				}
+				var dateStr:String = this.date_satrt.text;
+				var dateEnd:String = this.date_end.text;
+				var date_Str:String = dateStr.substring(0,4);
+				var date_End:String = dateEnd.substring(0,4);
+				var time:String = CompMethod.getRadioButtonValue(time);
+				if(date_Str!=date_End){
+					Alert.show("请选择到同一年中","系统提示!");
+					return;
+				}
+				//Alert.show(date_Str,"系统提示!");
+				
+				
+				var urlRequest:URLRequest = new URLRequest();
+				var variables:URLVariables = new URLVariables();
+				
+				variables.code=institution.getLastSelectedInstitutionCode();
+				variables.time=time;
+				variables.dateStr=dateStr;
+				variables.dateEnd=dateEnd;
+				urlRequest.data=variables;
+				urlRequest.method=URLRequestMethod.POST;
+				urlRequest.url=this.parentApplication.contextRoot + 
+					"/print_new/etbj/etsl/etslhzb.jsp";
+				navigateToURL(urlRequest);
+				//Alert.show(time,"系统提示!");
+		
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<mx:TabNavigator  width="1200" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="儿童视力机构汇总表" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid width="100%">
+						
+	
+						<mx:GridRow>
+							<mx:GridItem>
+								
+								<s:HGroup width="100%" height="100%">
+									<s:Label text="录入单位" id="addr" paddingTop="5"/>
+									<component:InstitutionComboBox id="institution" width="794" villageVisible="true"/>
+								</s:HGroup>
+							</mx:GridItem>
+						</mx:GridRow>		
+						
+						<mx:GridRow>
+							<mx:GridItem id="time">
+							<!-- 	<s:Label text="录入时间" width="75"/>-->
+								<s:Label text="时间选择 "/>
+								<s:RadioButton value="1" label="录入时间" buttonMode="true" groupName="time"  selected="true"/>
+								<s:RadioButton value="2" label="检查时间" buttonMode="true" groupName="time" />
+								<component:CustomRangeDateField id="date_satrt" isSelectFirst="true"/>
+								<s:Label text="至"/>
+								<component:CustomRangeDateField id="date_end" isSelectNow="true"/>
+								
+								<s:Button label="查询" id="loadBirth" click="query()" icon="{CustomIcon.QUERY}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

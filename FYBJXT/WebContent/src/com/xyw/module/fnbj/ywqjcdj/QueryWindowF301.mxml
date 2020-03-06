@@ -1,0 +1,103 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   title="档案信息加载" backgroundColor="#FFFFFF"
+			   chromeColor="#5CACEE" close="removeWindow()" width="1024" height="246"
+			   creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="f301Service" destination="f301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF301"  result="queryF301Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F301Request;
+			import com.xyw.module.fnbj.model.VF301;
+			import com.xyw.module.fnbj.model.F301;
+			
+			import com.xyw.module.fnbj.ywqjcdj.index;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var f30102:String;
+			public var f30105:String;
+			public var f30132:String;
+			public var vf301:VF301;
+			
+			public function init():void {
+				var f301Request:F301Request  = new F301Request();
+				f301Request.f30102 = this.f30102;
+				f301Request.f30105 = this.f30105;
+				//	f301Request.f30132 = this.f30132;
+				f301Request.parameterPageindex = 1;
+				f301Request.parameterPagesize = 20;
+				
+				this.f301Service.queryF301(f301Request);
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			public function queryF301Handler(event:ResultEvent):void {
+				var f301Response:Object = event.result;
+				
+				if(f301Response.state){
+					this.certificateDataGrid.dataProvider = f301Response.vf301s;
+				}else{
+					Alert.show(f301Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function onSelected(event:Event):void{
+				this.vf301 = DataGrid(event.target).selectedItem as VF301;
+				
+				if(this.vf301 == null){
+					Alert.show("请选择要加载的数据！","系统提示");
+					this.vf301 =null;
+				}
+				var sfindex:index=this.owner as index;
+				sfindex.loadF301(this.vf301);
+				this.removeWindow();
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+		<s:HGroup paddingBottom="5" paddingLeft="15" paddingTop="10"  paddingRight="5" width="100%" height="100%" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF">
+			<s:DataGrid id="certificateDataGrid" alternatingRowColors="[#FFFFFF,#EEEEEE]" chromeColor="#5CACEE" editable="true" rowHeight="22" width="980" height="158" >
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="f30101" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="80" dataField="f30102" headerText="孕产妇姓名"/>
+						<s:GridColumn width="150" dataField="f30105" headerText="身份证号"/>
+						<s:GridColumn width="80" dataField="f30106Str" headerText="出生日期"/>
+						<s:GridColumn width="80" dataField="f30116Zh" headerText="血型"/>
+						<s:GridColumn width="80" dataField="f30112Zh" headerText="婚姻状况"/>
+						<s:GridColumn width="80" dataField="f30113" headerText="联系方式"/>
+						<s:GridColumn width="140" dataField="f30117" headerText="保健卡号"/>
+						<s:GridColumn width="80" dataField="f30118" headerText="配偶姓名"/>
+						<s:GridColumn width="150" dataField="f30121" headerText="配偶身份证号"/>
+						<s:GridColumn width="80" dataField="f30122Str" headerText="出生日期"/>
+						<s:GridColumn width="80" dataField="f30128" headerText="联系方式"/>
+						<s:GridColumn width="150" dataField="f30132Zh" headerText="建卡单位"/>
+						<s:GridColumn width="80" dataField="f30131Str" headerText="建卡日期"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>					
+		</s:HGroup>
+		
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			<s:Button label="关闭" click="removeWindow();"/>
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:TitleWindow>

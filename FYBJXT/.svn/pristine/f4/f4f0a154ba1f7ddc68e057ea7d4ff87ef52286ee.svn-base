@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:etbj="com.xyw.module.etbj.componet.*"
+		  xmlns:sfdj="com.xyw.module.etbj.etjc.etsfdj.componet.*"
+		  width="100%" height="100%" >
+	<fx:Declarations>
+		
+		
+		
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+		s|Label
+		{
+			fontSize:12;
+		} 
+		
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.custom.component.CompMethod;
+			
+			
+			
+			private function query_selectChangeHandler(event:Event):void
+			{
+				etjcdj.loadVe301(query.item);
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup id="vg" paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<etbj:queryE301 width="1170" selectChange="query_selectChangeHandler(event)" id="query"/>
+			<sfdj:sfdj width="1180" saveSuccess="CompMethod._refreshIndex(this)" id="etjcdj"/>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

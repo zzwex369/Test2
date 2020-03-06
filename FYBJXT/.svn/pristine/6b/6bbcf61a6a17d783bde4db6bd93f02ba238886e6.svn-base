@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" title="医疗机构信息修改"
+			   xmlns:s="library://ns.adobe.com/flex/spark" cornerRadius="5"
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="560" height="255"
+			   xmlns="spark.components.*" backgroundColor="#5CACEE" 
+			   chromeColor="#5CACEE" close = "removeWindow()" 
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow"
+			   creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="medicalService" destination="medicalService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="modify" result="modifyHandler(event)" />
+			<s:method name="load" result="loadHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.D101;
+			import com.xyw.module.xtwh.model.D101Request;
+			import com.xyw.module.xtwh.model.D101Response;
+			import com.xyw.module.xtwh.model.VD101;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.validators.Validator;
+			
+			import spark.events.TextOperationEvent;
+			
+			public var vd101:VD101 = null;
+			public var areaCode:String;
+			public var areaName:String;
+			public var d10106_text:String;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			
+			private function init():void
+			{   
+				initializeComboBox();
+			}
+			
+			private function loadHandler(event:ResultEvent):void
+			{
+				var d101Response:D101Response = event.result as D101Response;
+				var d101:D101 = new D101();
+				if(d101Response.errorMessage == null){
+					
+					d101 = d101Response.d101;
+					this.d101_02.text = d101.d10102;
+					this.d101_03.text = d101.d10103;
+
+					var d10105DataProvider:ArrayCollection = ArrayCollection(this.d101_05.dataProvider);
+					var d10105Index:int = getDropDownListSelectedIndex(d10105DataProvider,d101.d10105);
+					this.d101_05.selectedIndex = d10105Index;
+					
+					var d10106DataProvider:ArrayCollection = ArrayCollection(this.d101_06.dataProvider);
+					var d10106Index:int = getDropDownListSelectedIndex(d10106DataProvider,d101.d10106);
+					this.d101_06.selectedIndex = d10106Index;
+					
+					this.d101_07.text = d101.d10107;
+					this.d101_08.text = d101.d10108;
+					this.d101_09.text = d101.d10109;
+					
+					var d10110DataProvider:ArrayCollection = ArrayCollection(this.d101_10.dataProvider);
+					var d10110Index:int = getDropDownListSelectedIndex(d10110DataProvider,d101.d10110);
+					this.d101_10.selectedIndex = d10110Index;
+					
+					var d10111DataProvider:ArrayCollection = ArrayCollection(this.d101_11.dataProvider);
+					var d10111Index:int = getDropDownListSelectedIndex(d10111DataProvider,d101.d10111);
+					this.d101_11.selectedIndex = d10111Index;
+					//this.d101_11.selectedItem = d101.d10111;
+					this.d101_40.selectedDate = d101.d10140;
+				}
+			}
+			
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:ComboBoxData = arrayCollection.getItemAt(i) as ComboBoxData;
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			private function modify(event:MouseEvent):void
+			{  
+				var d101Request:D101Request = new D101Request();
+				var d101:D101 = new D101();
+				d101.d10101 = this.vd101.d10101;
+				d101.d10102 = d101_02.text;
+				d101.d10103 = d101_03.text;
+				d101.d10104 = this.vd101.d10104;
+				
+				var comboBoxData_D101_05:ComboBoxData = this.d101_05.selectedItem as ComboBoxData;
+				var d10105_text:String = comboBoxData_D101_05.data;
+				d101.d10105 = d10105_text;
+				
+				var comboBoxData_D101_06:ComboBoxData = this.d101_06.selectedItem as ComboBoxData;
+				var d101_06_text:String = comboBoxData_D101_06.data;
+				d101.d10106 = d101_06_text;
+				
+				d101.d10107 = this.d101_07.text;
+				d101.d10108 = this.d101_08.text;
+				d101.d10109 = this.d101_09.text;
+				
+				var comboBoxData_D101_10:ComboBoxData = this.d101_10.selectedItem as ComboBoxData;
+				var d10110_text:String = comboBoxData_D101_10.data;
+				d101.d10110 = d10110_text;
+				
+				var comboBoxData_D101_11:ComboBoxData = this.d101_11.selectedItem as ComboBoxData;
+				var d10111_text:String = comboBoxData_D101_11.data;
+				d101.d10111 = d10111_text;
+				d101.d10140 = this.d101_40.selectedDate;
+			
+				d101Request.d101 = d101;
+				this.medicalService.modify(d101Request);
+			}
+			
+			
+			
+			private function modifyHandler(event:ResultEvent):void
+			{
+				var d101Response:D101Response = event.result as D101Response;
+				if(d101Response.errorMessage == null){
+					Alert.show(d101Response.promptMessage, "系统提示");
+					this.removeWindow();
+					var parentIndex:index = this.owner as index;
+					parentIndex.refrashPage();
+				}else{
+					Alert.show(d101Response.errorMessage, "系统提示");
+				}
+				
+			}
+			
+			private function initializeComboBox():void
+			{
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.flag = "S101_01";
+				comboBoxDataRequest.sql = "select t.S_01, t.S_02 from S101_01 t";
+				comboBoxDataRequest.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.flag = "S101_02";
+				comboBoxDataRequest.sql = "select t.S_01, t.S_02 from S101_02 t";
+				comboBoxDataRequest.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.flag = "S101_03";
+				comboBoxDataRequest.sql = "select t.S_01, t.S_02 from S101_03 t";
+				comboBoxDataRequest.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+				var d101_04_text:String = this.areaCode;
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.flag = "D101";
+				comboBoxDataRequest.sql = "select t.D101_01, t.D101_02 from D101 t where t.D101_04 like '%" + d101_04_text + "%'";
+				comboBoxDataRequest.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				
+				var comboBoxDataResponse:Object = event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "S101_01") {
+					this.d101_05.dataProvider = comboBoxDataList;
+					this.d101_05.selectedIndex = 0;
+				} else if(flag == "S101_02") {
+					this.d101_06.dataProvider = comboBoxDataList;
+					this.d101_06.selectedIndex = 0;
+				}else if(flag == "S101_03"){
+					this.d101_10.dataProvider = comboBoxDataList;
+					this.d101_10.selectedIndex = 0;
+				}else if(flag == "D101"){
+					this.d101_11.dataProvider = comboBoxDataList;
+					this.d101_11.selectedIndex = 0;
+				}
+				
+				var d101Request:D101Request = new D101Request();
+				var d101:D101 = new D101();
+				d101.d10101 = this.vd101.d10101;
+				d101Request.d101 = d101;
+				this.medicalService.load(d101Request);
+			}
+			
+			private function reset(event:MouseEvent):void
+			{
+				this.d101_02.text = "";
+				this.d101_03.text = "";
+				//this.d101_04.text = "";
+				this.d101_05.selectedIndex = 0;
+				this.d101_06.selectedIndex = 0;
+				this.d101_07.text = "";
+				this.d101_08.text = "";
+				this.d101_09.text = "";
+				this.d101_10.selectedIndex = 0;
+				this.d101_11.selectedIndex = 0;
+				this.d101_40.text = "";
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function setD20105Value(event:TextOperationEvent):void{
+				//d20105.text = this.d20105_text + d20104.text;
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:Grid  width="535" height="185" paddingTop="20" paddingLeft="15" paddingRight="15" backgroundColor="#eeeeee">
+			<mx:GridRow>
+				<mx:GridItem>
+					<s:Label text="机构名称 " /><s:TextInput  id="d101_02" width="180"/>			
+				</mx:GridItem>
+				<mx:GridItem>
+					<s:Label text="拼  音  码  "/><s:TextInput  id="d101_03" width="180"/>		
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem>
+					<s:Label text="机构类别  "/><s:DropDownList id="d101_05" width="180" chromeColor="#eeeeee"/>		
+				</mx:GridItem>
+				<mx:GridItem>
+					<s:Label text="机构级别  "/><s:DropDownList id="d101_06" width="180" chromeColor="#eeeeee"/>		
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem>
+					<s:Label text="通讯地址  "/><s:TextInput  id="d101_07" width="180"/>		
+				</mx:GridItem>
+				<mx:GridItem>
+					<s:Label text="邮政编码  "/><s:TextInput  id="d101_08" width="180"/>		
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem>
+					<s:Label text="电话号码  "/><s:TextInput  id="d101_09" width="180"/>	
+				</mx:GridItem>
+				<mx:GridItem>
+					<s:Label text="签发类型  "/><s:DropDownList id="d101_10" width="180" chromeColor="#eeeeee"/>			
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem>
+					<s:Label text="上级单位 " visible="false"/><s:DropDownList id="d101_11" width="180" chromeColor="#eeeeee" visible="false"/>	
+				</mx:GridItem>
+				<mx:GridItem>
+					<s:Label text="截止日期  " visible="false"/><mx:DateField  id="d101_40" width="180" yearNavigationEnabled="true"
+																		   dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+																		   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																		   formatString="YYYY-MM-DD" visible="false"/>	
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+		<s:HGroup paddingLeft="90">
+			<s:Button label="保存" click="modify(event)"/>
+			<s:Button label="清空" click="reset(event)"/>
+			<s:Button label="关闭" click="removeWindow()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

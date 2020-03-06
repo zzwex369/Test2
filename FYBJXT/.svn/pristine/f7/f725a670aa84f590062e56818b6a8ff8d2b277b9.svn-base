@@ -1,0 +1,1070 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  xmlns:local="com.xyw.sys.custom.component.*"
+		  initialize="initializeHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.csyxzmsfdjb.index;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.DropDownList;
+			import spark.components.TextInput;
+			
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			
+			private var areaCode_:String ="4113";
+			private var birthdayFormat:RegExp  = /^((19|20)\d\d-((0[1-9])|(1[0-2]))-[0-3]\d)$/;
+			[Bindable]
+			public var opensave:Function = null;
+			[Bindable]
+			public var gradeVal:String;  //单双亲  父亲1  母亲2  双亲0
+			[Bindable]
+			public var birthVal:int;  //出生日期   1显示，2不显示
+			[Bindable]
+			public var phoneVal:int;  //联系电话   1显示，2不显示
+			[Bindable]
+			public var areaVal:int; //家庭地址 户口地址    1显示，2不显示
+			[Bindable]
+			public var cardVal:int; //结婚证编号 亲子鉴定证明编号    1显示，2不显示
+			public var printVal:String; //打印状态  0正常(机构内首发)  1换发  2补发  3以往年度换发  4以往年度补发  5机构外首发 6机构外换发  7机构外补发     8变更父母信息换发
+			//登记表     10首发登记表     12补发登记表    14以往年度补发-机构外首发-登记表     15首发登记表修改   16机构外首发登记表
+			public var duka:String;  //读卡
+			public var fumuDuka:String;  //读卡父母信息输入框  0不变 1灰色     systemUser.setFumuDuka(d801_16); 
+			private var loadDataArr:Array=[[[""],[""],[""],[""],[""],[""]],[[""],[""],[""],[""],[""],[""],],[[""]],[[""],[""]],[[""],[""]],[[""]],[[""]],[[""]],[[""]],[[""]]]; //接收对应的值
+			[Bindable]
+			public var saveDataArr:Array=[[[""],[""],[""],[""],[""],[""]],[[""],[""],[""],[""],[""],[""],],[[""]],[[""],[""]],[[""],[""]],[[""]],[[""]],[[""]],[[""]],[[""]],
+				[[""],[""],[""]],[[""],[""],[""]] ];//保存对应的值
+			private var parentsId:Array;
+			private var parentsMsg:Array=[
+				[   ["母亲姓名"],
+					["母亲证件类别"],
+					["母亲证件号码"],
+					
+					["母亲民族"],
+					["母亲身份证地址"],
+					["母亲国籍"]],
+				[
+					["父亲姓名"],
+					["父亲证件类别"],
+					["父亲证件号码"],
+					
+					["父亲民族"],
+					["父亲身份证地址"],
+					["父亲国籍"]],
+				[   ["电话号码"]],  //2
+				[	["母亲户口地址"],["母亲家庭地址"]],	
+				[	["父亲户口地址"],["父亲家庭地址"]],
+				[   ["结婚证编号"]],
+				[   ["亲子鉴定证明编号"]],   //6
+				[   ["母亲出生日期"]], 
+				[   ["父亲出生日期"]]
+			];
+			
+			private function initializeHandler(event:FlexEvent):void
+			{   
+				this.areaCode_=this.parentApplication.systemUser.areaCode;
+				getcheckParent(gradeVal);
+				this.initializeComboBox();//初始化数据
+				this.d301_12.addEventListener(FlexEvent.ENTER,setMontherBirthday);
+				this.d301_12.addEventListener(FlexEvent.CHANGING,setMontherBirthday);
+				this.d301_17.addEventListener(FlexEvent.ENTER,setFatherBirthday);
+				this.d301_17.addEventListener(FlexEvent.CHANGING,setFatherBirthday);
+				
+				this.d301_34.addEventListener(FlexEvent.CHANGING,setD301_34);  //母亲有效证件类别
+				this.d301_35.addEventListener(FlexEvent.CHANGING,setD301_35);  //父亲有效证件类别
+				
+				this.d301_11.addEventListener(FlexEvent.CHANGING,opensave);
+			}
+			
+			private function getcheckParent(gradeVal_:String):void{ //单双亲  父亲1  母亲2  双亲0
+				this.gradeVal =gradeVal_;
+				if(gradeVal=="1"){
+					this.father.selected =true;
+				}else if(gradeVal=="2"){
+					this.mother.selected =true;
+				}else if(gradeVal=="0"){
+					this.parents.selected =true;
+				}
+				getEnable();
+			}
+			
+			private function getComboBoxData(sql:String,flag:String,showPrompt:Boolean=true):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql =sql ;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function initializeComboBox():void
+			{
+				getComboBoxData("select * from  S301_03 t","S301_03");
+				
+				getComboBoxData("select * from  S301_04 t","S301_04");
+				
+				getComboBoxData("select * from  S301_06 t","S301_06");
+			}
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag == "S301_03"){
+					this.d301_14.dataProvider = comboBoxDataList;
+					var countryIndex:int = CompMethod.getDropDownListSelectedIndex(comboBoxDataList, "CHN");;
+					
+					this.d301_14.dataProvider = comboBoxDataList;
+					this.d301_14.selectedIndex = countryIndex;
+					this.d301_19.dataProvider = comboBoxDataList;
+					this.d301_19.selectedIndex = countryIndex;
+				}else if(flag == "S301_04"){
+					this.d301_15.dataProvider = comboBoxDataList;
+					var volkIndex:int = this.getVolkSelectedIndex(comboBoxDataList);
+					
+					this.d301_15.dataProvider = comboBoxDataList;
+					this.d301_15.selectedIndex = volkIndex;
+					this.d301_20.dataProvider = comboBoxDataList;
+					this.d301_20.selectedIndex = volkIndex;
+				}else if(flag == "S301_06"){
+					this.d301_34.dataProvider = comboBoxDataList;
+					this.d301_34.selectedIndex =1;
+					this.d301_35.dataProvider = comboBoxDataList;
+					this.d301_35.selectedIndex =1;
+				}
+			}
+			
+			//读卡父母信息输入框  0不变 1灰色     systemUser.setFumuDuka(d801_16);
+			private function setD301_34(event:Event):void{
+				if(fumuDuka == "1" && printVal !="3" && printVal!="8" && printVal!="14" && printVal!="16"){  //3以往年度换发   8变更父母信息换发  14以往年度补发登记表   16机构外首发登记表
+					if(this.d301_34.selectedItem.data == 1 || this.d301_34.selectedItem.data == 0){  //产妇证件类型为身份证或未选
+						this.d301_11.enabled =false;
+						this.d301_12.enabled =false;
+						this.d301_21.enabled =false;
+					}else{
+						this.d301_11.enabled =true;
+						this.d301_12.enabled =true;
+						this.d301_21.enabled =true;
+						
+						this.d301_11.text ="";
+						this.d301_12.text ="";
+						this.d301_21.text ="";
+					}
+				}
+			}
+			
+			//读卡父母信息输入框  0不变 1灰色     systemUser.setFumuDuka(d801_16); 
+			private function setD301_35(event:Event):void{
+				if(fumuDuka == "1" && printVal!="3" && printVal!="8" && printVal!="14" && printVal!="16" ){   //3以往年度换发   8变更父母信息换发  14以往年度补发登记表   16机构外首发登记表
+					if(this.d301_35.selectedItem.data == 1 || this.d301_35.selectedItem.data == 0){ //丈夫证件类型为身份证或未选
+						this.d301_16.enabled =false;
+						this.d301_17.enabled =false;
+						this.d301_48.enabled =false;
+					}else{
+						this.d301_16.enabled =true;
+						this.d301_17.enabled =true;
+						this.d301_48.enabled =true;
+						
+						this.d301_16.text ="";
+						this.d301_17.text ="";
+						this.d301_48.text ="";
+					}
+				}
+			}     
+			
+			private function dukaEnabled():void{
+				if(gradeVal=="1"){
+					if(duka=="1")
+						this.duka3.enabled =true;
+					this.duka2.enabled =false;
+				}else if(gradeVal=="2"){
+					if(duka=="1")
+						this.duka2.enabled =true;
+					this.duka3.enabled =false;
+				}else if(gradeVal=="0"){ 
+					if(duka == "1"){
+						this.duka2.enabled =true;  //母亲信息
+						this.duka3.enabled =true;  //父亲信息 
+					}	
+				}
+				//读卡父母信息输入框  0不变 1灰色     systemUser.setFumuDuka(d801_16); 
+				if(fumuDuka == "1" && printVal!="3" && printVal!="8" && printVal!="14" && printVal!="16"){ //3以往年度换发   8变更父母信息换发  14以往年度补发登记表   16机构外首发登记表
+					this.d301_11.enabled =false;
+					this.d301_12.enabled =false;
+					this.d301_21.enabled =false;
+					
+					this.d301_16.enabled =false;
+					this.d301_17.enabled =false;
+					this.d301_48.enabled =false;
+				}
+				
+				if(printVal=="1" || printVal=="2" || printVal=="4"){   // 1换发  2补发    3以往年度换发 4以往年度补发
+					this.father.enabled =false;
+					this.mother.enabled =false;
+					this.parents.enabled =false;
+					
+					this.duka2.enabled =false;  //母亲信息
+					this.duka3.enabled =false;  //父亲信息
+				}else{
+					this.father.enabled =true;
+					this.mother.enabled =true;
+					this.parents.enabled =true;
+				}
+			}
+			
+			private function defaultMother_Enable():void{
+				this.d301_11.enabled =false;
+				this.d301_34.enabled =false;
+				this.d301_12.enabled =false;
+				this.d301_13.enabled =false;
+				this.d301_14.enabled =false;
+				this.d301_15.enabled =false;
+				this.d301_21.enabled =false;
+			}
+			private function motherValue():void{
+				this.d301_11.text ="";
+				this.d301_12.text ="";
+				this.d301_13.text ="";
+				this.d301_21.text ="";
+			}
+			private function defaultValue_mother():void{
+				var d30134Index_:int =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.d301_34.dataProvider),"1");  //证件类别
+				this.d301_34.selectedIndex =d30134Index_;
+				
+				var d30115Index_:int =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.d301_15.dataProvider),"01");  //民族
+				this.d301_15.selectedIndex =d30115Index_;
+				
+				var d30114Index_:int =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.d301_14.dataProvider),"CHN");  //国籍
+				this.d301_14.selectedIndex =d30114Index_;
+			}
+			private function defaultMother_Area(areaCode:String):void{
+				if(areaVal==1){ //家庭地址 户口地址    1显示，2不显示
+					this.d301_60.setAreaCode(areaCode);   //母亲户口地址;
+					this.d301_63.setAreaCode(areaCode);  //母亲家庭地址;
+				}
+			}
+			
+			private function defaultFather_Enable():void{
+				this.d301_16.enabled =false;
+				this.d301_35.enabled =false;
+				this.d301_17.enabled =false;
+				this.d301_18.enabled =false;
+				this.d301_19.enabled =false;
+				this.d301_20.enabled =false;
+				this.d301_48.enabled =false;
+			}
+			private function fatherValue():void{
+				this.d301_16.text ="";
+				this.d301_17.text ="";
+				this.d301_18.text ="";
+				this.d301_48.text ="";
+			}
+			private function defaultValue_father():void{
+				var d30135Index_:int =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.d301_35.dataProvider),"1");  //证件类别
+				this.d301_35.selectedIndex =d30135Index_;
+				
+				var d30120Index_:int =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.d301_20.dataProvider),"01");  //民族
+				this.d301_20.selectedIndex =d30120Index_;
+				
+				var d30119Index_:int =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.d301_19.dataProvider),"CHN");  //国籍
+				this.d301_19.selectedIndex =d30119Index_;
+			}
+			private function defaultFather_Area(areaCode:String):void{
+				if(areaVal==1){ //家庭地址 户口地址    1显示，2不显示
+					this.d301_61.setAreaCode(areaCode);  //父亲户口地址;
+					this.d301_64.setAreaCode(areaCode);  //父亲家庭地址;	
+				}
+			}
+						
+			private function getEnable():void{
+				if(gradeVal=="1"){  //单双亲  父亲1  母亲2  双亲0
+					getprintEnable_father();
+					if(areaVal==1){
+						this.d301_60.enabled =false;   //母亲户口地址;
+						this.d301_63.enabled =false;
+						this.d301_61.enabled =true;  //父亲户口地址;
+						this.d301_64.enabled =true;
+					}
+					defaultMother_Enable();  // 不可编辑
+				}else if(gradeVal=="2"){  //单双亲  父亲1  母亲2  双亲0
+					getprintEnable_mother();
+					if(areaVal==1){
+						this.d301_60.enabled =true;   //母亲户口地址;
+						this.d301_63.enabled =true;
+						this.d301_61.enabled =false;  //父亲户口地址;
+						this.d301_64.enabled =false;
+					}
+					defaultFather_Enable();  // 不可编辑
+				}else if(gradeVal=="0"){  //单双亲  父亲1  母亲2  双亲0
+					if(areaVal==1){
+						this.d301_60.enabled =true;   //母亲户口地址;
+						this.d301_63.enabled =true;
+						this.d301_61.enabled =true;  //父亲户口地址;
+						this.d301_64.enabled =true;
+					}
+					getprintEnable_mother();	
+					getprintEnable_father();
+				}
+				dukaEnabled();
+			}
+			
+			public function putRecord(loadArr_:Array):void{ //得到对应的值
+				loadDataArr =loadArr_;
+				if(phoneVal==1)
+					this.d301_43.text =equVaule(loadDataArr[2][0]);  //电话号码
+				if(cardVal==1){   //结婚证编号 亲子鉴定证明编号    1显示，2不显示
+					this.d301_53.text=equVaule(loadDataArr[5][0]);
+					this.d301_54.text=equVaule(loadDataArr[6][0]);
+				}
+				if(gradeVal=="1"){  //单双亲  父亲1  母亲2  双亲0
+					setparentsValue_father();
+					
+					motherValue();
+					this.d301_34.selectedIndex =0;
+					this.d301_15.selectedIndex =0;
+					this.d301_14.selectedIndex =0;
+//					defaultMother_Area("4113");  //母亲地址
+				}else if(gradeVal=="2"){  //单双亲  父亲1  母亲2  双亲0
+					setparentsValue_mother();
+					
+					fatherValue();
+					this.d301_35.selectedIndex =0;
+					this.d301_20.selectedIndex =0;
+					this.d301_19.selectedIndex =0;
+//					defaultFather_Area("4113");  //父亲地址
+				}else if(gradeVal=="0"){  //单双亲  父亲1  母亲2  双亲0
+					setparentsValue_mother();
+					setparentsValue_father();
+				}
+/*				if(areaVal !=1){
+					defaultMother_Area("4113");
+					defaultFather_Area("4113");	
+				}  */
+			}
+			
+			private function equVaule(value:String):String{
+				if(value !=null && value !="null")
+					return value;
+				return "";
+			}
+			
+			private function setparentsValue_mother():void{
+				var d30134DataProvider:ArrayCollection = ArrayCollection(this.d301_34.dataProvider);  //母亲证件类别
+				var d30115DataProvider:ArrayCollection = ArrayCollection(this.d301_15.dataProvider);  //母亲民族
+				var d30114DataProvider:ArrayCollection = ArrayCollection(this.d301_14.dataProvider);  //母亲国籍
+				
+				if(equVaule(loadDataArr[0][0]) !=""){
+					this.d301_11.text =equVaule(loadDataArr[0][0]); //母亲姓名
+					var d30134Index:int =CompMethod.getDropDownListSelectedIndex(d30134DataProvider,equVaule(loadDataArr[0][1]));  //证件类别
+					if(d30134Index == 0)
+						d30134Index=CompMethod.getDropDownListSelectedIndex(d30134DataProvider,"1");
+					this.d301_34.selectedIndex =d30134Index; //母亲证件类别
+					
+					this.d301_12.text =equVaule(loadDataArr[0][2]); //母亲证件号码
+					if(birthVal==1)
+						this.d301_13.text =equVaule(loadDataArr[7][0]); //母亲出生日期
+					var d30115Index:int =CompMethod.getDropDownListSelectedIndex(d30115DataProvider,equVaule(loadDataArr[0][3]));  //民族
+					if(d30115Index == 0)
+						d30115Index=CompMethod.getDropDownListSelectedIndex(d30115DataProvider,"01");
+					this.d301_15.selectedIndex =d30115Index; //母亲民族
+					this.d301_21.text =equVaule(loadDataArr[0][4]); //母亲身份证地址
+					var d30114Index:int =CompMethod.getDropDownListSelectedIndex(d30114DataProvider,equVaule(loadDataArr[0][5]));  //国籍
+					if(d30114Index == 0)
+						d30114Index=CompMethod.getDropDownListSelectedIndex(d30114DataProvider,"CHN");
+					this.d301_14.selectedIndex =d30114Index; //母亲国籍
+					
+					if(areaVal==1){ //家庭地址 户口地址    1显示，2不显示
+						defaultValue_Area(d301_60,equVaule(loadDataArr[3][0]));   //母亲户口地址;
+						defaultValue_Area(d301_63,equVaule(loadDataArr[3][1]));  //母亲家庭地址; 
+/*  					var d30160_:String =equVaule(loadDataArr[3][0]);
+						var d30163_:String =equVaule(loadDataArr[3][1]);
+						if(d30160_.length >=9)
+						this.d301_60.setAreaCode(d30160_);   //母亲户口地址;
+						if(d30163_.length >=9)
+						this.d301_63.setAreaCode(d30163_);  //母亲家庭地址;   */
+					}
+				}else{
+					motherValue();
+					defaultValue_mother();
+//					if(areaVal==1)
+//						defaultMother_Area(areaCode_);
+				}
+			}
+			private function setparentsValue_father():void{
+				var d30135DataProvider:ArrayCollection = ArrayCollection(this.d301_35.dataProvider);  //父亲证件类别
+				var d30120DataProvider:ArrayCollection = ArrayCollection(this.d301_20.dataProvider);  //父亲民族
+				var d30119DataProvider:ArrayCollection = ArrayCollection(this.d301_19.dataProvider);  //父亲国籍
+				
+				if(equVaule(loadDataArr[1][0]) !=""){
+					this.d301_16.text =equVaule(loadDataArr[1][0]); //父亲姓名
+					var d30135Index:int =CompMethod.getDropDownListSelectedIndex(d30135DataProvider,equVaule(loadDataArr[1][1]));  //证件类别
+					if(d30135Index == 0)
+						d30135Index=CompMethod.getDropDownListSelectedIndex(d30135DataProvider,"1");	
+					this.d301_35.selectedIndex =d30135Index;  //父亲证件类别
+					this.d301_17.text =equVaule(loadDataArr[1][2]); //父亲证件号码
+					
+					if(birthVal==1)
+						this.d301_18.text =equVaule(loadDataArr[8][0]); //父亲出生日期
+					var d30120Index:int =CompMethod.getDropDownListSelectedIndex(d30120DataProvider,equVaule(loadDataArr[1][3]));  //民族
+					if(d30120Index == 0)
+						d30120Index=CompMethod.getDropDownListSelectedIndex(d30120DataProvider,"01");
+					this.d301_20.selectedIndex =d30120Index;  //父亲民族
+					this.d301_48.text =equVaule(loadDataArr[1][4]); //父亲身份证地址
+					var d30119Index:int =CompMethod.getDropDownListSelectedIndex(d30119DataProvider,equVaule(loadDataArr[1][5]));  //国籍
+					if(d30119Index == 0)
+						d30119Index=CompMethod.getDropDownListSelectedIndex(d30119DataProvider,"CHN");
+					this.d301_19.selectedIndex =d30119Index;  //父亲国籍
+					
+					if(areaVal==1){ //家庭地址 户口地址    1显示，2不显示
+						defaultValue_Area(d301_61,equVaule(loadDataArr[4][0]));  //父亲户口地址;
+						defaultValue_Area(d301_64,equVaule(loadDataArr[4][1]));  //父亲家庭地址;
+					}
+				}else{
+					fatherValue();
+					defaultValue_father();
+//					if(areaVal==1)
+//						defaultFather_Area(areaCode_);
+				}
+			}
+			
+			private function defaultValue_Area(id:AreaComboBoxVillageAuto,area_:String):void{
+				if(area_.length >=9){
+					id.setAreaCode(area_);
+				}else{
+					id.setAreaCode(areaCode_);
+				}
+			}
+			
+			public function verification():Boolean
+			{
+				parentsId=[
+					[
+						[this.d301_11.text],
+						[this,d301_34.selectedItem.data],
+						[this.d301_12.text],
+						
+						[this.d301_15.selectedItem.data],
+						[this.d301_21.text],
+						[this.d301_14.selectedItem.data]],		
+					[
+						[this.d301_16.text],
+						[this.d301_35.selectedItem.data],
+						[this.d301_17.text],
+						
+						[this.d301_20.selectedItem.data],
+						[this.d301_48.text],
+						[this.d301_19.selectedItem.data]],
+					[[this.d301_43.text]],
+					[[this.d301_60.getAreaCode()],[this.d301_63.getAreaCode()]],
+					[[this.d301_61.getAreaCode()],[this.d301_64.getAreaCode()]],
+					[[this.d301_53.text]],
+					[[this.d301_54.text]],   //6
+					[[this.d301_13.text]],
+					[[this.d301_18.text]]
+					
+				];
+				
+				var p_:Boolean = false;
+				if(gradeVal==null || gradeVal=="")
+				{
+					Alert.show("请选择单双亲情况","系统提示");
+					p_=true;
+				}
+				if(!p_){
+					if(gradeVal=="1"){    //验证录入信息   父亲1  母亲2  双亲0
+						if(!p_)
+							p_ =validate_Father();
+						if(!p_ && cardVal==1)
+							p_ =getArraySelectedIndex(parentsId[6],parentsMsg[6]);
+					}else if(gradeVal=="2"){
+						if(!p_)
+							p_ =validate_Mother();
+						if(!p_ && phoneVal==1)
+							p_ =getArraySelectedIndex(parentsId[2],parentsMsg[2]);
+					}else if(gradeVal =="0"){
+						if(!p_)
+							p_ =validate_Mother();
+						if(!p_)
+							p_ =validate_Father();
+						if(!p_ && phoneVal==1)
+							p_ =getArraySelectedIndex(parentsId[2],parentsMsg[2]);
+/*						if(!p_ && cardVal==1){
+							if(this.d301_53.text == "" && this.d301_54.text == "")
+								p_ =getArraySelectedIndex(parentsId[5],parentsMsg[5]);
+						}     */
+					}
+				}
+				return p_;
+			}
+			
+			/****************选择对应的信息********************/
+			private function getArraySelectedIndex(arr:*,arrayMsg:*):Boolean{
+				var p_:Boolean = false;
+				if((arr is Array) && (arrayMsg is Array)){
+					var len:uint = arr.length;
+					var i:uint = 0;
+					var comboBoxDataP:Object =new Object();
+					
+					var arrayMsgP:String =new String();
+					while(i < len) {
+						comboBoxDataP= arr[i];
+						arrayMsgP= new String(arrayMsg[i]);
+						
+						p_=validateMsg(comboBoxDataP,arrayMsgP); 
+						if(p_){
+							p_=true;
+							break;
+						};
+						i++;
+					}
+				}
+				
+				return p_;
+			}
+			/****************验证********************/
+			private function validateMsg(value:Object,str:String):Boolean
+			{	
+				if(value=="" || value==null){
+					Alert.show("请输入"+str,"系统提示");
+					return true;
+				}
+				return false;
+			}
+			//保存
+			public function saveRecord():Array{
+				saveDataArr[0][0] =CompMethod.saveEleVale(d301_11);  //母亲姓名
+				saveDataArr[0][1] =CompMethod.saveEleVale(d301_34);  //证件类别
+				saveDataArr[0][2] =CompMethod.saveEleVale(d301_12);  //母亲证件号码
+				
+				saveDataArr[0][3] =CompMethod.saveEleVale(d301_15);  //母亲民族
+				saveDataArr[0][4] =CompMethod.saveEleVale(d301_21);  //母亲身份证地址
+				saveDataArr[0][5] =CompMethod.saveEleVale(d301_14);  //母亲国籍
+				
+				saveDataArr[1][0] =CompMethod.saveEleVale(d301_16);  //父亲姓名
+				saveDataArr[1][1] =CompMethod.saveEleVale(d301_35);  //证件类别
+				saveDataArr[1][2] =CompMethod.saveEleVale(d301_17);  //父亲证件号码
+				
+				saveDataArr[1][3] =CompMethod.saveEleVale(d301_20);  //父亲民族
+				saveDataArr[1][4] =CompMethod.saveEleVale(d301_48);  //父亲身份证地址
+				saveDataArr[1][5] =CompMethod.saveEleVale(d301_19);  //父亲国籍
+				
+				saveDataArr[2][0] =CompMethod.saveEleVale(d301_43);  //电话号码
+				
+				if(gradeVal=="1"){  //单双亲  父亲1  母亲2  双亲0
+					saveDataArr[3][0] ="";  //母亲户口地址
+					saveDataArr[3][1] ="";  //母亲家庭地址
+					
+					saveDataArr[4][0] =this.d301_61.getAreaCode();  //父亲户口地址
+					saveDataArr[4][1] =this.d301_64.getAreaCode();  //父亲家庭地址
+				}else if(gradeVal=="2"){
+					saveDataArr[3][0] =this.d301_60.getAreaCode();  //母亲户口地址
+					saveDataArr[3][1] =this.d301_63.getAreaCode();  //母亲家庭地址
+					
+					saveDataArr[4][0] ="";  //父亲户口地址
+					saveDataArr[4][1] ="";  //父亲家庭地址
+				}else{
+					saveDataArr[3][0] =this.d301_60.getAreaCode();  //母亲户口地址
+					saveDataArr[3][1] =this.d301_63.getAreaCode();  //母亲家庭地址
+					
+					saveDataArr[4][0] =this.d301_61.getAreaCode();  //父亲户口地址
+					saveDataArr[4][1] =this.d301_64.getAreaCode();  //父亲家庭地址
+				}
+				
+				saveDataArr[5][0] =CompMethod.saveEleVale(d301_53);  //结婚证编号
+				
+				saveDataArr[6][0] =CompMethod.saveEleVale(d301_54);  //亲子鉴定证明编号
+				
+				saveDataArr[7][0] =CompMethod.saveEleVale(d301_13);  //母亲出生日期
+				
+				saveDataArr[8][0] =CompMethod.saveEleVale(d301_18);  //父亲出生日期
+				
+				saveDataArr[9][0] =this.gradeVal;   //单双亲
+				
+				
+				saveDataArr[10][0] =this.d301_34.selectedItem.label;  //母亲有效证件类别  名称
+				saveDataArr[10][1] =this.d301_14.selectedItem.label;  //母亲国籍  名称
+				saveDataArr[10][2] =this.d301_15.selectedItem.label;  //母亲民族  名称
+				
+				saveDataArr[11][0] =this.d301_35.selectedItem.label;  //父亲有效证件类别  名称
+				saveDataArr[11][1] =this.d301_19.selectedItem.label;  //父亲国籍 名称
+				saveDataArr[11][2] =this.d301_20.selectedItem.label;  //父亲民族 名称
+				
+				return saveDataArr;
+			}
+			
+			private function getprintEnable_mother():void{  //母亲基本信息可否修改	
+				//打印状态  0正常  1换发  2补发  3以往年度换发  4以往年度补发  5机构外首发 6机构外换发  7机构外补发     8变更父母信息换发
+				//登记表     10首发登记表     12补发登记表    14以往年度补发    15首发登记表修改
+				if(printVal=="0"){ //状态  0正常首发
+					this.d301_11.enabled =false;
+					this.d301_34.enabled =true;
+					this.d301_12.enabled =false;
+					this.d301_13.enabled =true;
+					this.d301_14.enabled =true;
+					this.d301_15.enabled =true;
+					this.d301_21.enabled =true;
+				}else if(printVal=="1" || printVal=="2"){   // 1换发  2补发  
+					defaultMother_Enable();
+				}else if(printVal=="3" || printVal=="8" || printVal=="14" || printVal=="16"){    // 3以往年度换发   8变更父母信息换发    14以往年度补发登记表   16机构外首发登记表
+					this.d301_11.enabled =true;
+					this.d301_34.enabled =true;
+					this.d301_12.enabled =true;  //母亲身份证号
+					this.d301_13.enabled =true;
+					this.d301_14.enabled =true;
+					this.d301_15.enabled =true;
+					this.d301_21.enabled =true;
+				}else if(printVal=="4" || printVal=="5"){    // 4以往年度补发   5机构外首发 
+					this.d301_11.enabled =false;
+					this.d301_34.enabled =false;
+					this.d301_12.enabled =false;
+					this.d301_13.enabled =true;   //母亲出生日期
+					this.d301_14.enabled =false;
+					this.d301_15.enabled =false;
+					this.d301_21.enabled =false;
+				}else if(printVal=="10"){   //登记表     10首发登记表 
+					this.d301_11.enabled =false;
+					this.d301_34.enabled =false;
+					this.d301_12.enabled =false;
+					this.d301_13.enabled =true;   //母亲出生日期
+					this.d301_14.enabled =true;   //母亲国籍
+					this.d301_15.enabled =false;
+					this.d301_21.enabled =false;
+				}else if(printVal=="12"){   //登记表     12补发登记表
+					this.d301_11.enabled =false;
+					this.d301_34.enabled =false;
+					this.d301_12.enabled =false;
+					this.d301_13.enabled =false;
+					this.d301_14.enabled =true;
+					this.d301_15.enabled =false;
+					this.d301_21.enabled =false;
+				}else if(printVal=="15"){   //登记表     15首发登记表修改
+					this.d301_11.enabled =false;
+					this.d301_34.enabled =true;   //母亲有效证件类别
+					this.d301_12.enabled =false;
+					this.d301_13.enabled =false;
+					this.d301_14.enabled =true;  //母亲国籍
+					this.d301_15.enabled =false;
+					this.d301_21.enabled =false;
+				}
+			}
+			private function getprintEnable_father():void{  //父亲基本信息可否修改
+				//打印状态  0正常  1换发  2补发  3以往年度换发  4以往年度补发  5机构外首发 6机构外换发  7机构外补发     8变更父母信息换发
+				//登记表     10首发登记表     12补发登记表    14以往年度补发
+				if(printVal=="0" || printVal=="3" || printVal=="8" || printVal=="10" || printVal=="14" || printVal=="16"){ //状态  0正常首发   3以往年度换发   8变更父母信息换发    10首发登记表  14以往年度补发登记表   16机构外首发登记表
+					this.d301_16.enabled =true;
+					this.d301_35.enabled =true;
+					this.d301_17.enabled =true;
+					this.d301_18.enabled =true;
+					this.d301_19.enabled =true;
+					this.d301_20.enabled =true;
+					this.d301_48.enabled =true;
+				}else if(printVal=="1" || printVal=="2" || printVal=="12"){   // 1换发  2补发     12补发登记表
+					defaultFather_Enable();
+				}else if(printVal=="4" || printVal=="5"){    // 4以往年度补发   5机构外首发
+					this.d301_16.enabled =false;
+					this.d301_35.enabled =false;
+					this.d301_17.enabled =false;
+					this.d301_18.enabled =true;
+					this.d301_19.enabled =false;
+					this.d301_20.enabled =false;
+					this.d301_48.enabled =false;
+				}else if(printVal=="15"){   //登记表     15首发登记表修改
+					this.d301_16.enabled =false;
+					this.d301_35.enabled =true;  //父亲有效证件类别
+					this.d301_17.enabled =false;
+					this.d301_18.enabled =false;
+					this.d301_19.enabled =true;  //父亲国籍
+					this.d301_20.enabled =false;
+					this.d301_48.enabled =false;
+				}
+			}
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var arr:Array = CompMethod.read_card("女");
+					if(!arr)
+						return ;
+					this.d301_11.text = arr[0];//姓名
+					this.d301_12.text = arr[5];//身份证号
+					this.d301_13.text = arr[3];//出生日期
+					this.d301_21.text = arr[4];//家庭地址
+					var nation:String = arr[2];// + "族";//民族
+					var nationDataProvider:ArrayCollection = ArrayCollection(this.d301_15.dataProvider);
+					var nationIndex:int = CompMethod.getDropDownListSelectedIndex(nationDataProvider,nation,true);
+					
+					this.d301_15.selectedIndex = nationIndex;
+					setMontherBirthday(null);		
+//						
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			//读卡(父亲)
+			protected function readCard_father(event:MouseEvent):void
+			{
+				try
+				{
+					
+					var arr:Array = CompMethod.read_card("男");
+					if(!arr)
+						return ;
+					this.d301_16.text = arr[0];//姓名
+					this.d301_17.text = arr[5];//身份证号
+					this.d301_18.text = arr[3];//出生日期
+					this.d301_48.text = arr[4];//家庭地址
+					var nation:String = arr[2];// + "族";//民族
+					var nationDataProvider:ArrayCollection = ArrayCollection(this.d301_20.dataProvider);
+					var nationIndex:int = CompMethod.getDropDownListSelectedIndex(nationDataProvider,nation,true);
+					
+					this.d301_20.selectedIndex = nationIndex;
+					setFatherBirthday(null);
+							
+						
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			private function setMontherBirthday(event:Event):void
+			{
+				if(this.d301_34.selectedItem.data == 1){
+					var cardId:String = this.d301_12.text;
+					if(cardId.length>=16){
+						cardId=cardId.substring(6,14);
+						this.d301_13.text = cardId.substring(0,4) + "-" + cardId.substring(4,6) + "-" + cardId.substring(6,8);
+					}else{
+						cardId=cardId.substring(6,12);
+						this.d301_13.text = "19" + cardId.substring(0,2) + "-" + cardId.substring(2,4) + "-" + cardId.substring(4,6);
+					}
+				}
+			}
+			
+			private function setFatherBirthday(event:Event):void
+			{
+				if(this.d301_35.selectedItem.data == 1){
+					var cardId:String = this.d301_17.text;
+					if(cardId.length>=16){
+						cardId=cardId.substring(6,14);
+						this.d301_18.text = cardId.substring(0,4) + "-" + cardId.substring(4,6) + "-" + cardId.substring(6,8);
+					}else{
+						cardId=cardId.substring(6,12);
+						this.d301_18.text = "19" + cardId.substring(0,2) + "-" + cardId.substring(2,4) + "-" + cardId.substring(4,6);
+					}
+				}
+			}
+			//读卡获取民族信息
+			private function getNationDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.label == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			/*-----------------默认民族  汉族---------------------*/
+			private function getVolkSelectedIndex(arrayCollection:ArrayCollection):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == "01") {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			private function validate_Mother():Boolean{
+				var p_:Boolean = false;
+				if(!p_)
+					p_ =getArraySelectedIndex(parentsId[0],parentsMsg[0]);
+				if(!p_)
+					p_ =validateCard_Mother();
+				if(!p_ && birthVal==1){
+					p_ =getArraySelectedIndex(parentsId[7],parentsMsg[7]);
+					if(!p_ ){
+						if(!birthdayFormat.test(this.d301_13.text)){
+							Alert.show("请选择母亲出生日期!","系统提示");
+							p_=true;
+						}
+					}
+				}
+				if(!p_ && phoneVal==1)
+					p_ =getArraySelectedIndex(parentsId[2],parentsMsg[2]);
+				if(!p_ && areaVal==1)
+					p_ =validateArea_Mother();
+				return p_;
+			}
+			private function validate_Father():Boolean{
+				var p_:Boolean = false;
+				if(!p_)
+					p_ =getArraySelectedIndex(parentsId[1],parentsMsg[1]);
+				if(!p_)
+					p_ =validateCard_Father();
+				if(!p_ && birthVal==1){
+					p_ =getArraySelectedIndex(parentsId[8],parentsMsg[8]);
+					if(!p_){
+						if(!birthdayFormat.test(this.d301_18.text)){
+							Alert.show("请选择父亲出生日期!","系统提示");
+							p_=true;
+						}
+					}
+				}
+				if(!p_ && phoneVal==1)
+					p_ =getArraySelectedIndex(parentsId[2],parentsMsg[2]);
+				if(!p_ && areaVal==1)
+					p_ =validateArea_Father();
+				
+				return p_;
+			}
+			private function cardExp(cardId:String):int{
+				try{
+					var str:Boolean=ExternalInterface.call("parent.checkIdcard",cardId);
+					if(!str){	
+						Alert.show("身份证号码有误!","系统提示");
+						return 1;
+					}else{
+						var age:Number =dayExp(cardId);
+						if( age <14 || age>90){
+							Alert.show("身份证号码有误：当前年龄为14-90之间的数字!","系统提示");
+							return 1;
+						}
+					} 
+				}catch(error:Error){
+					Alert.show("身份证验证失败！");
+					return 1;
+				}
+				return 0;
+			}
+			private function dayExp(cardId:String):Number{
+				var age:Number;
+				var year:Number;
+				var month:Number;
+				var day:Number;
+				var date:Date = new Date();
+				var nowDay:Number = date.date;
+				var nowMonth:Number = date.month + 1;
+				var nowYear:Number = date.fullYear;
+				if(cardId.length >= 16){
+					cardId=cardId.substring(6,14);
+					year = Number(cardId.substring(0,4));
+					month = Number(cardId.substring(4,6));
+					day = Number(cardId.substring(6,8));
+					
+				}else{
+					cardId=cardId.substring(6,12);
+					year = Number("19" + cardId.substring(0,2));
+					month = Number(cardId.substring(2,4));
+					day = Number(cardId.substring(4,6));
+				}
+				if(nowMonth < month){
+					age = nowYear - year - 1;
+				}else if(nowMonth == month){
+					if(day > nowDay){
+						age = nowYear - year -1;
+					}else{
+						age = nowYear - year;
+					}
+				}else if(nowMonth > month){
+					age = nowYear - year; 
+				}
+				
+				return age;
+			}
+			private function validateCard_Mother():Boolean{
+				var p_:Boolean = false;
+				var patternMonther_:RegExp = /^(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{2}[0-9Xx]$)$/g;
+				if(this.d301_34.selectedItem.data == 1 && this.d301_14.selectedItem.data == "CHN"){
+					if(!patternMonther_.test(this.d301_12.text)){
+						Alert.show("母亲身份证号长度不对，或号码不符合规定!","系统提示");
+						return true;
+					}else{
+						var cardIdM:String  = this.d301_12.text;
+						if(cardExp(cardIdM) !=0){
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+			private function validateCard_Father():Boolean{
+				var patternFather:RegExp = /^(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{2}[0-9Xx]$)$/g;
+				if(this.d301_35.selectedItem.data == 1 && this.d301_19.selectedItem.data == "CHN" ){
+					if(!patternFather.test(this.d301_17.text)){
+						Alert.show("父亲身份证号长度不对，或号码不符合规定!","系统提示");
+						return true;
+					}else{
+						var cardIdF:String  = this.d301_17.text;
+						if(cardExp(cardIdF) !=0){
+							return true;
+						}
+					} 
+				}
+				return false;
+			}
+			private function validateArea_Mother():Boolean{
+				if(!CompMethod.validateAreaCode(this.d301_60.getAreaCode(),"4113",true)) {
+					Alert.show("母亲户口地址请选择到乡镇","系统提示");
+					return true;
+				}
+				if(!CompMethod.validateAreaCode(this.d301_63.getAreaCode(),'4113')) {
+					Alert.show("母亲家庭住址选择到最下级!", "系统提示");
+					return true;
+				}
+				return false;
+			}
+			private function validateArea_Father():Boolean{
+				if(!CompMethod.validateAreaCode(this.d301_61.getAreaCode(),"4113",true)) {
+					Alert.show("父亲户口地址请选择到乡镇!", "系统提示");
+					return true;
+				}
+				if(!CompMethod.validateAreaCode(this.d301_64.getAreaCode(),'4113')) {
+					Alert.show("父亲家庭住址选择到最下级!", "系统提示");
+					return true;
+				}
+				return false;
+			}
+			
+			private function checkParent(event:MouseEvent):void{
+				if(this.father.selected){   //单双亲  父亲1  母亲2  双亲0
+					this.gradeVal="1";
+				}else if(this.mother.selected){
+					this.gradeVal="2";
+				}else if(this.parents.selected){
+					this.gradeVal="0";
+				}
+				getEnable();
+				if(loadDataArr !=null){
+					putRecord(loadDataArr);
+				}else{
+					defaultValue_mother();
+					defaultValue_father();
+				}
+			}
+
+			public function defaultCheckParent(gradeVal_:String,loadDataArr_:Array,printVal_:String):void{ //单双亲  父亲1  母亲2  双亲0
+				if(gradeVal_ !=null && gradeVal_ !="")
+					this.gradeVal =gradeVal_;
+				if(printVal_ !=null && printVal_ !="")
+					this.printVal =printVal_;
+				if(gradeVal=="1"){
+					this.father.selected =true;
+				}else if(gradeVal=="2"){
+					this.mother.selected =true;
+				}else if(gradeVal=="0"){
+					this.parents.selected =true;
+				}
+				
+				getEnable();
+				if(loadDataArr_ !=null){
+					putRecord(loadDataArr_);
+				}else{
+					loadDataArr =[[[""],["1"],[""],["01"],[""],["CHN"]],[[""],["1"],[""],["01"],[""],["CHN"],],[[""]],[[""],[""]],[[""],[""]],[[""]],[[""]],[[""]],[[""]],[[""]]];
+					this.d301_43.text ="";
+					motherValue();
+					fatherValue();
+					defaultValue_mother();
+					defaultValue_father();
+				}
+			}
+			
+			private function D301_63_clickHandler(event:MouseEvent):void
+			{
+				this.d301_63.setAreaCode(this.d301_60.getAreaCode());
+			}
+			private function D301_64_clickHandler(event:MouseEvent):void
+			{
+				this.d301_64.setAreaCode(this.d301_61.getAreaCode());
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+		<s:HGroup width="1080" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+			<s:RadioButton label="父亲" id="father" groupName="parent" click="checkParent(event)"/>
+			<s:RadioButton label="母亲" id="mother" groupName="parent" click="checkParent(event)"/>
+			<s:RadioButton label="双亲" id="parents" groupName="parent" click="checkParent(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle"> 		
+			<s:Button label="读卡" id="duka2"  click="readCard_mother(event)" enabled="false" icon="{CustomIcon.READCARD}"/>	
+			<s:Label text="母亲姓名"/><s:TextInput id="d301_11" width="120"/>
+			<s:Label text="证件类别" paddingLeft="10"/><s:DropDownList id="d301_34" width="120"/>
+			<s:Label text="证件号码" paddingLeft="10"/><s:TextInput id="d301_12" width="145" />
+			<s:Label text="出生日期" paddingLeft="10" includeInLayout="{birthVal==1}" visible="{birthVal==1}"/><s:TextInput id="d301_13" width="130" includeInLayout="{birthVal==1}" visible="{birthVal==1}"/>
+			<s:Label text="母亲民族" paddingLeft="10"/><s:DropDownList id="d301_15" width="114"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle">		
+			<s:Label text="身份证地址"/><s:TextInput id="d301_21" width="363"/>
+			<s:Label text="母亲国籍" paddingLeft="10"/><s:DropDownList id="d301_14" width="145"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle" includeInLayout="{areaVal==1}" visible="{areaVal==1}"><!-- label="母亲地址" --> 
+			<s:Label text="户口地址"/><component:AreaComboBoxVillageAuto id="d301_60" width="792" buttonMode="true" table="D201" areaCode="{this.parentApplication.systemUser.areaCode}"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle" includeInLayout="{areaVal ==1}" visible="{areaVal==1}">
+			<s:Label text="家庭地址"/><component:AreaComboBoxVillageAuto id="d301_63" width="791" buttonMode="true" table="D201" areaCode="{this.parentApplication.systemUser.areaCode}"/>
+			<s:Button label="家庭地址与户口地址是否一致"  click="D301_63_clickHandler(event)" buttonMode="true"/>
+		</s:HGroup>
+		
+		<s:HGroup width="100%" paddingTop="20" paddingLeft="10" paddingRight="10" verticalAlign="middle"><!-- label="父亲信息" -->
+			<s:Button label="读卡" id="duka3"  click="readCard_father(event)" enabled="false" icon="{CustomIcon.READCARD}"/>
+			<s:Label text="父亲姓名"/><s:TextInput id="d301_16" width="120"/>
+			<s:Label text="证件类别" paddingLeft="10"/><s:DropDownList id="d301_35" width="120"/>
+			<s:Label text="证件号码" paddingLeft="10"/><s:TextInput id="d301_17" width="145"/>
+			<s:Label text="出生日期" paddingLeft="10"  includeInLayout="{birthVal ==1}" visible="{birthVal==1}"/><s:TextInput id="d301_18" width="130" includeInLayout="{birthVal==1}" visible="{birthVal==1}"/>
+			<s:Label text="父亲民族" paddingLeft="10"/><s:DropDownList id="d301_20" width="114"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle">	
+			<s:Label text="身份证地址"/><s:TextInput id="d301_48" width="363"/>
+			<s:Label text="父亲国籍" paddingLeft="10"/><s:DropDownList id="d301_19" width="145"/>
+			<s:Label text="联系方式" paddingLeft="10" includeInLayout="{phoneVal==1}" visible="{phoneVal==1}"/><s:TextInput id="d301_43" width="113" maxChars="12" restrict="0-9" includeInLayout="{phoneVal==1}" visible="{phoneVal==1}"/> <!-- label="联系方式" -->
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle" includeInLayout="{areaVal==1}" visible="{areaVal==1}"><!-- label="父亲地址" -->
+			<s:Label text="户口地址"/><component:AreaComboBoxVillageAuto id="d301_61" width="792" buttonMode="true" table="D201" areaCode="{this.parentApplication.systemUser.areaCode}"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle" includeInLayout="{areaVal==1}" visible="{areaVal==1}">
+			<s:Label text="家庭地址"/><component:AreaComboBoxVillageAuto id="d301_64" width="792" buttonMode="true" table="D201" areaCode="{this.parentApplication.systemUser.areaCode}"/>
+			<s:Button label="家庭地址与户口地址是否一致"  click="D301_64_clickHandler(event)" buttonMode="true"/>
+		</s:HGroup>
+		
+		<s:HGroup width="100%" paddingLeft="10" paddingRight="10" verticalAlign="middle" includeInLayout="{cardVal==1}" visible="{cardVal==1}"> <!-- label="结婚证编号" -->
+			<s:Label text="结婚证编号"/><s:TextInput id="d301_53" width="150" restrict="^ \f\n\r\t\v"/>
+			<s:Label text="亲子鉴定证明编号" paddingLeft="10"/><s:TextInput id="d301_54" width="150" restrict="^ \f\n\r\t\v"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:VGroup>

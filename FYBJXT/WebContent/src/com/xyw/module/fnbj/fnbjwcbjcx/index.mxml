@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="perinatalHealthService" destination="perinatalHealthService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF302" result="queryF302Handler(event)"/>
+			<s:method name="deleteF302" result="deleteF302Handler(event)"/>
+		</s:RemoteObject>
+		
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F302Request;
+			import com.xyw.module.fnbj.model.VF302;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.messaging.AbstractConsumer;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			
+			private var vf302:VF302 =null;
+			public var f302Request:F302Request =null; 
+			public var systemUser:SystemUser =null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				
+				
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+				}
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vf302 = DataGrid(event.target).selectedItem as VF302;
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				f302Request = new F302Request();
+				try
+				{	
+					var type:String = this.F302_50.getLastSelectedInstitution();
+					var F302_50_:String = this.F302_50.getLastSelectedInstitutionCode();
+					
+					if(this.systemUser.institutionType == "1")
+					{
+						f302Request.f30250 = this.systemUser.institutionCode;
+					}else{
+						if(type == "8")
+						{
+							f302Request.f30250 = F302_50_;
+						}else if(type == "6")
+						{
+							f302Request.f30250 = F302_50_.substring(0,6);
+						}else if(type == "4")
+						{
+							f302Request.f30250 = F302_50_.substring(0,4);
+						}else if(type == "2")
+						{
+							f302Request.f30250 = F302_50_.substring(0,2);
+						}
+					}
+					
+					//					f302Request.f30253Start = this.timeStart.selectedDate;
+					//					f302Request.f30253End = this.timeEnd.selectedDate;
+					//					f302Request.f30203 = StringUtil.trim(this.F302_03.text);
+					//					f302Request.f30205 = StringUtil.trim(this.F302_05.text);
+					//					f302Request.f30207 = StringUtil.trim(this.F302_07.text);
+					if(this.seleall.selectedIndex==1){
+						f302Request.f30253Start =  null;
+						f302Request.f30253End = null;
+						f302Request.f30259Start = null;
+						f302Request.f30259End = null;
+						f302Request.f30203 = StringUtil.trim(this.F302_03.text);
+						f302Request.f30205 = StringUtil.trim(this.F302_05.text);
+						f302Request.f30207 = StringUtil.trim(this.F302_07.text);
+						
+					}else{
+						if(this.deliveryTime.selected){
+							f302Request.f30253Start = this.timeStart.selectedDate;
+							f302Request.f30253End = this.timeEnd.selectedDate;
+							f302Request.f30259Start = null;
+							f302Request.f30259End = null;
+							f302Request.f30203 = StringUtil.trim(this.F302_03.text);
+							f302Request.f30205 = StringUtil.trim(this.F302_05.text);
+							f302Request.f30207 = StringUtil.trim(this.F302_07.text);
+							
+						}else if(this.systemTime.selected){
+							f302Request.f30253Start =  null;
+							f302Request.f30253End = null;
+							f302Request.f30259Start = this.timeStart.selectedDate;
+							f302Request.f30259End = this.timeEnd.selectedDate;
+							f302Request.f30203 = StringUtil.trim(this.F302_03.text);
+							f302Request.f30205 = StringUtil.trim(this.F302_05.text);
+							f302Request.f30207 = StringUtil.trim(this.F302_07.text);
+						}
+					}
+				} 
+				catch(error:Error) 
+				{		
+				}
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				f302Request = new F302Request();
+				this.initQueryParam();
+				f302Request.parameterPageindex = 1;
+				f302Request.parameterPagesize = 20;
+				this.perinatalHealthService.queryF302(f302Request);
+			}
+			protected function queryF302Handler(event:ResultEvent):void
+			{
+				var f302Response:Object = event.result;
+				var flag:String = f302Response.flag;
+				var listVF302:ArrayCollection = f302Response.vf302s;
+				var rowCount:Number = f302Response.rowCount;
+				if(f302Response.errorMessage == null)
+				{ 
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVF302;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(f302Response.errorMessage, "系统提示");
+				}
+			}
+			protected function deleteF302Handler(event:ResultEvent):void
+			{
+				var f302Response:Object = event.result;
+				if(f302Response.errorMessage == null){
+					if(f302Response.promptMessage != null){
+						Alert.show(f302Response.promptMessage, "系统提示");
+					}
+					refresh();
+				} else {
+					Alert.show(f302Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				f302Request = new F302Request();
+				this.initQueryParam();
+				f302Request.parameterPageindex = currentPageIndex;
+				f302Request.parameterPagesize = pageSize;
+				this.perinatalHealthService.queryF302(f302Request);
+			}
+			
+			public function refresh():void
+			{
+				f302Request = new F302Request();
+				this.initQueryParam();
+				f302Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				f302Request.parameterPagesize = 20;
+				this.perinatalHealthService.queryF302(f302Request);
+			}
+			public function update(event:MouseEvent):void
+			{
+				if(this.vf302 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:title =new title();
+					window.vf302 = this.vf302;
+					PopUpManager.addPopUp(window,this);
+					var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+					var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+					window.move(x, y);
+				}
+			}
+			
+			public function deleteF302(event:MouseEvent):void
+			{
+				if(this.vf302 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				
+				f302Request.f30201 = this.vf302.f30201;
+				f302Request.f30202 = this.vf302.f30202;
+				f302Request.f30203 = this.vf302.f30203;
+				f302Request.f30205 = this.vf302.f30205;
+				f302Request.f30207 = this.vf302.f30207;
+				this.perinatalHealthService.deleteF302(f302Request);
+			}
+			
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F302_03.text = array[0];//姓名
+							this.F302_05.text = array[5];//身份证号
+						}else{
+							Alert.show("请读孕产妇信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="seleall" width="100%" height="110" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="建册机构"/>
+					<component:InstitutionComboBox id="F302_50"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="检查日期"/>
+					<s:RadioButton id="deliveryTime" groupName="fm1" label="按建册日期查询" selected="true"/>
+					<s:RadioButton id="systemTime" groupName="fm1" label="按录入日期查询" width="115"/>
+					<mx:DateField yearNavigationEnabled="true" id="timeStart" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+								  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+								  formatString="YYYY-MM-DD" />
+					<s:Label text="至" /><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+													  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+													  formatString="YYYY-MM-DD" />
+					<!--					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+					verticalAlign="middle">
+					<s:Label text="建册日期"/><mx:DateField id="timeStart" width="120"
+					dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+					monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+					formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+					<s:Label text="至"/><mx:DateField id="timeEnd" width="120"
+					dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+					monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+					formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+					-->			
+					<s:Button label="查询" click="query(event)"/>
+					<s:Button label="修改" click="update(event)"/>
+					<s:Button label="删除" click="deleteF302(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" label="精确查询">
+			<s:VGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="孕产妇姓名"/><s:TextInput id="F302_03"/>
+					<s:Label text="证件号码"/><s:TextInput id="F302_05" width="200"/>
+					<s:Button id="duka1" width="60" label="读卡" click="readCard_mother(event)" enabled="false"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="建 册 编 号" paddingRight="1"/><s:TextInput id="F302_07"/>
+					<s:Button label="查询" click="query(event)"/>
+					<s:Button label="修改" click="update(event)"/>
+					<s:Button label="删除" click="deleteF302(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="110" width="100%" height="560" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="certificateDataGrid" width="100%" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="f30201" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="80" dataField="f30203" headerText="孕产妇姓名"/>
+						<s:GridColumn width="150" dataField="f30205" headerText="证件号码"/>
+						<s:GridColumn width="140" dataField="f30207" headerText="建册编号"/>
+						<s:GridColumn width="80" dataField="f30206" headerText="建册孕周"/>
+						<s:GridColumn width="80" dataField="f30209" headerText="结婚年龄"/>
+						<s:GridColumn width="80" dataField="f30216Str" headerText="末次月经"/>
+						<s:GridColumn width="80" dataField="f30238Zh" headerText="手术史"/>
+						<s:GridColumn width="80" dataField="f30240Zh" headerText="现病史"/>
+						<s:GridColumn width="80" dataField="f30242Zh" headerText="药物过敏"/>
+						<s:GridColumn width="80" dataField="f30251" headerText="建册医生"/>
+						<s:GridColumn width="80" dataField="f30252Str" headerText="建册日期"/>
+						<s:GridColumn width="150" dataField="f30250Zh" headerText="建册单位"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+			
+		</s:VGroup>	
+	</s:Scroller>	
+</s:Module>
+

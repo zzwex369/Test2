@@ -1,0 +1,96 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   title="历次产检信息" backgroundColor="#FFFFFF"
+			   chromeColor="#5CACEE" close="removeWindow()" width="1024" height="246"
+			   creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="e304Service" destination="e304Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryE304" result="queryE304Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.model.E304;
+			import com.xyw.module.etbj.model.E304Request;
+			import com.xyw.module.etbj.model.E304Response;
+			import com.xyw.module.etbj.model.VE301;
+			import com.xyw.module.etbj.model.VE304;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var ve301:Object;
+
+			
+			//儿童检查查询信息
+			public function init():void
+			{
+				var e304:E304=new E304();
+				var e304Request:E304Request = new E304Request();
+				e304.e30449 = ve301.e30126;
+				e304.e30450 = ve301.e30127;
+				e304Request.flag = "et";
+				e304Request.e304=e304;
+				e304Request.parameterPageindex = 1;
+				e304Request.parameterPagesize = 20;
+				this.e304Service.queryE304(e304Request);
+			}
+				 
+			public function queryE304Handler(event:ResultEvent):void
+			{
+				var e304Response:Object = event.result;
+				if(e304Response.rowCount == 0){
+					Alert.show("查询不到检查记录");
+					return;
+				}
+				if(e304Response.state){
+					this.certificateDataGrid.dataProvider = e304Response.ve304s;
+				}else{
+					Alert.show(e304Response.errorMessage, "系统提示");
+				}
+			}
+					
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			} 
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+		<s:HGroup paddingBottom="5" paddingLeft="15" paddingTop="10"  paddingRight="5" width="100%" height="100%" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF">
+			<s:DataGrid id="certificateDataGrid" alternatingRowColors="[#FFFFFF,#EEEEEE]" chromeColor="#5CACEE" editable="true" rowHeight="22" width="980" height="158" >
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e30401" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号"
+									  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="120" dataField="e30404Str" headerText="检查时间"/>
+						<s:GridColumn width="100" dataField="e30437Str" headerText="下次检查时间"/>
+						<s:GridColumn width="120" dataField="e30445ZH" headerText="检查机构"/>
+						<s:GridColumn width="100" dataField="e30403" headerText="婴儿姓名"/>
+						<s:GridColumn width="80" dataField="e30405" headerText="体重"/>
+						<s:GridColumn width="80" dataField="e30407" headerText="身长"/>
+						<s:GridColumn width="80" dataField="e30402ZH" headerText="月龄"/>
+						<s:GridColumn width="100" dataField="e30430ZH" headerText="发育评估"/>
+						<s:GridColumn width="80" dataField="e30433ZH" headerText="转诊建议"/>
+						<s:GridColumn width="200" dataField="e30434" headerText="转诊原因"/>
+						<s:GridColumn width="100" dataField="e30438" headerText="检查医生"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+		</s:HGroup>
+		
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			<s:Button label="关闭" click="removeWindow();"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

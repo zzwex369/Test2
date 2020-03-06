@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:gja="com.xyw.module.msss.la.fngjadacx.*"
+		  width="100%" height="100%" 
+		  creationComplete="vgroup1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="l302Service" destination="l302Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL302" result="saveOrRenewL302Handler(event)"/>
+			<s:method name="renewL302" result="saveOrRenewL302Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="saveSuccess", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L302;
+			import com.xyw.module.msss.la.model.L302Request;
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var l302:L302;
+			private var systemUser:SystemUser;
+			public  var l30202:String;
+			public var l30204:String;
+			public var state:String;
+			public var vl302:VL302;
+			private var i:int=0;
+			private function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				systemUser=this.parentApplication.systemUser;
+				if("0"==state)
+					callLater(updatevia);
+			}
+			public function updatevia():void
+			{
+				("1"==vl302.l30279)==true?(L302_79_01.selected=true):(L302_79_02.selected=true);
+				("1"==vl302.l30280)==true?(L302_80_01.selected=true):(L302_80_02.selected=true);
+				("1"==vl302.l30281)==true?(L302_81_01.selected=true):(L302_81_02.selected=true);
+				callLater(institutionCodeDataProvider);
+				check.checker.text=vl302.l30283;
+				check.nowDate.text=vl302.l30284str;
+			}
+			
+			
+			private function institutionCodeDataProvider():void
+			{
+				if(!(check.institutionCode.dataProvider))
+				{
+					callLater(institutionCodeDataProvider);
+					return ;				
+				}
+			
+				check.institutionCode.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(check.institutionCode.dataProvider),vl302.l30282);
+			}
+
+			
+			
+			private function savevia():void
+			{
+				l302=new L302();
+				var l302Request:L302Request=new L302Request();
+				if(L302_79_01.selected)l302.l30279="1";
+				if(L302_79_02.selected)l302.l30279="2";
+				if(L302_80_01.selected)l302.l30280="1";
+				if(L302_80_02.selected)l302.l30280="2";
+				if(L302_81_01.selected)l302.l30281="1";
+				if(L302_81_02.selected)l302.l30281="2";
+				if(StringUtil.trim(check.checker.text)=="")
+				{
+					Alert.show("请输入检查人员信息","系统提示");
+					return;
+				}
+				save.enabled=false;
+				l302.l30282=check.institutionCode.selectedItem.data;
+				l302.l30283=StringUtil.trim(check.checker.text);
+				l302.l30284=DateField.stringToDate(check.nowDate.text,"YYYY-MM-DD");
+				l302Request.flag="4";
+				if("0"==state)
+				{
+					l302.l30201=vl302.l30201;
+					l302Request.l302=l302;
+					l302Service.renewL302(l302Request);
+				}else
+				{				
+					l302.l30202=l30202;
+					l302Request.l302=l302;
+					l302Service.saveL302(l302Request);
+				}
+			}
+			
+			private function saveOrRenewL302Handler(event:ResultEvent):void
+			{
+				var l302Response:Object=event.result;
+				save.enabled=true;
+				if(l302Response.state)
+				{
+					Alert.show(l302Response.promptMessage,"系统提示");
+					this.dispatchEvent(new Event("saveSuccess"));
+					return ;
+				}
+				Alert.show(l302Response.errorMessage,"系统提示");
+			}
+			
+		
+		]]>
+	</fx:Script>
+		
+	
+	<s:Scroller x="-6" y="1" width="100%" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator width="700" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="醋酸染色或复方碘染色后肉眼观察法检查（VIA/VILI）">
+					<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label text="醋酸染色后肉眼观察（VIA）" width="176"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle">
+							<s:RadioButton width="218" label="1.未见异常（无颜色变化）" groupName="VIA"
+										   selected="true" buttonMode="true" id="L302_79_01"/>
+							<s:RadioButton groupName="VIA" label="2.异常或可疑癌（有白色反应）" buttonMode="true" id="L302_79_02"/>
+							</s:HGroup>	
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="176" text="碘染色后肉眼观察（VILI）"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle">
+							<s:RadioButton width="218" label="1. 未见异常（染成深褐色）" groupName="VILI"
+										   selected="true" buttonMode="true" id="L302_80_01"/>
+							<s:RadioButton groupName="VILI" label="2.异常或可疑癌（未被碘染色）" buttonMode="true" id="L302_80_02"/>
+							</s:HGroup>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+							<s:Label width="177" text="需阴道镜检查"/>
+							<s:HGroup width="100%" height="100%" paddingBottom="3" verticalAlign="middle">
+							<s:RadioButton label="1.是" groupName="VIACheck"  width="217" buttonMode="true" id="L302_81_01"/>
+							<s:RadioButton label="2.否" groupName="VIACheck" selected="true" buttonMode="true" width="100" id="L302_81_02"/>
+							</s:HGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<gja:gjajcdj width="700" chromeColor="#ffffff" creationPolicy="all" id="check" creationComplete="if('1'==state)check._initializeComboBox('2');"/>
+			<s:HGroup width="700" height="30" contentBackgroundColor="#FF0000" horizontalAlign="center"
+					  paddingBottom="20" paddingLeft="10" paddingTop="10" verticalAlign="middle">
+				<s:Button label="保存" buttonMode="true" id="save" click="savevia()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:VGroup>

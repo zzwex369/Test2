@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   backgroundColor="white" chromeColor="#5CACEE"
+			   close="closeHandler()"  title="信息审核"
+			   maxWidth="{this.parentApplication.stage.stageWidth-20}"
+			   maxHeight="{this.parentApplication.stage.stageHeight-50}"
+			   cornerRadius="5"  horizontalCenter="0"  creationComplete="creationCompleteHandler(event)">
+	<fx:Declarations>
+		
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="f605Service" destination="f605Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="renewF605" result="renewF605Handler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.model.F605;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			public var vf605:Object;
+			[Bindable]
+			public var F60584Arr:ArrayCollection;
+			private var f605:F605;
+			private var systemUser:SystemUser;
+			public var isSave:Boolean=true;
+			/**
+			 *
+			 */
+			private function closeHandler():void
+			{
+				var parent:Object=this.owner;
+				parent.refresh();
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				if(F605_81.enabled&&!F605_81.text)
+				{
+					Alert.show("请输入退回原因","系统提示");
+					return;
+				}
+				if(!F605_82.text)
+				{
+					Alert.show("请输入审核医生","系统提示");
+					return;
+				}
+				f605.f60540=CompMethod.getRadioButtonValue(F605_40);
+				f605.f60581=StringUtil.trim(F605_81.text);
+				f605.f60582=StringUtil.trim(F605_82.text);
+				f605.f60583=DateField.stringToDate(F605_83.text,'YYYY-MM-DD');
+				f605.f60584=F605_84.selectedItem.data;
+				f605Service.renewF605(f605);
+			}
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=false):void
+			{
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.sql = sql;
+				comboBoxDataRequest.flag = flag;
+				comboBoxDataRequest.showPrompt = showPrompt;
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			private function getS30110():void
+			{
+				
+				_initializeComboBox("select t.s_01,t.s_02 from S301_10 t " +
+					"where t.S_05='5' and t.S_04 ="+this.systemUser.userCode,"S301_10");
+			
+			}
+			
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(flag=="S301_10")
+				{
+					this.F605_82.dataProvider = comboBoxDataList;
+					this.F605_82.selectedIndex = 0;
+				}else if(flag=="D101")
+				{
+					putAudit();
+					this.F605_84.dataProvider = comboBoxDataList;
+					this.F605_84.selectedIndex = 0;
+				}
+				
+					
+			}	
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser =this.parentApplication.systemUser;
+				
+				if(isSave)
+				{
+					F605_84.dataProvider=F60584Arr;
+					F605_84.selectedIndex=0;
+					getS30110();
+					
+					f605=new F605();
+					var suffix:String;
+					for(var i:int=1;i<81;i++)
+					{
+						suffix=i<10?'0'+i:i.toString();
+						f605['f605'+suffix]=vf605['f605'+suffix];
+					}
+					
+				}else
+					getAuditCode();
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function getAuditCode():void
+			{
+				this.title="查看信息审核";
+				saveButton.visible=false;
+				_initializeComboBox("select t.d101_01, t.d101_02 from D101 t where d101_01="
+					+vf605.f60584,"D101");
+			}
+			
+			/**
+			 *
+			 */
+			private function putAudit():void
+			{
+				
+				CompMethod.setRadioButtonSelect(F605_40,vf605.f60540);
+				F605_81.text=vf605.f60581;
+				F605_82.text=vf605.f60582;
+				F605_83.text=DateField.dateToString(vf605.f60583,'YYYY-MM-DD');
+				
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function renewF605Handler(event:ResultEvent):void
+			{
+				var f605Response:Object=event.result;
+				if(f605Response.state)
+				{
+					Alert.show("审核成功","系统提示",1,this,function ():void{
+						closeHandler();
+					});
+					return ;
+				}
+				
+				Alert.show("审核失败","系统提示");
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup chromeColor="#ffffff" paddingLeft="15" paddingRight="15">
+		  
+		<mx:Grid paddingBottom="10">	
+			<mx:GridRow paddingTop="5">
+				<mx:GridItem colSpan="3">
+					<s:HGroup id="F605_40">
+						<s:RadioButton value="5" label="通过" buttonMode="true" groupName="F605_40" selected="true"
+									   change="F605_81.text=''"/>
+						<s:RadioButton value="4" label="退回" buttonMode="true" groupName="F605_40" id="F605_40_4"/>
+					</s:HGroup>
+				
+					<s:Label text="退回原因：" paddingTop="5"/>
+					<s:TextInput width="460" id="F605_81" enabled="{F605_40_4.selected}"/>
+				</mx:GridItem>
+			</mx:GridRow>
+		
+			<mx:GridRow >
+				<mx:GridItem >
+					<s:Label   text="审核医生" paddingTop="5"/>						
+					<component:FindSelectedItemComboBox editable="true" id="F605_82" width="130" height="22"/>
+				</mx:GridItem>
+				<mx:GridItem paddingLeft="10" >
+					<s:Label  text="审核机构" paddingTop="5"/>
+					<s:DropDownList id="F605_84" width="150" enabled="false" />
+					
+					
+					<s:Label   text="审核时间" paddingLeft="10" paddingTop="5"/>
+					<component:CustomRangeDateField  id="F605_83" width="140" enabled="false" isSelectNow="true"/>
+					
+				</mx:GridItem>
+			</mx:GridRow>
+			
+			<mx:GridRow >
+				<mx:GridItem colSpan="2" horizontalAlign="center">
+					<s:Button label="保存" click="button1_clickHandler(event)" id="saveButton"/>
+						
+					
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+		
+		
+	</s:VGroup>
+</s:TitleWindow>

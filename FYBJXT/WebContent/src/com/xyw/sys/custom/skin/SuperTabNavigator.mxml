@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300">
+	<fx:Declarations>
+	</fx:Declarations>
+	
+	<s:Rect left="1" right="1" top="1" bottom="1" topLeftRadiusY="10" topRightRadiusY="10" topLeftRadiusX="10" topRightRadiusX="10">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#C1C1C1" alpha="1"/>
+				<s:GradientEntry color="#C1C1C1" alpha="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+</s:SparkSkin>

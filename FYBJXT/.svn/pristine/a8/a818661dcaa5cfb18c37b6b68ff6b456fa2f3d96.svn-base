@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   chromeColor="#5CACEE" title="结案登记"
+			   close="closeWindow()" width="900"
+			   cornerRadius="5" creationComplete="creationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l301Service" destination="l301Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="finishCaseL301" result="finishCaseL301Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L301;
+			import com.xyw.module.msss.la.model.L301Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			[Bindable]
+			public var dataArr:Array;//0，档案主键  1.名字  2.身份证号  3.编号  4 是否检查宫颈癌  （检查 true 未检查 false）
+									//5是否检查乳腺癌  （检查 true 未检查 false） 6.是否刷新页面
+			private var systemUser:SystemUser =null;
+			private function closeWindow():void
+			{
+				PopUpManager.removePopUp(this);				
+			}
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				clickHandler();
+				this.systemUser =this.parentApplication.systemUser;
+				var comboBoxDataRequest:ComboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.flag ="D101";
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t where t.d101_01 = '" + this.systemUser.institutionCode + "' or t.d101_11 ='" + this.systemUser.institutionCode +"'";
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag =="D101"){
+					var index:int=CompMethod.getDropDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					this.institution.dataProvider =comboBoxDataList;
+					this.institution.selectedIndex =index;
+				}
+			}
+			
+			
+			private function saveFinishCase():void
+			{			
+				var val:Array=CompMethod.getCheckBoxAutomationName([type]);
+				var  result:Array=['',''];//0  gja  1 rxa
+				var resultSingle:Array=new Array(2);
+				if(this.currentState=="special")
+				{
+					Alert.show("请选择检查结案","系统提示");
+					return;
+				}
+				if(!val[0])
+				{
+					Alert.show("请选择结案对象","系统提示");
+					return;
+				}
+			/* 	if(gjHGroup)
+				{
+					resultSingle=CompMethod.getCheckBoxAutomationName([gjHGroup]);
+					if(!resultSingle[0])
+					{
+						Alert.show("请选择宫颈癌结案原因","系统提示");
+						return;
+					}
+					result[0]=resultSingle[1];
+				}
+				if(rxHGroup)
+				{
+					resultSingle=CompMethod.getCheckBoxAutomationName([rxHGroup]);
+					if(!resultSingle[0])
+					{
+						Alert.show("请选择乳腺癌结案原因","系统提示");
+						return;
+					}
+					result[1]=resultSingle[1];
+
+				} */
+				var l301:L301=new L301();
+				l301.l30101=dataArr[0];
+				l301.l30138=val[1];
+				l301.l30139=CompMethod.getRadioButtonValue(gjHGroup);
+				l301.l30140=CompMethod.getRadioButtonValue(rxHGroup);
+				l301.l30137=institution.selectedItem.data;
+				l301.l30136=DateField.stringToDate(date.text,"YYYY-MM-DD");
+				this.l301Service.finishCaseL301(l301);
+			}
+			
+			private function finishCaseL301Handler(event:ResultEvent):void
+			{
+				var l301Response:Object=event.result;
+				if(l301Response.state)
+				{
+					var module:Object=this.owner;
+					if(dataArr[6])
+						module.refresh();	
+					else
+						module.setOldId(dataArr[0]);
+					Alert.show(l301Response.promptMessage,"系统提示",1,this,_closeHandler);
+					return ;
+				}
+				Alert.show(l301Response.errorMessage,"系统提示");
+			}
+			
+			private function _closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+					this.closeWindow();
+			}
+			
+			protected function clickHandler():void
+			{
+				if(rx.selected==false&&gj.selected==false)
+					this.currentState="special";
+				else
+				{
+					if(gj.selected==false)
+						this.currentState="rx";
+					else if(rx.selected==false)
+						this.currentState="gj";
+					else if(rx.selected==true&&gj.selected==true)
+						this.currentState="normal";
+					
+				}
+				
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal" stateGroups="gjGroup,rxGroup"/>
+		<s:State name="special"/>
+		<s:State name="gj" stateGroups="gjGroup"/>
+		<s:State name="rx" stateGroups="rxGroup"/>
+	</s:states>
+	<s:VGroup horizontalAlign="center" width="900" chromeColor="#cccccc">
+		<mx:TabNavigator width="850" chromeColor="#ffffff" creationPolicy="all"
+						 height.normal="225"
+						 height.special="97"
+						 height.gj="161"
+						 height.rx="161"
+						 >
+			<s:NavigatorContent width="100%" label="结案登记">			
+				<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+					<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+						<s:Label text="姓       名"/><s:TextInput text="{dataArr[1]}" width="130" editable="false"/>
+						<s:Label text="证件号码" width="58"/><s:TextInput text="{dataArr[2]}" width="140" editable="false"/>
+						<s:Label text="档案编号" width="55"/><s:TextInput width="198" editable="false"
+																	  text="{dataArr[3]}"/>
+					</s:HGroup>
+					<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle" 
+							 	includeIn="gjGroup"
+							  id="gjHGroup">
+						<s:Label text="结案原因&#13;(宫颈癌)" />
+						<s:RadioButton buttonMode="true" value="1" label="未见异常" selected="true" groupName="gja"/>
+						<s:RadioButton buttonMode="true" value="2" label="良性病变" groupName="gja"/>
+						<s:RadioButton buttonMode="true" value="6" label="低级别病变" groupName="gja"/>
+						<s:RadioButton buttonMode="true" value="7" label="癌前病变" groupName="gja"/>
+						<s:RadioButton buttonMode="true" value="8" label="恶性" groupName="gja"/>
+						<s:RadioButton buttonMode="true" value="5" label="阴道镜检查失访" groupName="gja"/>
+					</s:HGroup>
+					
+					<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle" 
+							  includeIn="rxGroup"
+							   id="rxHGroup">
+						<s:Label text="结案原因&#13;(乳腺癌)" />
+						<s:RadioButton buttonMode="true" value="1" label="未见异常" selected="true"/>
+						<s:RadioButton buttonMode="true" value="2" label="良性病变"/>
+						<s:RadioButton buttonMode="true" value="3" label="定期检查"/>
+						<s:RadioButton buttonMode="true" value="7" label="癌前病变"/>
+						<s:RadioButton buttonMode="true" value="8" label="恶性"/>
+						<s:RadioButton buttonMode="true" value="5" label="乳腺X线失访"/>
+						<s:RadioButton buttonMode="true" value="6" label="乳腺活检失访"/>
+					</s:HGroup>
+					<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+						<s:Label text="检查结案" />
+						<s:HGroup width="155" height="100%" id="type">
+							<s:CheckBox label="宫颈结案" id="gj" selected="{dataArr[4]}" automationName="gj" enabled="{dataArr[4]}" click="clickHandler()"/>
+							<s:CheckBox label="乳腺结案" id="rx" selected="{dataArr[5]}" automationName="rx" enabled="{dataArr[5]}" click="clickHandler()"/>
+						</s:HGroup>  
+						<s:Label text="结案单位"/><s:DropDownList width="130" id="institution" enabled="false"/>
+						<s:Label text="结案时间"/>
+						<component:CustomRangeDateField  id="date" enabled="false"  isSelectNow="true"/>
+
+					</s:HGroup>
+					
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:HGroup width="1150" height="30" contentBackgroundColor="#FF0000" horizontalAlign="center"
+				  paddingBottom="20" paddingLeft="10" paddingTop="10" verticalAlign="middle">
+			<s:Button  width="68" label="保存" buttonMode="true" id="save"  click="saveFinishCase()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

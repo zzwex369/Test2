@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			public var systemUser:SystemUser = null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			protected function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				
+				this.systemUser = this.parentApplication.systemUser;
+				this.initializeComboBox();
+				this.initializeComboBox1();
+			}
+			private function initializeComboBox1():void{
+			comboBoxDataRequest = new ComboBoxDataRequest();
+			comboBoxDataRequest.showPrompt = true;
+			comboBoxDataRequest.sql = "select * from Z601_04";
+			comboBoxDataRequest.flag = "Z601_04";
+			this.systemService.getComboBoxData(this.comboBoxDataRequest); 
+			}
+			private function initializeComboBox():void{
+				//收费方式  z501_07 
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from z601_06";
+				comboBoxDataRequest.flag = "z601_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest); 
+				
+				
+			}
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				if(flag=="z601_06"){
+					this.chargetype.dataProvider = comboBoxDataList;
+					this.chargetype.selectedIndex=0;
+				}
+				if(flag=="Z601_04"){
+					this.checktype.dataProvider = comboBoxDataList;
+					this.checktype.selectedIndex=0;
+				}
+			}
+			
+			private function query():void
+			{
+				var chargetype:String = this.chargetype.selectedItem.data;
+				var checktype:String = this.checktype.selectedItem.data;
+				var date_satrt:String = this.date_satrt.text;
+				var date_end:String = this.date_end.text;
+				var institution:String = this.institution.getLastSelectedInstitutionCode();
+				var institutionType:String = this.institution.getLastSelectedInstitution();	
+				var date_status:String=null;
+				var hospital:String=this.systemUser.institution;
+				
+				if(institutionType == "6")
+				{
+					institution = institution.substring(0,6);
+				}else if(institutionType == "4")
+				{
+					institution = institution.substring(0,4);
+				}else if(institutionType == "2")
+				{
+					institution = institution.substring(0,2);
+				}
+				
+				if(this.csTime.selected){
+					date_status="0";
+					
+				}else if(this.lrTime.selected)
+				{
+					date_status="1";
+				}else if(this.yjTime.selected)
+				{
+					date_status="2";
+				}else if(this.shTime.selected)
+				{
+					date_status="3";
+				}else if(this.bgTime.selected)
+				{
+					date_status="4";
+				}
+			/*	var url:String = null;
+				url = this.parentApplication.contextRoot + "/report_new/jsp/Report_23.jsp?date_satrt="+date_satrt+"&date_end="+date_end+"&institution="+institution+"&hospital="+hospital+"&chargetype="+chargetype+"&checktype="+checktype+"&date_status="+date_status;
+				navigateToURL(new URLRequest(url), null);*/
+				var urlRequest:URLRequest = new URLRequest();
+				var variables:URLVariables = new URLVariables();
+				
+				variables.chargetype=chargetype;
+				variables.checktype=checktype;
+				variables.date_satrt=date_satrt;
+				variables.date_end=date_end;
+				variables.institution=institution;
+				variables.date_status=date_status;
+				//variables.hospital=hospital;
+				urlRequest.data=variables;
+				urlRequest.method=URLRequestMethod.POST;
+				urlRequest.url=this.parentApplication.contextRoot + 
+					"/report_new/jsp/Report_23.jsp?";
+				navigateToURL(urlRequest);
+			}
+			private function radiobutton_clickHandler(label:Object,event:MouseEvent):void
+			{
+				label.text=event.target.label;
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<mx:TabNavigator y="-8" width="800" height="116" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="两病筛查汇总表" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid width="100%">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="筛查单位"/>
+								<component:InstitutionComboBox id="institution"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label  text="日期查询"/>
+								<s:HGroup width="100%" height="100%" gap="40" paddingLeft="10" id="time">
+									<s:RadioButton id="csTime" buttonMode="true" label="采血日期" value="csTime" groupName="time" click="radiobutton_clickHandler(label,event)" selected="true"/>
+									<s:RadioButton id="lrTime" buttonMode="true" label="录入时间" value="lrTime" groupName="time"  click="radiobutton_clickHandler(label,event)"/>
+									<s:RadioButton id="yjTime" buttonMode="true" label="邮寄日期"  value="yjTime" groupName="time" click="radiobutton_clickHandler(label,event)"/>
+									<s:RadioButton id="shTime" buttonMode="true" label="审核日期" value="shTime" groupName="time" click="radiobutton_clickHandler(label,event)"/>
+									<s:RadioButton id="bgTime" buttonMode="true" label="报告日期"  value="bgTime" groupName="time" click="radiobutton_clickHandler(label,event)"/>
+								</s:HGroup>  
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="采血日期" id="label"/>
+								<mx:DateField yearNavigationEnabled="true" id="date_satrt" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD"  text="{DateField.dateToString(new Date(),'YYYY-MM-01')}"/>
+								<s:Label text="至"/>
+								<mx:DateField yearNavigationEnabled="true" id="date_end" width="120" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"/>
+								<s:Label text="收费方式"/><s:DropDownList width="90" id="chargetype"/>
+								<s:Label text="筛查类型"/><s:DropDownList width="90" id="checktype"/>
+								<s:Button label="查询" id="loadDelivery" click="query()"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

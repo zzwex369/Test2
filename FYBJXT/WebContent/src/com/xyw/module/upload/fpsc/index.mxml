@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="uploadService" destination="uploadService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="pagerFp" result="pagerFpHandler(event)"/>
+			<s:method name="uploadFp" result="uploadFpHandler(event)"/>
+			<s:method name="uploadFps" result="uploadFpsHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D501;
+			import com.xyw.module.csyxzm.model.VD501;
+			import com.xyw.module.upload.model.UploadRequest;
+			import com.xyw.module.upload.model.UploadResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;
+			import spark.formatters.DateTimeFormatter;
+
+			
+			public var systemUser:SystemUser = null;
+			[Bindable]
+			public var vd501:VD501 = null;
+			[Bindable]
+			public var vd501s:ArrayCollection;
+			
+			public function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.dataGridD501.addEventListener(GridSelectionEvent.SELECTION_CHANGE, onSelectionChange);
+				var now:Date = new Date();
+				this.timeStart.text=DateField.dateToString(now,"YYYY-MM-01");
+				this.timeEnd.text=DateField.dateToString(now,"YYYY-MM-DD");
+			}
+			
+			private function onSelectionChange(event:GridSelectionEvent):void
+			{
+				this.vd501 = DataGrid(event.target).selectedItem as VD501;
+			}
+			
+			public function uploadList():void
+			{
+				if(vd501s == null){
+					Alert.show("请先查询出要上传的数据!","系统提示");
+					return;
+				} 
+				if(this.d50118.selectedItem.data == "1" ){
+					Alert.show("不能上传已上传数据！","系统提示");
+					return;
+				} else if(this.d50118.selectedItem.data == "4"){
+					Alert.show("不能上传被上传数据！","系统提示");
+					return;
+				} else if(this.d50118.selectedItem.data == "0"){
+					Alert.show("请选择上传的数据的状态！","系统提示");
+					return;
+				}
+				
+				this.uploadService.uploadFps(vd501s);
+			}
+			
+			public function uploadFpsHandler(event:ResultEvent):void 
+			{
+				var uploadResponse:Object = event.result;
+				if(uploadResponse.errorMessage == null) {
+					if(uploadResponse.promptMessage == null){
+					} else {
+						Alert.show(uploadResponse.promptMessage,"系统提示");
+					}
+				} else {
+					Alert.show(uploadResponse.errorMessage,"系统提示");
+				}
+				query();
+			}
+			
+			public function query():void
+			{
+				if(this.timeStart.text == ""){
+					Alert.show("请选择起始日期！");
+					return ;
+				} else if(this.timeEnd.text == ""){
+					Alert.show("请选择终止日期！");
+					return ;
+				} else if(this.timeStart.text > this.timeEnd.text){
+					Alert.show("起始日期不能大于终止日期！");
+					return ;
+				}
+				
+				var uploadRequest:UploadRequest = new UploadRequest();
+				uploadRequest.institutionCode = this.institutionCode.getLastSelectedInstitutionCode();
+				if(uploadRequest.institutionCode == null){
+					uploadRequest.institutionCode = this.systemUser.institutionCode;
+				}
+				uploadRequest.timeStart = this.timeStart.text;
+				uploadRequest.timeEnd = this.timeEnd.text;
+				uploadRequest.status = this.d50118.selectedItem.data;
+				
+				uploadRequest.parameterPageindex = 1;
+				uploadRequest.parameterPagesize = 100;
+				this.uploadService.pagerFp(uploadRequest);
+			}
+			
+			public function uploadFpHandler(event:ResultEvent):void 
+			{
+				var uploadResponse:Object = event.result;
+				if(uploadResponse.errorMessage == null) {
+					if(uploadResponse.promptMessage == null){
+					} else {
+						Alert.show(uploadResponse.promptMessage,"系统提示");
+					}
+				} else {
+					Alert.show(uploadResponse.errorMessage,"系统提示");
+				}
+				query();
+			}
+			
+			public function pagerFpHandler(event:ResultEvent):void 
+			{
+				var uploadResponse:Object = event.result;
+				var rowCount:Number = uploadResponse.rowCount;
+				if(uploadResponse.errorMessage == null) {
+					vd501s = uploadResponse.vd501s;
+					this.pagerBar.dataGrid = this.dataGridD501;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.visible = true;
+					this.pagerBar.resultData = vd501s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled =true;
+					} else {
+						if(uploadResponse.promptMessage == null) {
+						} else {
+							Alert.show(uploadResponse.promptMessage, "系统提示");
+						}
+					}
+				} else {
+					Alert.show(uploadResponse.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				if(this.timeStart.text == ""){
+					Alert.show("请选择起始日期！");
+					return ;
+				} else if(this.timeEnd.text == ""){
+					Alert.show("请选择终止日期！");
+					return ;
+				} else if(this.timeStart.text > this.timeEnd.text){
+					Alert.show("起始日期不能大于终止日期！");
+					return ;
+				}
+				
+				var uploadRequest:UploadRequest = new UploadRequest();
+				uploadRequest.institutionCode = this.institutionCode.getLastSelectedInstitutionCode();
+				if(uploadRequest.institutionCode == null){
+					uploadRequest.institutionCode = this.systemUser.institutionCode;
+				}
+				uploadRequest.timeStart = this.timeStart.text;
+				uploadRequest.timeEnd = this.timeEnd.text;
+				uploadRequest.status = this.d50118.selectedItem.data;
+				
+				uploadRequest.parameterPageindex = currentPageIndex;
+				uploadRequest.parameterPagesize = pageSize;
+				
+				this.uploadService.pagerFp(uploadRequest);
+			}
+			
+			private function formatDateToString(d501:Object, column:GridColumn):String
+			{
+				var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+				dateTimeFormatter.dateTimePattern = "yyyy-MM-dd";
+				var date_D50112:Date = d501.d50112;
+				var date_D50112_Text:String = dateTimeFormatter.format(date_D50112);
+				return date_D50112_Text;
+			}
+			
+			private function statusFormat(vd501:Object, column:GridColumn):String
+			{
+				var status:String = vd501.d50118;
+				if(status == "1"){
+					return "成功";
+				} else if(status == "2"){
+					return "失败";
+				} else if(status == "3"){
+					return "未传";
+				} else if(status == "4"){
+					return "被传";
+				} else {
+					return "未知";
+				}
+			}
+			
+			public function upload(event:MouseEvent):void
+			{
+				if(this.vd501 == null) {
+					Alert.show("请选择要查看的行!","系统提示");
+					return;
+				} else if(this.vd501.d50118 == "1"){
+					Alert.show("已成功上传，不能重复上传!","系统提示");
+					return;
+				} else if(this.vd501.d50118 == "4"){
+					Alert.show("不能上传被传的数据!","系统提示");
+					return;
+				}
+				
+				this.uploadService.uploadFp(this.vd501);
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="100%" height="100%">
+			<mx:TabNavigator width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent label="分配查询" width="100%">
+					<s:VGroup width="100%">
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="发放机构"/>
+							<component:InstitutionComboBox id="institutionCode" width="588"/>
+						</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="分配日期"/><mx:DateField yearNavigationEnabled="true" id="timeStart" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																formatString="YYYY-MM-DD"/>
+							<s:Label text="至"/><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="120" dayNames='["日","一","二","三","四","五","六"]'
+															 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+															 formatString="YYYY-MM-DD"/>
+							
+							<s:Label text="上传状态"/><s:DropDownList id="d50118" dataProvider="{new ArrayCollection( [{label:'请选择',data:'0'},{label:'上传成功',data:'1'},{label:'上传失败',data:'2'},{label:'暂未上传',data:'3'},{label:'被上传',data:'4'}])}" selectedIndex="0"/>
+							<s:Button label="查询" click="query()"/>
+							<s:Button label="上传当前页" click="uploadList()"/>
+						</s:HGroup>
+					</s:VGroup>
+					
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:DataGrid id="dataGridD501" editable="true" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">  
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="50" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d50101" headerText="主键" visible="false"/>
+						<s:GridColumn dataField="d50102Zh" headerText="申领单位"/>
+						<s:GridColumn dataField="d50103" headerText="申领人1"/>
+						<s:GridColumn dataField="d50104" headerText="申领人2"/>
+						<s:GridColumn dataField="d50110" headerText="发放人1"/>
+						<s:GridColumn dataField="d50111" headerText="发放人2"/>
+						<s:GridColumn dataField="d50109Zh" headerText="发放单位"/>
+						<s:GridColumn dataField="d50112" headerText="发放时间" editable="false" labelFunction="formatDateToString"/>
+						<s:GridColumn dataField="d50106" headerText="首字母"/>
+						<s:GridColumn dataField="d50107" headerText="起始编号"/>
+						<s:GridColumn dataField="d50108" headerText="终止编号"/>
+						<s:GridColumn dataField="d50105" headerText="数量"/>
+						<s:GridColumn dataField="d50118" headerText="上传标志" labelFunction="statusFormat"/>
+						<s:GridColumn headerText="操作" width="100" editable="false">
+							<s:itemRenderer>
+								<fx:Component>
+									<s:GridItemRenderer>
+										<s:Button click="outerDocument.upload(event);" label="上传" cornerRadius="0" id="upload" width="100%" height="100%" skinClass="com.xyw.sys.custom.skin.CustomButtonSkin"/>
+									</s:GridItemRenderer>
+								</fx:Component>
+							</s:itemRenderer>	
+						</s:GridColumn>
+						<s:GridColumn dataField="d50113" headerText="发放地点" visible="false"/>
+						<s:GridColumn dataField="d50114" headerText="县区" visible="false"/>
+						<s:GridColumn dataField="d50115" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50116" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50117" headerText="备注" visible="false"/>
+						
+						<s:GridColumn dataField="d50119" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50120" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50121" headerText="备注" visible="false"/>
+						
+						<s:GridColumn dataField="d50122" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50123" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50124" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50125" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50126" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50127" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50128" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50129" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50130" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50131" headerText="备注" visible="false"/>
+						
+						<s:GridColumn dataField="d50132" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50133" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50134" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50135" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50136" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50137" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50138" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50139" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50140" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50141" headerText="备注" visible="false"/>
+						
+						<s:GridColumn dataField="d50142" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50143" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50144" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50145" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50146" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50147" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50148" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50149" headerText="备注" visible="false"/>
+						<s:GridColumn dataField="d50150" headerText="备注" visible="false"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar3 id="pagerBar" enabled="false"/>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

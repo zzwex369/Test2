@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="creationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="sw301Service" destination="sw301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="querySw301" result="querySw301Handler(event)"/>
+			<s:method name="delSw301" result="delSw301Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<!--<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>-->
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+
+		@namespace s "library://ns.adobe.com/flex/spark";
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]"; 
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		} 
+		s|Label
+		{
+			fontSize:12;
+		}
+		.myLabel
+		{
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		.pf10
+		{
+			paddingLeft:10px;
+		} 
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.swjc.model.Sw301;
+			import com.xyw.module.swjc.model.Sw301Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			private var sw301:Sw301;
+			private var vSw301:Object;
+			private var sw301Request:Sw301Request;
+			private var systemUser:SystemUser =null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				//doGetComboBoxData();
+				this.systemUser = this.parentApplication.systemUser;
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vSw301= DataGrid(event.target).selectedItem;
+			}
+			
+			private function getComboBoxData(sql:String,flag:String,showPrompt:Boolean=true):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql =sql ;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function doGetComboBoxData():void
+			{
+				
+				getComboBoxData("select s_01,s_02 from S301_01 ","S301_01");
+				
+				getComboBoxData("select * from SW301_01" ,"SW301_01");
+				
+				getComboBoxData("select * from SW301_04" ,"SW301_04");
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				/* var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag=="S301_01")
+				{
+					SW301_15.dataProvider=comboBoxDataList;
+					SW301_15.selectedIndex=0;
+				}else if(flag=="SW301_01")
+				{
+					SW301_14.dataProvider=comboBoxDataList;
+					SW301_14.selectedIndex=0;
+					
+				}else if(flag=="SW301_04")
+				{
+					SW301_30.dataProvider=comboBoxDataList;
+					SW301_30.selectedIndex=0;
+					
+				} */
+			}
+			
+			
+			/**
+			 * 
+			 */
+			private function getTextVal():Boolean
+			{
+				sw301=new Sw301();
+				var status:Boolean=false;
+				sw301.sw30105=StringUtil.trim(SW301_05.text);
+				sw301.sw30106=StringUtil.trim(SW301_06.text);
+				sw301.sw30107=StringUtil.trim(SW301_07.text);
+				sw301.sw30109=StringUtil.trim(SW301_09.text);
+				sw301.sw30110=StringUtil.trim(SW301_10.text);
+				sw301.sw30112=StringUtil.trim(SW301_12.text);
+				sw301.sw30113=StringUtil.trim(SW301_13.text);
+				if(sw301.sw30105||sw301.sw30106||
+					sw301.sw30107||sw301.sw30109||
+					sw301.sw30110||sw301.sw30112||
+					sw301.sw30113)
+					status=true;
+				
+				return status;
+			}
+			
+			
+			
+			/**
+			 *
+			 */
+			private function getTimeSql():String
+			{
+				 var dateField:String=CompMethod.getRadioButtonValue([dateGroup]);
+				 var timeSql:String=" and to_char("+dateField+",'yyyy-mm-dd')>='"+
+					 timeStart.text+"' and to_char("+dateField+",'yyyy-mm-dd')<='"
+					 +timeEnd.text+"'";
+				 return timeSql;
+			}
+			
+			
+			
+			private function initQueryParam():void
+			{
+				
+				sw301Request =new Sw301Request();
+				try{	
+					
+					if(!getTextVal())
+					{
+						if(CompMethod.getTimeSpace(timeStart.text,timeEnd.text))
+						{
+							Alert.show("开始时间不能大于结束时间","系统提示");
+							return;
+						}
+						/* sw301.sw30114=SW301_14.selectedItem.data;
+						sw301.sw30115=SW301_15.selectedItem.data;
+						sw301.sw30130=SW301_30.selectedItem.data; */
+						
+						sw301Request.suffixSql=getTimeSql();
+					}
+					
+					var type:String = this.SW301_43.getLastSelectedInstitution();
+					var sw30143:String = this.SW301_43.getLastSelectedInstitutionCode();
+					sw301.sw30143 = (type == "10")?sw30143:sw30143.substring(0,Number(type));
+					sw301Request.sw301=sw301;
+				}catch(error:Error) {		
+					
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function query(currentPageIndex:int,pageSize:int):void
+			{
+				sw301Request= new Sw301Request();
+				this.initQueryParam();
+				sw301Request.parameterPageindex=currentPageIndex;
+				sw301Request.parameterPagesize=pageSize;
+				this.sw301Service.querySw301(sw301Request);
+			}
+			
+			public function refresh():void
+			{
+				query(this.pagerBar.currentPageIndex,20);
+			}
+			
+			private function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				query(currentPageIndex,pageSize);	
+			}		
+			
+			private function queryVsw301(event:MouseEvent):void
+			{
+				query(1,20);
+			}
+			
+			private function querySw301Handler(event:ResultEvent):void{
+				var sw301Response:Object = event.result;
+				var vSw301s:ArrayCollection =sw301Response.vSw301s;
+				var rowCount:Number = sw301Response.rowCount;
+				this.pagerBar.pageSize = 20;
+				this.pagerBar.dataGrid = this.certificateDataGrid;  
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = vSw301s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(!sw301Response.state){
+					Alert.show(sw301Response.errorMessage,"系统提示");
+				}
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}else
+					Alert.show("暂无数据");
+			}
+		
+			/**
+			 *
+			 */
+			private function operationSw301(method:Function,del:Boolean=false):void
+			{
+				if(!vSw301)
+				{
+					Alert.show("请选择一条信息","系统提示");
+					return;
+				}
+				if(del)
+					CompMethod.delConfirm(method);
+				else
+					method();
+			}
+			
+			/**
+			 *
+			 */
+			private function updateSw301():void
+			{
+				var window:title = new title();
+				CompMethod.popUpTitleWindow(window,this,true);
+				window.creationCompleteHandler(this.vSw301);
+			}
+			
+			/**
+			 *
+			 */
+			private function delSw301():void
+			{
+				this.sw301Service.delSw301(vSw301.sw30101);
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function delSw301Handler(event:ResultEvent):void
+			{
+				var sw301Response:Object = event.result;
+				if(sw301Response.state){
+					this.refresh();
+					Alert.show("删除成功", "系统提示");
+				} else {
+					Alert.show(sw301Response.errorMessage, "系统提示");
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller width="1200" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup>
+			<mx:TabNavigator id="tab" width="1200">
+				<s:NavigatorContent width="100%" label="综合查询" buttonMode="true">
+					<s:VGroup>
+						<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="录入单位"/>
+							<component:InstitutionComboBox id="SW301_43" width="896" villageVisible="true" buttonMode="true"/>
+						</s:HGroup>
+						
+						
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle" id="dateGroup">
+							<s:RadioButton buttonMode="true" label="录入时间" groupName="dateGroup" value="sw301_42"  selected="true" />
+							<s:RadioButton buttonMode="true" label="出生时间" groupName="dateGroup" value="sw301_16"  />
+							<s:RadioButton buttonMode="true" label="死亡时间" groupName="dateGroup" value="sw301_23"/>
+							<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" width="130"/>
+							<s:Label text="至"/>
+							<component:CustomRangeDateField  id="timeEnd" isSelectNow="true" width="130"/>
+							<!--<s:Label paddingLeft="15" text="性别" />
+							<s:DropDownList id="SW301_15" width="130"/>
+							<s:Label  paddingLeft="15" text="户籍"/>
+							<s:DropDownList id="SW301_14" width="130"/>
+							<s:Label paddingLeft="15"  text="分类编号" />
+							<s:DropDownList id="SW301_30" width="162"/>-->
+						</s:HGroup>
+						
+						<s:HGroup width="100%" height="100%" paddingLeft="10"  paddingBottom="5" verticalAlign="middle">
+							<s:Label text="母亲姓名"/>
+							<s:TextInput id="SW301_07" width="130" />
+							<s:Label paddingLeft="15" text="母亲身份证号"/>
+							<s:TextInput id="SW301_09" width="179" />
+							<s:Label paddingLeft="15" text="联系方式"/>
+							<s:TextInput id="SW301_13" width="130" />
+							<s:Label paddingLeft="15" text="儿童姓名"/>
+							<s:TextInput id="SW301_06" width="130" />
+							<s:Label paddingLeft="15" text="保健卡号"/>
+							<s:TextInput id="SW301_05" width="164" />
+							
+						</s:HGroup>  
+						<s:HGroup width="100%" height="100%" paddingLeft="10"  paddingBottom="5" verticalAlign="middle">
+							
+							<s:Label text="父亲姓名"/>
+							<s:TextInput id="SW301_10" width="130" />
+							<s:Label paddingLeft="15" text="父亲身份证号"/>
+							<s:TextInput id="SW301_12" width="179" />
+							<s:Button click="queryVsw301(event)"  label="查询"/>
+							<s:Button click="operationSw301(updateSw301)"  label="修改"/>
+							<s:Button click="operationSw301(delSw301,true)" label="删除"/>
+						</s:HGroup>  
+						
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:DataGrid id="certificateDataGrid" width="100%" height="340"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" borderAlpha="0.3" editable="false"
+						rowHeight="23" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin"
+						selectionChange="onSelected(event)">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn width="40" editable="false" headerText="序号"
+									  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="200" dataField="sw30105" headerText="保健卡号"/>
+						<s:GridColumn width="100" dataField="sw30106" headerText="儿童姓名"/>
+						<s:GridColumn width="140" dataField="sw30107" headerText="母亲姓名"/>
+						<s:GridColumn width="117" dataField="sw30109" headerText="母亲身份证号"/>
+						<s:GridColumn width="125" dataField="sw30113" headerText="联系方式"/>
+						<s:GridColumn width="100" dataField="sw30114zh" headerText="户籍"/>
+						<s:GridColumn width="100" dataField="sw30115zh" headerText="性别"/>
+						<s:GridColumn width="200" dataField="sw30130zh" headerText="分类编号"/>
+						<s:GridColumn width="100" dataField="sw30142" headerText="录入时间" labelFunction="CompMethod.setStrDate"/>
+						<s:GridColumn width="200" dataField="sw30143zh" headerText="录入单位"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false"
+								isPrinter="false"/>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

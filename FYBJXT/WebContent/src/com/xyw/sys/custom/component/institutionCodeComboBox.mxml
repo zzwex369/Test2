@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ComboBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			xmlns:s="library://ns.adobe.com/flex/spark" 
+			xmlns:mx="library://ns.adobe.com/flex/mx"
+			skinClass="com.xyw.sys.custom.skin.CustomComboBoxSkin"
+			itemMatchingFunction="myMatchingFunction"
+		    buttonMode="true" labelField="label" width="150" 
+			restrict="{'[\u4e00-\u9fa5]'}" toolTip="{this.selectedItem.label}"
+			initialize="combobox_creationCompleteHandler(event)"
+			prompt="请输入汉字搜索医院">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		s|TextInput:normalWithPrompt {
+			 color: #D60505;
+			 fontStyle:normal;
+		  }
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.custom.skin.CustomComboBoxSkin;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			/**
+			 *  默认机构  不填默认为本单位
+			 */
+			[Bindable]
+			public var defaultCode:String;
+			/**
+			 * true 选择本单位
+			 */
+			public var isSelectUserCode:Boolean=false;
+			/**
+			 * true 包含 选择 这一项  如果不包含默认 选择登录账号机构
+			 */
+			public var hasDefaultItem:Boolean=true;//true 包含 选择 这一项  如果不包含  选择登录账号机构
+			/**
+			 * 字符串或者数据形式 不包含的机构  传递label 汉字
+			 * 1.数组形式
+			 * 2.字符串逗号隔开
+			 */
+			public var excludeLable:*;//字符串或者数据形式 不包含的机构  传递label 汉字
+			/**
+			 * 字符串或者数据形式 不包含的机构  传递 data 编码形式
+			 * 1.数组形式
+			 * 2.字符串逗号隔开
+			 */
+			public var excludeData:*;//字符串或者数据形式 不包含的机构  传递 data 编码形式
+			/**
+			 * 字符串或者数据形式 不包含的机构  传递label 汉字
+			 * 1.数组形式
+			 * 2.字符串逗号隔开
+			 */
+			public var excludeParent:*;//字符串或者数据形式 不包含的机构  传递parent 编码形式
+			/**
+			 * 字符串或者数据形式 包含的机构   data  编码形式
+			 * 1.数组形式
+			 * 2.字符串逗号隔开
+			 */
+			public var includeData:*;//字符串或者数据形式 包含的机构   data  编码形式
+			/**
+			 * 字符串或者数据形式 父级机构  parent 编码形式
+			 * 1.数组形式
+			 * 2.字符串逗号隔开
+			 */
+			public var includeParent:*;//字符串或者数据形式 父级机构  parent 编码形式
+			
+			private var valArr:Array=['label','data','parent'];
+			/**
+			 * 元数据机构
+			 */
+			private var comboBoxDataList:ArrayCollection;//元数据机构
+			/**
+			 * 结果数组    0 data 匹配到的机构  1父级匹配到的机构
+			 */
+			private var resultArr:Array=[[],[]];//结果数组    0 data 匹配到的机构  1父级匹配到的机构
+			
+		
+			
+			private function myMatchingFunction(comboBox:ComboBox, inputText:String):Vector.<int>
+			{
+				
+				var vec:Vector.<int> = new Vector.<int>();
+				var index:int;
+				var findIndex:int ;
+				var maxIndex:int = -1;
+				for(var i:int; i < comboBoxDataList.length; i++)
+				{
+					index = String(comboBoxDataList.getItemAt(i).label).indexOf(inputText);
+					if( index !=-1)
+					{
+						if(maxIndex == -1 || maxIndex > index)
+						{
+							maxIndex = index;
+							findIndex = i;
+							break;
+						}
+					}
+				}
+//				if(hasDefaultItem)
+//					findIndex=index==-1?0:findIndex;
+				vec.push(findIndex);
+				return vec;
+			}
+			
+			
+			/**
+			 * 遍历得到匹配数据
+			 */
+			private function getComboBoxDataList():void
+			{
+				doGetComboBoxDataList(includeParent,2);
+				doGetComboBoxDataList(includeData,1);
+				var result:Array=resultArr[0].concat(resultArr[1]);
+				if(result.length)
+					comboBoxDataList=new ArrayCollection(result);
+				doGetComboBoxDataList(excludeLable,0,false);
+				doGetComboBoxDataList(excludeParent,2,false);
+				doGetComboBoxDataList(excludeData,1,false);
+				if(hasDefaultItem)
+					comboBoxDataList.addItemAt({"label":"选择","data":""},0);				
+				this.dataProvider=comboBoxDataList; 
+				if(isSelectUserCode)
+					this.selectedIndex=CompMethod.getDropDownListSelectedIndex(comboBoxDataList,defaultCode);
+								
+
+				
+			}
+			
+			/**
+			 * type 
+			 *     0 label  1 data 2 parent
+			 * 
+			 * comboBoxDataList 
+			 * 				待匹配的集合
+			 * matchArr     
+			 * 			条件集合
+			 * 
+			 */
+			private function doGetComboBoxDataList(matchArr:*,type:Number=0,isAdd:Boolean=true):void
+			{
+				if(!matchArr)
+					return ;
+				if(matchArr is Object &&(matchArr.toString().indexOf(',')!=-1))//两个及以上机构代码
+					matchArr=matchArr.toString().split(',');
+			
+				matchArr=matchArr is Array || matchArr is ArrayCollection?matchArr:[matchArr];//单个机构代码
+				for(var i:int=0;i<comboBoxDataList.length;i++)
+				{
+					var item:Object=comboBoxDataList.getItemAt(i);
+					var val:String=item[valArr[type]];
+					for(var j:int=0;j<matchArr.length;j++)
+					{
+						var result:Boolean=!type?(val.indexOf(matchArr[j])!=-1):val==matchArr[j]; 
+						if(result)
+						{
+							if(isAdd)//添加的机构
+							{
+								addInstitution(type-1,comboBoxDataList.getItemAt(i));
+								if(type==1)//如果是data 删除 集合元素
+								{
+								
+									matchArr.splice(j,1);
+									j--;
+								}
+							}
+							item=comboBoxDataList.removeItemAt(i);//匹配成功 删除元数据内容项
+							i--;
+							break;
+						}
+					}
+				}
+			}
+			
+			
+			/**
+			 * 将匹配到的机构放入数组存储
+			 */
+			private function addInstitution(type:Number,item:Object):void
+			{
+				var resultChild:Array=resultArr[type];
+				resultChild.push(item);
+				resultArr[type]=resultChild;
+			}
+					
+			private function combobox_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.setStyle("skinClass",Class(com.xyw.sys.custom.skin.CustomComboBoxSkin));
+				defaultCode=defaultCode?defaultCode:this.parentApplication.systemUser.institutionCode;
+				comboBoxDataList=CompMethod.cloneObject(this.parentApplication.comboBoxDataList.wholeInstitutionCode) as ArrayCollection;
+				comboBoxDataList.removeItemAt(0);//默认删除 请选择
+				getComboBoxDataList();
+			}
+			
+			
+		]]>
+	</fx:Script>
+</s:ComboBox>

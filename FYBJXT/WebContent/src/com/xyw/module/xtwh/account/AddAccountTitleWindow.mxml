@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="500" height="400" chromeColor="#429edd"
+			   fontSize="15" title="用户账户添加"
+			   close="removeModifyPasswordWindow(event)"
+			   creationComplete="modifyPasswordTitlewindowCreationCompleteHandler(event)"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow"
+			   xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="updatePassword" result="updatePasswordHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.MessageResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			private function modifyPasswordTitlewindowCreationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			private function removeModifyPasswordWindow(event:CloseEvent):void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			private function updatePassword(event:MouseEvent):void
+			{
+				
+			}
+			
+			private function updatePasswordHandler(event:ResultEvent):void
+			{
+				
+			}
+			private function resetPassword(event:MouseEvent):void
+			{
+			
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" paddingBottom="20" paddingLeft="20" paddingRight="20" paddingTop="20" chromeColor="#FFFFFF">
+		<mx:Grid>
+			<mx:GridRow>
+				<mx:GridItem>
+					<s:Label text="账户"/>
+				</mx:GridItem>
+				<mx:GridItem>
+					<s:TextInput />
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+	</s:VGroup>
+</s:TitleWindow>

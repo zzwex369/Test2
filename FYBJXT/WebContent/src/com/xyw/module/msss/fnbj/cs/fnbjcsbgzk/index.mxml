@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="f502Service" destination="f502Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryF502" result="queryF502Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]"; 
+		}
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		} 
+		s|Label
+		{
+			fontSize:13;
+		}
+		.myLabel
+		{
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		.pf10
+		{
+			paddingLeft:10px;
+		} 
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.model.F502;
+			import com.xyw.module.msss.fnbj.model.F502Request;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.DataGridEvent;
+			import com.xyw.sys.custom.component.LoadPicWindow;
+			import com.xyw.sys.custom.component.LoadPicWindow2;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.AbstractOperation;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.Operation;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridCaretEvent;
+			import spark.events.GridSelectionEvent;
+			[Bindable]
+			private var systemUser:SystemUser =null;
+			private var f502Request:F502Request;
+			[Bindable]
+			private var vf502:Object;
+			private var window:zkCsTitle;
+			
+			private function init():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vf502= DataGrid(event.target).selectedItem;
+			}
+			
+		
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				try{
+					var f502:F502 = new F502();
+					var f50203:String=StringUtil.trim(this.f502_03.text);
+					var f50204:String=StringUtil.trim(this.f502_04.text);
+					var type:String = this.f502_25.getLastSelectedInstitution();
+					var f502_25:String = this.f502_25.getLastSelectedInstitutionCode();
+					f502Request = new F502Request();
+						if(this.systemUser.institutionType == "1")
+							f502.f50225 = this.systemUser.institutionCode;
+						else
+							f502.f50225 = type == "8"?f502_25:f502_25.substring(0,Number(type));
+						if(f50203||f50204) {
+							f502.f50203 = f50203;
+							f502.f50204 = f50204;
+						} else {
+							f502Request.timeStr = DateField.stringToDate(this.timeStart.text,"YYYY-MM-DD");
+							f502Request.timeEnd = DateField.stringToDate(this.timeEnd.text,"YYYY-MM-DD");
+						}
+						f502.f50240="2";
+						f502Request.f502 = f502;
+						
+				}catch(e:Error)
+				{
+					Alert.show("查询异常","系统提示");
+				}
+			}
+		
+			private function queryF502():void
+			{
+				_query(1,20);
+			}
+			
+			private function queryF502Handler(event:ResultEvent):void
+			{
+				var f502Response:Object = event.result;
+				var rowCount:Number = f502Response.rowCount;
+				if(f502Response.errorMessage == null)
+				{
+					var listVF502:ArrayCollection = f502Response.vf502s;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVF502;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.vf502 =null;
+				} else {
+					Alert.show(f502Response.errorMessage, "系统提示");
+				}
+			}
+			
+			
+			
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				this.vf502=certificateDataGrid.selectedItem=null;
+				_query(this.pagerBar.currentPageIndex,20);
+			}
+			
+			private function _query(currentPageIndex:int,pageSize:int):void
+			{
+				this.initQueryParam();
+				f502Request.parameterPageindex = currentPageIndex;
+				f502Request.parameterPagesize = pageSize;
+				this.f502Service.queryF502(f502Request);
+			}
+			
+		
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.f502_03.text = array[0];//姓名
+							this.f502_04.text = array[5];//身份证号
+							queryF502();
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function zk():void
+			{
+				window= new zkCsTitle();
+				window.status=0;
+				window.title="质控结果保存";
+				window.vf502=vf502;
+				window.saveStatus=true;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Scroller width="1200" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup>
+			<mx:TabNavigator id="tab" width="100%">
+				<s:NavigatorContent width="100%" label="综合查询" buttonMode="true">
+					<s:VGroup>
+						<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="抽检单位"/>
+							<component:InstitutionComboBox id="f502_25" width="819" buttonMode="true"/>
+						</s:HGroup>
+						
+						<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="产妇姓名"/><s:TextInput id="f502_03"/>
+							<s:Label text="证号号码"/><s:TextInput id="f502_04" width="140"/>
+							<s:Button id="duka1" width="60" label="读卡" click="readCard_mother(event)"
+									  enabled="{systemUser.duka== '1'}"/>
+						</s:HGroup>
+						
+						
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="报告日期"/>
+							<component:CustomRangeDateField  id="timeStart" isSelectFirst="true" />
+
+							<s:Label text="至"/>
+							<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+
+							<s:Button width="60" label="查询" buttonMode="true" click="queryF502()"/>
+							<s:Button width="60" label="质控" buttonMode="true" click="zk()" enabled="{this.vf502}"/>
+						</s:HGroup>
+						
+						
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:DataGrid id="certificateDataGrid" width="100%" height="330"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22"
+						skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin" selectionChange="onSelected(event)">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn width="40" editable="false" headerText="序号"
+									  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="90" dataField="f50203" headerText="产妇姓名"/>
+						<s:GridColumn width="140" dataField="f50204" headerText="产妇身份证号"/>
+						<s:GridColumn width="90" dataField="f50207" headerText="联系方式"/>
+						<s:GridColumn width="120" dataField="f50217Zh" headerText="胎盘位置"/>
+						<s:GridColumn width="80" dataField="f50218" headerText="胎盘厚度"/>
+						<s:GridColumn width="80" dataField="f50219" headerText="羊水深度"/>
+						<s:GridColumn width="120" dataField="f50220Zh" headerText="宫颈内口"/>
+						<s:GridColumn width="90" dataField="f50222" headerText="报告医生"/>
+						<s:GridColumn width="90" dataField="f50223" headerText="审核医生"/>
+						<s:GridColumn width="90" dataField="f50224Str" headerText="报告时间"/>
+						<s:GridColumn width="90" dataField="f50227Str" headerText="录入时间"/>
+						<s:GridColumn width="100" dataField="f50225Zh" headerText="报告单位"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false"
+								isPrinter="false"/>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

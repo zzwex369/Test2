@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="certificateOutRegistService" destination="certificateOutRegistService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="save" result="saveHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;
+			cornerRadius:3;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+			cornerRadius:5;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D503;
+			import com.xyw.module.csyxzm.model.D503Request;
+			import com.xyw.module.csyxzm.model.D503Response;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			[Bindable]
+			public var systemUser:SystemUser =  null;
+			
+			public var d503:D503 = null;
+			public var d503Request:D503Request = null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				systemUser = this.parentApplication.systemUser;
+				this.d503_02.text = systemUser.institution;
+				this.d503_02.enabled = false;
+				this.initilizeComboBox();
+				this.d503_04.enabled = false;
+				this.d503_07.text = this.systemUser.institution;
+				this.d503_07.enabled = false;
+				this.d503_10.addEventListener(FocusEvent.FOCUS_OUT, onD50310FocusOut);
+			}
+			
+			private function onD50310FocusOut(event:FocusEvent):void
+			{
+				var d503_09_text_num:Number = Number(this.d503_09.text);
+				var d503_10_text_num:Number = Number(this.d503_10.text);
+				
+				if(d503_10_text_num < d503_09_text_num) {
+					Alert.show("出生证起始编号不能大于出生证终止编号!", "系统提示");
+					return;
+				}
+				
+				this.d503_04.value = d503_10_text_num - d503_09_text_num + 1;
+				
+			}
+			
+			private function initilizeComboBox():void
+			{
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t";
+				comboBoxDataRequest.flag = "D101";
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object = event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101") {
+					//this.d503_07.dataProvider = comboBoxDataList;
+					//this.d503_07.selectedIndex = 0;
+				}
+			}
+			
+			private function certificateValdateOutRegist(event:MouseEvent):void
+			{
+				if(this.d503_02.text == null || this.d503_02.text == "") {
+					Alert.show("出库单位不能为空!", "系统提示");
+					this.d503_02.setFocus();
+					this.registCertificateValdateButton.enabled = false;
+					return;
+				}
+				
+				if(this.d503_03.text == null || this.d503_03.text == "") {
+					Alert.show("出库人不能为空!", "系统提示");
+					this.d503_03.setFocus();
+					this.registCertificateValdateButton.enabled = false;
+					return;
+				}
+				
+				var reg:RegExp = /^[A-Z]$/;
+				if(!reg.test(this.d503_11.text)) {
+					Alert.show("出生证首字母必须为大写字母", "系统提示");
+					this.registCertificateValdateButton.enabled = false;
+					return;
+				}
+				
+				if(this.d503_04.value == 0) {
+					Alert.show("出库数量不能为空!", "系统提示");
+					this.registCertificateValdateButton.enabled = false;
+					this.d503_04.setFocus();
+					return;
+				}
+				/*
+				if(this.d503_07.selectedItem.data == "") {
+					Alert.show("申领单位不能为空!", "系统提示");
+					this.d503_07.setFocus();
+					return;
+				}*/
+				
+				
+				if(this.d503_07.text == "") {
+					Alert.show("申领单位不能为空!", "系统提示");
+					this.registCertificateValdateButton.enabled = false;
+					this.d503_07.setFocus();
+					return;
+				}
+				
+				if(this.d503_08.text == "" || this.d503_08 == null) {
+					Alert.show("申领人不能为空!", "系统提示");
+					this.d503_08.setFocus();
+					this.registCertificateValdateButton.enabled = false;
+					return;
+				}
+				
+				if(this.d503_09.text == null || this.d503_09.text == "") {
+					Alert.show("出生证起始编号不能为空!", "系统提示");
+					this.d503_09.setFocus();
+					this.registCertificateValdateButton.enabled = false;
+					return;
+				}
+				
+				if(this.d503_10.text == null || this.d503_10.text == "") {
+					Alert.show("出生证终止编号不能为空!", "系统提示");
+					this.registCertificateValdateButton.enabled = false;
+					this.d503_10.setFocus();
+					return;
+				}
+				var d503_02_text:String = this.systemUser.institutionCode;
+				var d503_03_text:String = this.d503_03.text;
+				var d503_04_text:Number = this.d503_04.value;
+				var d503_06_value:Number = this.d503_06.value;
+				//var comboBoxData_d503_07:ComboBoxData = this.d503_07.selectedItem as ComboBoxData;
+				//var d503_07_data:String = comboBoxData_d503_07.data;
+				var d503_07_data:String = this.systemUser.institutionCode;
+				//var d503_07_data:String = this.d503_07.text;
+				var d503_08_text:String = this.d503_08.text;
+				var d503_09_text:String = this.d503_09.text;
+				var d503_10_text:String = this.d503_10.text;
+				var d503_11_text:String = this.d503_11.text;
+				
+				d503 = new D503();
+				d503.d50302 = d503_02_text;
+				d503.d50303 = d503_03_text;
+				d503.d50304 = d503_04_text;
+				d503.d50306 = d503_06_value;
+				d503.d50307 = d503_07_data;
+				d503.d50308 = d503_08_text;
+				d503.d50309 = d503_09_text;
+				d503.d50310 = d503_10_text;
+				d503.d50311 = d503_11_text;
+				
+				var window:Confirmation = new Confirmation();
+				window.owner = this;
+				window.d503 = this.d503;
+				window.d503_02_Zh = this.d503_02.text;
+				//window.d503_07_Zh = this.d503_07.selectedItem.label;
+				window.d503_07_Zh = this.d503_07.text;
+				PopUpManager.addPopUp(window,this);
+				var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+				var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+				window.move(x, y);
+				
+				this.registCertificateValdateButton.enabled = true;
+			}
+			
+			private function certificateOutRegist(event:MouseEvent):void
+			{
+				d503Request = new D503Request();
+				d503Request.d503 = d503;
+				this.certificateOutRegistService.save(d503Request);
+			}
+			
+			private function saveHandler(event:ResultEvent):void
+			{
+				var d503Response:Object = event.result;
+				if(d503Response.errorMessage == null) {
+					Alert.show(d503Response.promptMessage, "系统提示");
+					this.registCertificateValdateButton.enabled = false;
+				} else {
+					Alert.show(d503Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="出生证出库登记" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="出库单位"/><s:TextInput id="d503_02" width="140"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出库人"/><s:TextInput id="d503_03"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出库数量"/><s:NumericStepper id="d503_04" minimum="1" maximum="10000" width="150"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="起始编号"/><s:TextInput id="d503_09"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="审核单位"/><!--s:DropDownList id="d503_07" width="140"/-->
+								<s:TextInput id="d503_07" width="140"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="审核人"/><s:TextInput id="d503_08"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="库存数量"/><s:NumericStepper id="d503_06" width="50" minimum="1" maximum="10000"/>
+								<s:Label text="首字母"/><s:TextInput width="50" id="d503_11"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="终止编号"/><s:TextInput id="d503_10"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>	
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:HGroup verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="520" width="100%" height="30">
+			<s:Button label="确定" id="registCertificateButton" click="certificateValdateOutRegist(event)"/>
+			<s:Button label="确定出库" id="registCertificateValdateButton" click="certificateOutRegist(event)" enabled="false"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Module>

@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow"
+			   cornerRadius="5" dropShadowVisible="true"
+			   width="1232" height="660" 
+				creationComplete="initApp()"
+				close="closeTitleWindow()">
+	<fx:Style>
+		Alert{font-size:12px;}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.messaging.messages.ErrorMessage;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;			
+			private static const DEFAULT_CAMERA_WIDTH:Number = 859; //摄像头显示宽度
+			private static const DEFAULT_CAMERA_HEIGHT:Number = 539; //摄像头显示高度
+			private static const DEFAULT_WEBSERVICE_URL:String = "http://localhost:1888/Web/TestWebService.asmx?WSDL"; //WebService地址
+			[Bindable]
+			private var arrColl:ArrayCollection = new ArrayCollection();
+			private var m_camera:Camera; //定义一个摄像头
+			private var m_localVideo:Video; //定义一个本地视频
+			private var m_pictureBitmapData:BitmapData //定义视频截图
+			[Bindable]
+			private var m_pictureData:String;
+			
+			private function closeTitleWindow():void
+			{	m_camera=null;
+				PopUpManager.removePopUp(this);
+				/* outerDocument.openFileId.enabled="true";  */
+			}
+			
+			private function initApp():void
+			{
+				t_btn_Shooting.enabled = false;
+				t_ban_Save.enabled = false;
+				initCamera();
+			}
+			
+			//初始化摄像头
+			private function initCamera():void
+			{	//USB视频设备   S620A3  Camera.getCamera("0").name
+				//USB CAM2     Camera.getCamera("1").name;
+				//m_camera = Camera.getCamera("1");//得到副摄像头
+				// Camera.getCamera("0");//得到主摄像头
+				m_camera =Camera.getCamera('0');
+				if(m_camera.name=="USB CAM2")
+				Alert.show(m_camera.name);
+				if(m_camera != null&&m_camera.name!="USB CAM2")
+				{	
+					m_camera.addEventListener(StatusEvent.STATUS,__onCameraStatusHandler);				
+					m_camera.setMode(DEFAULT_CAMERA_WIDTH,DEFAULT_CAMERA_HEIGHT,30);
+					 
+					//m_camera.setMode(240,180,15);
+					m_camera.setQuality(144000,85);//播放的质量
+					m_camera.setKeyFrameInterval(10);//设置传输的视频关键帧
+					m_localVideo = new Video();
+					m_localVideo.smoothing=true;
+					m_localVideo.width = m_camera.width;//800
+					m_localVideo.height =m_camera.height;//502
+					m_localVideo.attachCamera(m_camera);
+					m_localVideo.x=(DEFAULT_CAMERA_WIDTH-m_localVideo.width)/2;
+					m_localVideo.y=10;
+					t_vd_Video.addChild(m_localVideo);//加载到当前舞台中
+					//t_vd_Video.x = (DEFAULT_CAMERA_WIDTH - t_vd_Video.width) /2;
+					//t_vd_Video.y=m_localVideo.y+m_localVideo.height+5;
+					
+				}
+				else
+				{
+					if(m_camera.name=="USB CAM2"){
+						Alert.show("没有找到主摄像头，是否重新查找。","提示：",Alert.OK|Alert.NO,this,__InitCamera);
+						return;
+					}
+					Alert.show("没有找到摄像头，是否重新查找。","提示：",Alert.OK|Alert.NO,this,__InitCamera);
+					return;
+				}
+			}
+			
+			//拍照按钮事件，进行视频截图
+			private function SnapshotPicture():void
+			{
+				m_pictureBitmapData = new BitmapData(m_localVideo.width,m_localVideo.height);
+				//m_pictureBitmapData.draw(t_vd_Video,new Matrix());
+				m_pictureBitmapData.draw(m_localVideo);
+				var m_pictureBitmap:Bitmap = new Bitmap(m_pictureBitmapData);
+				//var ui:UIComponent=new UIComponent(); 
+				try{
+				//ui.addChild(m_pictureBitmap);
+				/* 	t_img_Picture.addChild(ui);	 */
+				var d:Date = new Date();
+				arrColl.addItem({image:m_pictureBitmap, label:"截图" + d.getFullYear()+ d.getMonth() + d.getDay() + d.getHours() + d.getMinutes()  + d.getSeconds() + d.getMilliseconds() + (arrColl.length + 1)+".jpg"});
+				/* arrList.addItem({label:"截图" + d.getFullYear()+ d.getMonth() + d.getDay() + d.getHours() + d.getMinutes()  + d.getSeconds() + d.getMilliseconds(),source:m_pictureBitmap});
+				CameraSelection.dataProvider=arrList; */
+				tileList.selectedIndex=arrColl.length-1;
+				}catch(e:ErrorMessage){
+					trace(e.faultString);
+					Alert.show("系统提示","拍照失败");
+				}
+				m_camera=null;
+				m_localVideo.clear();
+				initCamera();
+				//t_panel_Picture.visible = true;
+				t_ban_Save.enabled = true;
+			}
+			//通过WebService保存
+			private function SavePicture():void
+			{
+				m_pictureData = "";
+				for(var i:int = 0; i < DEFAULT_CAMERA_WIDTH; i++)
+				{
+					for(var j:int = 0; j < DEFAULT_CAMERA_HEIGHT; j++)
+					{
+						if(m_pictureData.length > 0)
+						{
+							m_pictureData += "," + m_pictureBitmapData.getPixel32(i,j).toString();
+						}
+						else
+						{
+							m_pictureData = m_pictureBitmapData.getPixel32(i,j).toString();
+						}
+					}
+				}
+				/* t_ws_SavePicture.SavePicture.send(); */
+			}
+			
+			//检测摄像头权限事件
+			private function __onCameraStatusHandler(event:StatusEvent):void
+			{
+				if(!m_camera.muted)
+				{
+					t_btn_Shooting.enabled = true;
+				}
+				else
+				{
+					Alert.show("无法链接到活动摄像头，是否重新检测。","提示：",Alert.OK|Alert.NO,this,__InitCamera);
+				}
+				m_camera.removeEventListener(StatusEvent.STATUS,__onCameraStatusHandler);
+			}
+			
+			//当摄像头不存在，或连接不正常时重新获取
+			private function __InitCamera(event:CloseEvent):void
+			{
+				if(event.detail == Alert.OK)
+				{
+					initApp();
+				}
+			}
+			
+			//WebService保存图片成功事件
+			private function __onSavePictureResult(event:ResultEvent):void
+			{
+				//trace(event.result);
+				if(event.result.toString() == "保存成功")
+				{
+					Alert.show(event.result.toString(),"提示",Alert.OK,this,__onAlertCloseHandler);
+				}
+				else
+				{
+					Alert.show(event.result.toString(),"提示",Alert.OK);
+				}
+			}
+			
+			//连接WebService失败事件
+			private function __onSavePictureFault(event:FaultEvent):void
+			{
+				//Alert.show(event.fault.toString(),"提示",Alert.OK);
+				Alert.show("连接WebService失败。","提示",Alert.OK);
+			}
+			
+			//保存图片成功后的弹出窗口确认事件
+			private function __onAlertCloseHandler(event:CloseEvent):void
+			{
+				if(event.detail == Alert.OK)
+				{
+					//trace("转向页面");
+				}
+			}
+		]]>
+	</fx:Script>
+	<!--<mx:WebService id="t_ws_SavePicture" showBusyCursor="true" wsdl="{DEFAULT_WEBSERVICE_URL}" useProxy="false" result="__onSavePictureResult(event)" fault="__onSavePictureFault(event)">
+		<mx:operation name="SavePicture">
+			<mx:request>
+				<pic_width>{DEFAULT_CAMERA_WIDTH}</pic_width>
+				<pic_height>{DEFAULT_CAMERA_HEIGHT}</pic_height>
+				<bitmap_data>{m_pictureData}</bitmap_data>
+			</mx:request>
+		</mx:operation>
+	</mx:WebService>-->
+	<mx:Panel x="0" y="0" width="871" height="632" layout="absolute" title="视频拍照" fontSize="12">
+		<s:VideoDisplay id="t_vd_Video" x="0" y="-32" width="869" height="539" />
+		<mx:ControlBar y="509" width="863" height="105" horizontalAlign="right">
+			<s:Button id="t_btn_Shooting" label="拍照" click="SnapshotPicture()" y="10"/>
+			<s:Button id="t_ban_Save" label="保存" click="SavePicture()" />
+		</mx:ControlBar>
+	</mx:Panel>
+	<s:Panel x="871" y="0" width="359" height="632">
+	<s:VGroup left="0" right="0" top="-30" bottom="0">
+		<s:List id="tileList" dataProvider="{arrColl}" width="357" height="628"  verticalScrollPolicy="auto"
+        horizontalScrollPolicy="auto"	horizontalCenter="0" verticalCenter="0" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomListColumnItemRenderer">
+			<s:layout>  
+				<s:VerticalLayout gap="0"  
+								  horizontalAlign="contentJustify"  
+								  requestedRowCount="0"
+								  paddingBottom="0"/>  
+			</s:layout>  
+			<!--<s:itemRenderer>
+				<fx:Component>
+					<s:ItemRenderer>
+						
+						<fx:Script>
+							<![CDATA[
+								private function saveImage(event:MouseEvent):void
+								{
+									
+								}
+							]]>
+						</fx:Script>
+						
+						<s:states>
+							<s:State name="normal" />
+							<s:State name="hovered" />
+							<s:State name="selected"/>
+						</s:states>
+						<s:Rect left="0" right="0" top="0" bottom="0">
+							<s:fill>
+								<s:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+											  alpha.selected="0.6" />
+							</s:fill>
+						</s:Rect>
+							<s:Image source="{data.image}" click="saveImage(event)"/>
+							<s:Label text="{data.label}" y="250" x="50"/>				
+					</s:ItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+			-->
+		</s:List>
+	</s:VGroup>
+		</s:Panel>
+</s:TitleWindow>

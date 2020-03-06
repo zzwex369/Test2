@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+	<class name="com.xyw.medical.qfrwh.model.S301_10" table="S301_10">
+		<id name="s3011001" type="string" column="S_01" length="20">
+			<generator class="assigned" />
+		</id>
+		<property name="s3011002" type="string">
+			<column name="S_02" length="20" />
+		</property>
+		<property name="s3011003" type="string">
+			<column name="S_03" length="14" />
+		</property>
+		<property name="s3011004" type="string">
+			<column name="S_04" length="14" />
+		</property>
+		<property name="s3011005" type="string">
+			<column name="S_05" length="1" />
+		</property>
+		<property name="s3011006" type="string">
+			<column name="S_06" length="18" />
+		</property>
+		<property name="s3011007" type="binary">
+			<column name="S_07"  />
+		</property>
+	</class>
+</hibernate-mapping>

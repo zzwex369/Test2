@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="400" height="300"
+		  creationComplete="applicationCreationComplete(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemParametersService" destination="systemParametersService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryById" result="queryByIdHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			private var systemUser:SystemUser = null;
+			
+			private function applicationCreationComplete(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.systemParametersService.queryById("02");
+				
+			}
+			
+			private function printSetup():void
+			{
+				this.systemParametersService.queryById("02");
+			}
+			
+			private function queryByIdHandler(event:ResultEvent):void
+			{
+				var flag:String = event.result as String;
+				var urlRequest:URLRequest = null;
+				if(flag == "0") {
+					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print/printSetupBf.jsp");
+				} else if(flag == "1") {
+					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print/printSetupBf_new.jsp?userCode=" + this.systemUser.userCode);
+				}
+				navigateToURL(urlRequest,"_blank");
+				
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup>
+		<s:Button label="医学证明补发打印设置" click="printSetup()"/>
+	</s:VGroup>
+</s:Module>

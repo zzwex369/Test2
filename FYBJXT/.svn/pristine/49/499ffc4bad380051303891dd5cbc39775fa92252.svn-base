@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="childDeathReportService" destination="childDeathReportService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryD605" result="queryD605Handler(event)"/>
+			<s:method name="deleteD605" result="deleteD605Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.delivery.model.D605;
+			import com.xyw.module.delivery.model.QueryChildRequest;
+			import com.xyw.module.delivery.model.QueryChildResponse;
+			import com.xyw.module.delivery.model.VD605;
+			import com.xyw.sys.custom.component.ExportExcel;
+			import com.xyw.sys.custom.component.SecurityControler;
+			import com.xyw.sys.model.SystemUser;
+			import mx.events.CloseEvent;
+			import flash.utils.flash_proxy;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.messaging.AbstractConsumer;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var d605:D605 =null;
+			public var vd605:VD605 = null;
+			public var vD605:VD605 = null;
+			public var queryChildRequest:QueryChildRequest = null;
+			public var systemUser:SystemUser = null;
+			
+			//****************启动按钮权限控制****************//
+			private function security():void{
+				SecurityControler.start(null,'visible');
+				SecurityControler.addAllPerms(this.parentApplication.permissionList);
+				//this.duka1.enabled=SecurityControler.isPermitted('duka.swf');
+				//this.duka2.enabled=SecurityControler.isPermitted('duka.swf');
+			}
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.pagerBar.exportEXCEL = exportEXCEL;
+				this.pagerBar.exportEXCELAll = exportEXCELall;
+				//security();
+				this.timeStart.text=DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeEnd.text=DateField.dateToString(new Date(),"YYYY-MM-DD");
+				
+				this.systemUser = this.parentApplication.systemUser;
+				
+				
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			public function exportEXCEL():void{
+				ExportExcel.loadDGInExcel(this.certificateDataGrid,"儿童死亡登记重要信息",this.parentApplication.contextRoot + '/print/ExcelExport.jsp');
+			}
+			public function exportEXCELall():void{
+				ExportExcel.loadDGInExcel(this.certificateDataGridAll,"儿童死亡登记重要信息",this.parentApplication.contextRoot + '/print/ExcelExport.jsp');
+			}
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vD605 = DataGrid(event.target).selectedItem as VD605;
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				queryChildRequest = new QueryChildRequest();
+				try
+				{	
+					var type:String = this.d605_30.getLastSelectedInstitution();
+					var d605_30_:String = this.d605_30.getLastSelectedInstitutionCode();
+					
+					if(this.systemUser.institutionType == "1")
+					{
+						queryChildRequest.d605_30 = this.systemUser.institutionCode;
+					}else{
+						if(type == "8")
+						{
+							queryChildRequest.d605_30 = d605_30_;
+						}else if(type == "6")
+						{
+							queryChildRequest.d605_30 = d605_30_.substring(0,6);
+						}else if(type == "4")
+						{
+							queryChildRequest.d605_30 = d605_30_.substring(0,4);
+						}else if(type == "2")
+						{
+							queryChildRequest.d605_30 = d605_30_.substring(0,2);
+						}
+					}
+					
+					queryChildRequest.d60516Start = DateField.stringToDate(this.timeStart.text,"YYYY-MM-DD");
+					queryChildRequest.d60516End = DateField.stringToDate(this.timeEnd.text,"YYYY-MM-DD");
+					queryChildRequest.d605_09 = this.d601_09.text;
+					queryChildRequest.d605_04 = this.d601_04.text;
+					queryChildRequest.d605_05 = this.d601_05.text;
+				} 
+				catch(error:Error) 
+				{
+					
+				}
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				queryChildRequest = new QueryChildRequest();
+				this.initQueryParam();
+				queryChildRequest.flag = "now";
+				queryChildRequest.parameterPageindex = 1;
+				queryChildRequest.parameterPagesize = 20;
+				this.childDeathReportService.queryD605(queryChildRequest);
+				
+				queryChildRequest = new QueryChildRequest();
+				this.initQueryParam();
+				queryChildRequest.flag = "all";
+				queryChildRequest.parameterPageindex = 1;
+				queryChildRequest.parameterPagesize = 100000;
+				this.childDeathReportService.queryD605(queryChildRequest);
+			}
+			
+			protected function queryD605Handler(event:ResultEvent):void
+			{
+				var queryBirthResponse:Object = event.result;
+				var flag:String = queryBirthResponse.flag;
+				var listVD605:ArrayCollection = queryBirthResponse.d605s;
+				var rowCount:Number = queryBirthResponse.rowCount;
+				this.certificateDataGridAll.dataProvider = listVD605;
+				if(queryBirthResponse.errorMessage == null)
+				{ 
+					if(flag == "now"){
+						this.pagerBar.pageSize = 20;
+						this.pagerBar.dataGrid = this.certificateDataGrid;
+						this.pagerBar.rowCount = rowCount;
+						this.pagerBar.resultData = listVD605;
+						this.pagerBar.dataBind();
+						this.pagerBar.pagerFunction = pagerFunction;
+						if(rowCount > 0) {
+							this.pagerBar.enabled = true;
+						}
+					}else if(flag == "all"){
+						this.certificateDataGridAll.dataProvider = listVD605;
+						if(rowCount > 0) {
+							this.pagerBar.enabled = true;
+						}
+					}
+				} else {
+					Alert.show(queryBirthResponse.errorMessage, "系统提示");
+				}
+			}
+			protected function deleteD605Handler(event:ResultEvent):void
+			{
+				var queryChildResponse:Object = event.result;
+				if(queryChildResponse.errorMessage == null){
+					if(queryChildResponse.promptMessage != null){
+						Alert.show(queryChildResponse.promptMessage, "系统提示");
+					}
+					refresh();
+				} else {
+					Alert.show(queryChildResponse.errorMessage, "系统提示");
+				}
+			} 
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				queryChildRequest = new QueryChildRequest();
+				this.initQueryParam();
+				queryChildRequest.flag = "now";
+				queryChildRequest.parameterPageindex = currentPageIndex;
+				queryChildRequest.parameterPagesize = pageSize;
+				
+				this.childDeathReportService.queryD605(queryChildRequest);
+			}
+			
+			public function refresh():void
+			{
+				queryChildRequest = new QueryChildRequest();
+				this.initQueryParam();
+				queryChildRequest.flag = "now";
+				queryChildRequest.parameterPageindex = this.pagerBar.currentPageIndex;
+				queryChildRequest.parameterPagesize = 20;
+				this.childDeathReportService.queryD605(queryChildRequest);
+				
+				queryChildRequest = new QueryChildRequest();
+				this.initQueryParam();
+				queryChildRequest.flag= "";
+				queryChildRequest.parameterPageindex = this.pagerBar.currentPageIndex;
+				queryChildRequest.parameterPagesize = 20;
+				this.childDeathReportService.queryD605(queryChildRequest);
+			}
+			public function update(event:MouseEvent):void
+			{
+				if(this.vD605 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:etitle = new etitle();
+					window.vd605 = this.vD605;
+					PopUpManager.addPopUp(window,this);
+					var x:Number = (this.parentApplication.mdiCanvas.width - window.width) / 2;
+					var y:Number = (this.parentApplication.mdiCanvas.height - window.height) / 2;
+					window.move(x, y);
+				}
+			} 
+			
+			public function deleteD605(event:MouseEvent):void
+			{
+				if(this.vD605 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				
+				Alert.yesLabel = '是'; 
+				Alert.noLabel = '否';
+				Alert.show('确认删除信息？','删除儿童死亡登记',1|2,this,deleteChildD605);
+				
+				
+			} 
+			public function deleteChildD605(event:CloseEvent):void
+			{
+				if(event.detail==Alert.YES){
+					queryChildRequest.d605_01 = this.vD605.d60501;
+					this.childDeathReportService.deleteD605(queryChildRequest);
+				}
+			}
+			public function printChildDeath(event:MouseEvent):void
+			{
+				if(this.vD605 == null){
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				var d60501:Number=vD605.d60501;
+				var url:String =this.parentApplication.contextRoot+"/ChildDeathReportServlet?flagF=0&d60501="+d60501;
+				navigateToURL(new URLRequest(url), null);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<mx:TabNavigator width="100%" height="125" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent label="综合查询" width="100%">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="助产机构" id="my"/>
+					<component:InstitutionComboBox id="d605_30"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="母亲姓名"/><s:TextInput id="d601_05" width="150"/>
+					<s:Label text="父亲姓名"/><s:TextInput id="d601_04" width="150"/>
+					<s:Label text="儿童姓名"/><s:TextInput id="d601_09" width="150"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					
+					
+					<s:Label text="分娩日期"/><mx:DateField yearNavigationEnabled="true" id="timeStart" width="150" dayNames='["日","一","二","三","四","五","六"]'
+														monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														formatString="YYYY-MM-DD"/>
+					<s:Label text="死亡日期"/><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="150" dayNames='["日","一","二","三","四","五","六"]'
+														monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														formatString="YYYY-MM-DD"/>
+					<s:Button label="查询" click="query(event)"/>
+					<s:Button label="修改" click="update(event)"/>
+					<s:Button label="删除" click="deleteD605(event)"/>
+					<s:Button label="打印" click="printChildDeath(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="126" width="100%" height="553" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="100%" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn dataField="d60501" headerText="主键" visible="false"/>
+						<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d60509" headerText="儿童姓名" width="80"/>
+						<s:GridColumn dataField="d60505" headerText="母亲姓名" width="80"/>
+						<s:GridColumn dataField="d60504" headerText="父亲姓名" width="80"/>
+						<s:GridColumn dataField="d60518" headerText="死亡原因" width="150"/>
+						<s:GridColumn dataField="d60531" headerText="填报人" width="120"/>
+						<s:GridColumn dataField="d60530ZH" headerText="填报单位" width="180"/>
+						<s:GridColumn dataField="d60522" headerText="根本死因" width="200"/>
+						<s:GridColumn dataField="d60525ZH" headerText="死亡地点" width="120"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+			<s:DataGrid id="certificateDataGridAll" visible="false" editable="false" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					
+					<s:ArrayList>
+						<s:GridColumn dataField="d60501" headerText="主键" visible="false"/>
+						<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d60509" headerText="儿童姓名" width="80"/>
+						<s:GridColumn dataField="" headerText="母亲姓名" width="150"/>
+						<s:GridColumn dataField="" headerText="父亲姓名" width="80"/>
+						<s:GridColumn dataField="" headerText="死亡原因" width="80"/>
+						<s:GridColumn dataField="" headerText="填报人" width="40"/>
+						<s:GridColumn dataField="" headerText="填报单位" width="90"/>
+						<s:GridColumn dataField="" headerText="根本死因" width="80"/>
+						<s:GridColumn dataField="" headerText="死亡地点" width="150"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+		</s:VGroup>	
+	</s:Scroller>	
+</s:Module>

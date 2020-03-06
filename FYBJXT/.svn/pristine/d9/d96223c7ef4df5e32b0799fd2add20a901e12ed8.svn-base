@@ -1,0 +1,137 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   title="审核" backgroundColor="#FFFFFF"
+			   chromeColor="#5CACEE"  cornerRadius="5"
+			   creationComplete="creationCompleteHandler(event)"
+			   close="removeWindow()" width="328" height="152">
+	<fx:Declarations>
+		<s:RemoteObject id="f602Service" destination="f602Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="renewF602" result="renewF602Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.fnbj.model.F601;
+			import com.xyw.module.msss.fnbj.model.F601Request;
+			import com.xyw.module.msss.fnbj.model.F602;
+			import com.xyw.module.msss.fnbj.model.F602Request;
+			import com.xyw.module.msss.fnbj.model.VF601;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			
+			public var itemArr:ArrayCollection=null;
+			private var f60201list:ArrayCollection=null;
+			
+			private function creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				var systemUser:SystemUser =this.parentApplication.systemUser;
+				
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select t.s_01,t.s_02 from S301_10 t where t.S_05='7' and t.S_04 ="+systemUser.userCode;
+				comboBoxDataRequest.flag = "S301_10";
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+				if(itemArr)
+				{
+					f60201list=new ArrayCollection();
+					for(var i:int=0;i<itemArr.length;i++)
+					{
+						var vf602:Object=itemArr.getItemAt(i);
+						f60201list.addItem(vf602.f60201);
+					}
+				}
+				
+			}
+			
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag =="S301_10"){
+					this.F601_76.dataProvider =comboBoxDataList;
+					this.F601_76.selectedIndex =0;
+				}
+			}
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function button1_clickHandler(event:MouseEvent):void
+			{
+				if(CompMethod.validate('1',F601_76,'审核医生'))
+					return ;
+				if(CompMethod.validate('1',F601_75,'审核日期'))
+					return ;
+				var f601:F601=new F601();
+				f601.f60176=StringUtil.trim(F601_76.text);
+				f601.f60175=DateField.stringToDate(F601_75.text,"YYYY-MM-DD");
+				var f602Request:F602Request=new F602Request();
+				f602Request.f601=f601;
+				f602Request.f60201List=f60201list;
+				f602Service.renewF602(f602Request);
+			}
+			
+			private function renewF602Handler(event:ResultEvent):void
+			{
+				var f602Response:Object = event.result;
+				if(f602Response.state){
+					Alert.show(f602Response.promptMessage, "系统提示",1,this,closeHandler);
+					
+				} else {
+					Alert.show(f602Response.errorMessage, "系统提示");
+				}
+			}
+			
+			private function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var index:Object=this.owner;
+					index.refresh();
+					this.removeWindow();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:VGroup gap="15" width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" chromeColor="#cccccc">
+		<s:HGroup  >
+			<s:Label styleName="myLabel" text="审核医生"/>
+			<component:FindSelectedItemComboBox editable="true" id="F601_76" width="130" height="22"/>
+		</s:HGroup>  
+		<s:HGroup  >
+			<s:Label styleName="myLabel" text="审核日期"/>
+			<component:CustomRangeDateField  id="F601_75" isSelectNow="true" enabled="false"/>
+		</s:HGroup>  
+		<s:HGroup>
+			<s:Button label="保存" click="button1_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

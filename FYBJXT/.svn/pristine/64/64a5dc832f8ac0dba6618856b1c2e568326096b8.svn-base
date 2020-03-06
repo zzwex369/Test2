@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin = "com.xyw.sys.custom.skin.*"
+			   title="申领信息确认" backgroundColor="white"
+			   chromeColor="#5CACEE" close = "removeWindow()" cornerRadius="5"
+			   width="720" height="150" creationComplete="init()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		.myLabel
+		{
+			fontStyle:italic;
+			fontWeight:bold;
+			color:#A020F0;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D501;
+			
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			
+			public var d501:D501 = null;
+			public var d50102:String = "";
+			public var d50109:String = "";
+			public var d50114:String = "";
+			
+			private function init():void
+			{
+				this.d501_02.text = this.d50102;
+				this.d501_03.text = this.d501.d50103;
+				this.d501_04.text = this.d501.d50104;
+				this.d501_05.text = String(this.d501.d50105);
+				this.d501_06.text = this.d501.d50106;
+				this.d501_07.text = this.d501.d50107;
+				this.d501_08.text = this.d501.d50108;
+				this.d501_09.text = this.d50109;
+				this.d501_10.text = this.d501.d50110;
+				this.d501_11.text = this.d501.d50111;
+				this.d501_12.text = DateField.dateToString(this.d501.d50112,"YYYY-MM-DD");
+				this.d501_13.text = this.d501.d50113;
+				this.d501_14.text = this.d50114;
+			}
+			
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup paddingLeft="7">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="申领信息" width="700">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid width="100%">
+						<mx:GridRow>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="申领单位"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_02" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="申领人1"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_03" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="申领人2"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_04" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="首字母"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_06" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="起始编号"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_07" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="终止编号"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_08" styleName="myLabel"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="发放单位"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_09" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="发放人1"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_10" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="发放人2"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_11" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="申领数量 "/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_05" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="发放时间"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_12" styleName="myLabel"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="发放地点"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label id="d501_13" styleName="myLabel"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem horizontalAlign="left">
+								<s:Label text="申领地址"/>
+							</mx:GridItem>
+							<mx:GridItem horizontalAlign="left" colSpan="3">
+								<s:Label id="d501_14" styleName="myLabel"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			<s:Button label="关闭" click="removeWindow()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

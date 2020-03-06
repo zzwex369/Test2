@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  xmlns:gja="com.xyw.module.msss.la.fngjadacx.*"
+		  maxWidth="{this.parentApplication.stage.stageWidth-10}"
+		  height="100%" creationComplete="init()">
+	<fx:Declarations>
+		
+		<s:RemoteObject id="l302Service" destination="l302Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL302" result="saveOrRenewL302Handler(event)"/>
+			<s:method name="renewL302" result="saveOrRenewL302Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="saveSuccess", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L302;
+			import com.xyw.module.msss.la.model.L302Request;
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.LoadPicWindow2;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var systemUser:SystemUser;
+			[Bindable]
+			public var l302:L302;
+			public  var l30202:String;
+			public var l30204:String;
+			public var state:String;
+			[Bindable]
+			public var vl302:VL302;
+			private var i:int=0;
+			private var picData:ArrayCollection=new ArrayCollection();
+			
+			
+			private function init():void
+			{
+				if("0"==state)
+					callLater(updateydj);
+				systemUser=this.parentApplication.systemUser;
+			}
+			
+			
+			
+			private function jcdjCreationComplete():void
+			{
+				check.institution.text="检查单位";
+				check.Checkname.text="报告人员";
+				if('1'==state)
+					check._initializeComboBox('5');
+			}
+			
+			private function updateydj():void
+			{
+				L302_85_02_clickHandler(false);
+				L302_87.text=vl302.l30287;
+				L302_115.text=vl302.l302115;
+				
+				CompMethod.setRadioButtonSelect([L302_85],vl302.l30285);
+				CompMethod.setRadioButtonSelect([L302_86],vl302.l30286);
+				CompMethod.setRadioButtonSelect([L302_88],vl302.l30288);
+				CompMethod.setRadioButtonSelect([L302_89],vl302.l30289);
+				CompMethod.setRadioButtonSelect([L302_90],vl302.l30290);
+				CompMethod.setRadioButtonSelect([L302_91],vl302.l30291);
+				CompMethod.setRadioButtonSelect([L302_150],vl302.l302150);
+				CompMethod.setCheckBoxAutomationName([L302_151],vl302.l302151);
+				CompMethod.setCheckBoxAutomationName(L302_155,vl302.l302155);
+
+				CompMethod.setCheckBoxAutomationName([L302_144_1,L302_144_2,L302_144_3,L302_144_4],vl302.l302144);
+				
+				
+				callLater(institutionCodeDataProvider);
+			}
+			
+			private function institutionCodeDataProvider():void
+			{
+				if(!(check.institutionCode.dataProvider))
+				{
+					callLater(institutionCodeDataProvider);
+					return ;				
+				}
+				check.checker.text=vl302.l30293;
+				check.nowDate.text=vl302.l30294str;	
+				check.institutionCode.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(check.institutionCode.dataProvider),vl302.l30292);
+			}
+			
+			/**
+			 * 验证信息
+			 */
+			private function validationYDJ(l302155Result:Boolean):Boolean
+			{
+				var l302151Arr:Array=CompMethod.getCheckBoxAutomationName([L302_151]);
+				var l302144Arr:Array=CompMethod.getCheckBoxAutomationName([L302_144_1,L302_144_2,L302_144_3,L302_144_4])
+				if(L302_115.enabled&&!l302.l302115)
+				{
+					Alert.show("请输入初步诊断其他异常原因","系统提示");
+					return false;
+				}
+				if(L302_87.enabled&&!l302.l30287)
+				{
+					Alert.show("请输入未接受检查其他原因","系统提示");
+					return false;
+				}
+				
+				if(!l302144Arr[0])
+				{
+					Alert.show("请选择阴道镜检查指征","系统提示");
+					return false;
+				}
+				
+				if(L302_89_02.selected)
+				{
+					if(!l302.l30290)
+					{
+						Alert.show("请选择异常原因","系统提示");
+						return false;
+					}
+				
+				}
+				
+				if(!l302151Arr[0])
+				{
+					Alert.show("请选择病变位置","系统提示");
+					return false;
+				}
+				
+				if(L302_91_1.selected&&!l302155Result)
+				{
+					Alert.show("请选择病理检查","系统提示");
+					return false;
+				}
+				
+				if(!l302.l30293)
+				{
+					Alert.show("请输入报告人员信息","系统提示");
+					return false;
+				}
+				
+				
+				
+				l302.l302144=l302144Arr[1];
+				l302.l302151=l302151Arr[1];
+				return true;
+			}
+			
+			private function saveydj():void
+			{
+				/* if(!picData.length)
+				{
+				Alert.show("请上传图片","系统提示");
+				return ;
+				} */
+				l302=new L302();
+				var l302Request:L302Request=new L302Request();
+				l302.l30294=DateField.stringToDate(check.nowDate.text,"YYYY-MM-DD");
+				l302.l30287=StringUtil.trim(L302_87.text);
+				l302.l302115=StringUtil.trim(L302_115.text);
+				l302.l30293=StringUtil.trim(check.checker.text);
+				l302.l30292=check.institutionCode.selectedItem.data;
+				l302.l30285=CompMethod.getRadioButtonValue([L302_85]);
+				l302.l30286=CompMethod.getRadioButtonValue([L302_86]);
+				l302.l30290=CompMethod.getRadioButtonValue([L302_90]);
+				l302.l30291=CompMethod.getRadioButtonValue([L302_91]);
+				l302.l30288=CompMethod.getRadioButtonValue([L302_88]);
+				l302.l30289=CompMethod.getRadioButtonValue([L302_89]);
+				var l302155Arr:Array=CompMethod.getCheckBoxAutomationName(L302_155);
+				l302.l302155=l302155Arr[1];
+				if(!validationYDJ(l302155Arr[0]))
+					return ;	
+				
+				save.enabled=false;
+				l302Request.flag="5";
+				l302Request.picList=picData;// 暂不适用
+		
+				
+				l302.l302150=CompMethod.getRadioButtonValue([L302_150]);
+				//l302.l302151=CompMethod.getCheckBoxAutomationName([L302_151])[1];
+				
+				
+				if("0"==state)
+				{
+					l302.l30201=vl302.l30201;
+					l302Request.l302=l302;
+					l302Service.renewL302(l302Request);
+				}else
+				{				
+					l302.l30202=l30202;
+					l302Request.l302=l302;
+					l302Service.saveL302(l302Request);
+				}
+			}
+			
+			private function saveOrRenewL302Handler(event:ResultEvent):void
+			{
+				var l302Response:Object=event.result;
+				save.enabled=true;
+				if(l302Response.state)
+				{
+					if(picData.length)
+						picData=new ArrayCollection();
+					Alert.show("0"==state?"修改成功":"保存成功！","系统提示",1,this,closeHandler);
+					return ;
+				}
+				Alert.show(l302Response.errorMessage,"系统提示");
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+					this.dispatchEvent(new Event("saveSuccess"));
+			}
+			
+			
+			private function L302_85_01_changeHandler(event:Event):void
+			{
+				CompMethod.hasNumEles([L302_86])
+				L302_88_1.selected=L302_150_0.selected=L302_89_01.selected=L302_91_2.selected=true;
+			}
+			
+			private function L302_85_02_clickHandler(selected:Boolean=true):void
+			{
+				L302_86_01.selected=selected;
+				CompMethod.hasNumEles([L302_144,L302_88_150,L302_89_90,L302_151,L302_91_155]);	
+				
+			}
+			
+			private function uploadPic():void{
+				var detailTitleWindow:LoadPicWindow2= new LoadPicWindow2();
+				detailTitleWindow.paramsArr=[this.vl302.l30203,'1',4,4];//0.档案人名   1. 类型代码    2 图片数量限制（最少） 3 图片数量限制（最多）
+				detailTitleWindow.picArr=['1'];//图片参数   0 sql条件 不为空可以不写其他 1 缩放比例   2质量参数  3图片格式 
+				CompMethod.popUpTitleWindow(detailTitleWindow,this,true);
+			}
+			
+			/*****************图片放入集合*******************/
+			public function putPictures(arr:ArrayCollection):void
+			{
+				try
+				{
+					picData.addAll(arr);
+					
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("上传图片异常","系统提示");
+				}
+			}
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="950" >
+			<s:HGroup width="100%" gap="1">
+				<s:VGroup paddingLeft="10" paddingTop="10">
+					<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+						<s:NavigatorContent width="100%" label="阴道镜检查">
+							<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="2">	
+								<s:HGroup width="100%" height="100%" paddingBottom="5"
+										  verticalAlign="middle">
+									<s:Label width="119" text="接受阴道镜检查"/>
+									<s:HGroup height="100%" paddingBottom="3"
+											  verticalAlign="middle" id="L302_85">
+										<s:RadioButton  label="1.是" value="1"
+														buttonMode="true" id="L302_85_01"
+														change="L302_85_01_changeHandler(event)"
+														groupName="L302_85" selected="true"/>
+										<s:RadioButton  label="2.否" value="2"
+														buttonMode="true" id="L302_85_02"
+														change="L302_85_02_clickHandler()"
+														groupName="L302_85"/>
+									</s:HGroup>
+									<s:HGroup  width="100%" height="100%" 
+											  enabled="{L302_85_02.selected}" paddingBottom="5"
+											  verticalAlign="baseline">
+										<s:Label  text="未接受检查的原因"/>
+										<s:HGroup width="100%" height="100%" paddingBottom="3"
+												  verticalAlign="middle" id="L302_86">
+											<s:RadioButton  label="1.拒绝检查"  id="L302_86_01"
+															buttonMode="true" change="L302_87.text=''"
+															groupName="L302_86" value="1"/>
+											<s:RadioButton label="2.失访"
+														   buttonMode="true" change="L302_87.text=''"
+														   groupName="L302_86" value="2"/>
+											<s:RadioButton  label="3.其他原因" id="L302_86_03"
+															buttonMode="true" groupName="L302_86" value="9"/>
+											<s:TextInput id="L302_87" width="327" enabled="{L302_86_03.selected}"/>
+										</s:HGroup>
+										
+									</s:HGroup>
+								</s:HGroup>
+								
+								
+								<s:VGroup width="100%" height="100%" enabled="{L302_85_01.selected}"  id="L302_144">
+									
+									<mx:Grid horizontalGap="7"  id="L302_144Grid">
+										<mx:GridRow>
+											<mx:GridItem>
+												<s:Label width="119" text="阴道镜检查指征"/>
+											</mx:GridItem>
+											<mx:GridItem id="L302_144_1">
+												<s:CheckBox label="HPV16/18阳性" buttonMode="true" automationName="4"/>
+											</mx:GridItem>
+											<mx:GridItem id="L302_144_2">
+												<s:CheckBox label="宫颈脱落细胞筛查结果异常" automationName="1"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										<mx:GridRow>
+											<mx:GridItem height="12"/>
+											<mx:GridItem id="L302_144_3">
+												<s:CheckBox label="细胞学筛查结果ASC-US且HPV任一高危型亚型阳性者" buttonMode="true" automationName="7"/>
+											</mx:GridItem>
+											<mx:GridItem id="L302_144_4">
+												<s:CheckBox label="临床症状或体征高度可疑子宫颈癌" buttonMode="true" automationName="3"/>
+											</mx:GridItem>
+										</mx:GridRow>
+										
+										
+									</mx:Grid>
+								</s:VGroup> 
+								
+								<s:HGroup width="100%" height="100%" id="L302_88_150"
+										  enabled="{L302_85_01.selected}" paddingBottom="5"
+										  verticalAlign="middle">
+									<s:Label width="119" text="阴道镜检查评价"/>
+									<s:HGroup height="100%" paddingBottom="3"
+											  verticalAlign="middle" id="L302_88">
+										<s:RadioButton  label="1.满意" id="L302_88_1"
+														buttonMode="true" groupName="L302_88"
+														selected="true" value="1"/>
+										<s:RadioButton  label="2.不满意"
+														buttonMode="true" value="2"
+														groupName="L302_88"/>
+									</s:HGroup>
+									
+									<s:HGroup width="100%" height="100%" verticalAlign="baseline" id="L302_150">
+										
+										<s:Label text="宫颈转化区"/>
+										
+										<s:RadioButton label="I型" buttonMode="true" groupName="L302_150" value="0" selected="true" id="L302_150_0"/>
+										<s:RadioButton label="II型" buttonMode="true" groupName="L302_150" value="1"/>
+										<s:RadioButton label="III型" buttonMode="true" groupName="L302_150" value="2"/>
+										
+									</s:HGroup>  
+									
+									
+								</s:HGroup>
+								
+								<s:HGroup id="L302_89_90" width="100%" height="100%"
+										  enabled="{L302_85_01.selected}" paddingBottom="5"
+										  verticalAlign="middle">
+									<s:Label width="119" text="初步诊断"/>
+									<s:HGroup height="100%" paddingBottom="3"
+											  verticalAlign="middle"  id="L302_89" >
+										<s:RadioButton  label="1.未见异常" id="L302_89_01" value="1"
+														buttonMode="true" change="CompMethod.hasNumEles([L302_90])"
+														groupName="L302_89" selected="true"/>
+										<s:RadioButton id="L302_89_02"  label="2.异常" value="2"
+													   buttonMode="true" groupName="L302_89"/>
+									</s:HGroup>
+									
+									<s:HGroup id="L302_90" width="100%" height="100%"
+											  enabled="{L302_89_02.selected}" verticalAlign="baseline">
+										<s:Label text="异常原因"/>
+										<s:RadioButton label="低度病变" buttonMode="true" value="1"
+													   change="L302_115.text=''" groupName="L302_90"/>
+										<s:RadioButton label="高度病变" buttonMode="true" value="2"
+													   change="L302_115.text=''" groupName="L302_90"/>
+										<s:RadioButton label="可疑癌" buttonMode="true" value="3"
+													   change="L302_115.text=''" groupName="L302_90"/>
+										<s:RadioButton id="L302_90_4"  label="其他" buttonMode="true"
+													   groupName="L302_90" value="9"/>
+										<s:TextInput id="L302_115" width="100%" enabled="{L302_90_4.selected}"/>
+									</s:HGroup>  
+									
+									
+								</s:HGroup>
+								
+								<s:HGroup width="100%" height="100%" id="L302_151" >
+									<s:Label text="病变位置" width="119" />
+									
+									<s:CheckBox label="右上象限" buttonMode="true" automationName="1"/>
+									<s:CheckBox  label="左上象限" buttonMode="true" automationName="2"/>
+									<s:CheckBox  label="右下象限" buttonMode="true" automationName="3"/>
+									<s:CheckBox  label="左下象限" buttonMode="true" automationName="4"/>
+									<s:CheckBox  label="宫颈内" buttonMode="true" automationName="5"/>
+									<s:CheckBox  label="阴道壁" buttonMode="true" automationName="6"/>
+									<s:CheckBox  label="外阴" buttonMode="true" automationName="7"/>
+								</s:HGroup>  
+								
+								
+								
+								
+								<s:HGroup width="100%" height="100%" paddingBottom="5" id="L302_91_155"
+										  verticalAlign="middle" enabled="{L302_85_01.selected}">
+									<s:Label width="118" text="需组织病理检查"/>	
+									<s:HGroup width="100%" height="100%" paddingBottom="3"
+											  verticalAlign="middle" id="L302_91">
+										<s:RadioButton  label="1.是" value="1" id="L302_91_1"
+														buttonMode="true" groupName="L302_91"
+														/>
+										<s:RadioButton  label="2.否" value="2"
+														buttonMode="true" groupName="L302_91"
+														selected="true" id="L302_91_2"
+														change="CompMethod.hasNumEles(L302_155)"/>
+										<s:HGroup width="100%" height="100%" verticalAlign="baseline"
+												  id="L302_155" enabled="{L302_91_1.selected}">
+											<s:Label text="病理检查"/>	
+											<s:CheckBox automationName="7" label="宫颈活检" buttonMode="true"/>
+											<s:CheckBox automationName="5" label="颈管内膜刮取术"  buttonMode="true"  />	
+											<s:CheckBox automationName="1" label="宫颈活检+颈管内膜刮取术"  buttonMode="true"   />	
+											<s:CheckBox automationName="6" label="子宫内膜活检"  buttonMode="true"  />	
+											<s:CheckBox automationName="4" label="外阴、阴道活检" buttonMode="true" />
+
+										</s:HGroup>  
+										
+									</s:HGroup>
+								</s:HGroup>
+								<s:HGroup width="100%" height="100%" paddingBottom="5"
+										  verticalAlign="middle" enabled="{L302_85_01.selected}">
+									<s:Label width="118" text="阴道镜图片上传"/>	
+									<s:HGroup width="100%" height="100%" paddingBottom="3"
+											  verticalAlign="middle">
+										<s:Button label="上传" buttonMode="true" click="uploadPic()"
+												  enabled="{vl302.l302138!='1'}"/>
+										<s:Button label="图片标准文件下载" buttonMode="true"
+												  click="CompMethod.downLoadFiles('upload/la/gjrxPic.pptx','两癌图片上传要求')"/>
+										<s:Label visible="{vl302.l302138=='1'}" text="已经质控无法上传图片信息!"/>	
+									</s:HGroup>
+								</s:HGroup>  
+								
+							</s:VGroup>
+						</s:NavigatorContent>
+						
+					</mx:TabNavigator>
+					<gja:gjajcdj id="check" chromeColor="#ffffff" height="69"
+								 creationComplete="jcdjCreationComplete()" creationPolicy="all"/>
+					
+				</s:VGroup>
+				
+			</s:HGroup>  
+			<s:HGroup width="950" height="30" contentBackgroundColor="#FF0000" horizontalAlign="center"
+					  paddingBottom="20" paddingLeft="10" paddingTop="10" verticalAlign="middle">
+				<s:Button id="save" label="保存" buttonMode="true" click="saveydj()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:VGroup>

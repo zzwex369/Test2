@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   xmlns:skin = "com.xyw.sys.custom.skin.*"
+			   title="签发人更改" backgroundColor="#5CACEE"
+			   chromeColor="#5CACEE" close = "removeWindow()" cornerRadius="5"
+			   width="500" height="200" creationComplete="init()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow">
+	<fx:Declarations>
+		<s:RemoteObject id="signerService" destination="signerService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="update" result="updateHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.D201;
+			import com.xyw.module.xtwh.model.D201Request;
+			import com.xyw.module.xtwh.model.D201Response;
+			import com.xyw.module.xtwh.model.S301_10;
+			import com.xyw.module.xtwh.model.S301_10Request;
+			import com.xyw.module.xtwh.model.S301_10Response;
+			import com.xyw.module.xtwh.model.VD201;
+			import com.xyw.module.xtwh.model.VS301_10;
+			
+			import mx.controls.Alert;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.validators.Validator;
+			
+			import spark.events.TextOperationEvent;
+			
+			public var d20105_text:String;
+			public var vs301_10:VS301_10 = null;
+			public var areaCode:String;
+			
+			private function init():void
+			{   
+				this.Mqfrbm.text = vs301_10.s3011001;
+				this.Mqfrxm.text = vs301_10.s3011002;
+				this.Mszyy.text = vs301_10.s3011003_zh;
+				
+			}
+			
+			private function modify(event:MouseEvent):void
+			{   
+				var s301_101Request:S301_10Request = new S301_10Request();
+				var s301_10:S301_10 = new S301_10();
+				s301_10.s3011001 = this.vs301_10.s3011001;
+				s301_10.s3011002 = this.Mqfrxm.text;
+				s301_10.s3011003 = this.vs301_10.s3011003;
+				s301_101Request.s301_10 = s301_10;
+				this.signerService.update(s301_101Request);
+			}
+			
+			private function updateHandler(event:ResultEvent):void
+			{
+				var s301_10Response:S301_10Response = event.result as S301_10Response;
+				if(s301_10Response.errorMessage == null){
+					Alert.show(s301_10Response.promptMessage, "系统提示");
+					this.removeWindow();
+					var parentIndex:index = this.owner as index;
+					parentIndex.refrashPage();
+				}else{
+					Alert.show(s301_10Response.errorMessage, "系统提示");
+				}
+				
+			}
+			
+			private function reset(event:MouseEvent):void
+			{
+				this.Mqfrxm.text = "";
+				
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" paddingBottom="10" paddingLeft="20" paddingRight="10" paddingTop="10">
+		<mx:Grid verticalAlign="middle" horizontalAlign="center" width="400" height="120">
+			<mx:GridRow>
+				<mx:GridItem verticalAlign="middle">
+					<s:Label text="签发人编码"/><s:TextInput  id="Mqfrbm" editable="false" width="200"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem verticalAlign="middle">
+					<s:Label text="签发人姓名 "/><s:TextInput  id="Mqfrxm" width="200"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow>
+				<mx:GridItem verticalAlign="middle">
+					<s:Label text="所 在  医 院"/><s:TextInput  id="Mszyy" editable="false" width="200" />
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+		<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+			<s:Button label="保存" click="modify(event)"/>
+			<s:Button label="清空" click="reset(event)"/>
+			<s:Button label="关闭" click="removeWindow()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

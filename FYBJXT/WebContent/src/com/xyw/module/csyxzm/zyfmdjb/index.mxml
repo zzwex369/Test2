@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="deliveryService" destination="deliveryService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="pagerZyfmdjb" result="pagerZyfmdjbHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.delivery.model.ZyfmdjbRequest;
+			import com.xyw.sys.custom.component.ExportExcel;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.formatters.DateTimeFormatter;
+			
+			[Bindable]
+			public var systemUser:SystemUser = null;
+			protected function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.pagerBar.exportEXCELAll = exportEXCELall;
+				this.pagerBar.exportEXCEL = exportEXCEL;
+				this.systemUser = this.parentApplication.systemUser;
+			}
+			
+			[Bindable]
+			public var rowCount:Number = 0;
+			
+			[Bindable]
+			public var flag:String = "";
+			
+			protected function pagerZyfmdjbHandler(event:ResultEvent):void
+			{
+				var zyfmdjbResponse:Object = event.result;
+				var vd601s:ArrayCollection = zyfmdjbResponse.vd601s;
+				if(flag == "excel"){
+					flag = "";
+					this.certificateDataGrid2.dataProvider = vd601s;
+					ExportExcel.loadDGInExcel(this.certificateDataGrid2,"住院分娩登记表(全)",this.parentApplication.contextRoot + '/print/ExcelExport.jsp');
+				} else {
+					if(flag == "page"){
+						flag = "";
+						ExportExcel.loadDGInExcel(this.certificateDataGrid,"住院分娩登记表（页）",this.parentApplication.contextRoot + '/print/ExcelExport.jsp');
+					} else {
+						rowCount = zyfmdjbResponse.rowCount;
+						if(zyfmdjbResponse.errorMessage == null)
+						{
+							this.pagerBar.dataGrid = this.certificateDataGrid;
+							this.pagerBar.rowCount = rowCount;
+							this.pagerBar.resultData = vd601s;
+							this.pagerBar.dataBind();
+							this.pagerBar.pagerFunction = pagerFunction;
+							if(rowCount > 0) {
+								this.pagerBar.enabled = true;
+							}
+						} else {
+							Alert.show(zyfmdjbResponse.errorMessage, "系统提示");
+						}
+					}
+				}
+				
+			}
+			
+			public function exportEXCELall():void{
+				queryForExcel();
+			}
+			
+			
+			public function exportEXCEL():void{
+				flag = "page";
+				if(rowCount >0 && rowCount <= 20){
+					ExportExcel.loadDGInExcel(this.certificateDataGrid,"住院分娩登记表",this.parentApplication.contextRoot + '/print/ExcelExport.jsp');
+				} else {
+					query();
+				}
+				
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				if(this.timeStart.text == ""){
+					Alert.show("请选择起始日期！","系统提示");
+					return;
+				} else if(this.timeEnd.text == ""){
+					Alert.show("请选择终止日期！","系统提示");
+					return;
+				} else if(this.timeStart.text > this.timeEnd.text){
+					Alert.show("起始日期不能大于终止日期！","系统提示");
+					return;
+				}
+				var sexFlag:String;// 1按男方统计，2按女方统计
+				if(this.sex.selected == true){
+					sexFlag = "1";
+				} else {
+					sexFlag = "2";
+				}
+				var areaFlag:String;// 1按家庭地址统计，2按户口地址统计
+				if(this.areaType.selected == true){
+					areaFlag = "1";
+				} else {
+					areaFlag = "2";
+				}
+				var timeFlag:String;// 1按出生日期统计，2按保存日期统计
+				if(this.ti.selected == true){
+					timeFlag = "1";
+				} else {
+					timeFlag = "2";
+				}
+				
+				var zyfmdjbRequest:ZyfmdjbRequest = new ZyfmdjbRequest();
+				zyfmdjbRequest.areaCode = this.areaCode.getAreaCode();
+				zyfmdjbRequest.areaFlag = areaFlag;
+				zyfmdjbRequest.sexFlag = sexFlag;
+				zyfmdjbRequest.timeFlag = timeFlag;
+				zyfmdjbRequest.jiwei = this.systemUser.jiwei;
+				
+				zyfmdjbRequest.date_start = this.timeStart.text;
+				zyfmdjbRequest.date_end = this.timeEnd.text;
+				zyfmdjbRequest.pageIndex = currentPageIndex;
+				zyfmdjbRequest.pageSize = pageSize;
+				this.deliveryService.pagerZyfmdjb(zyfmdjbRequest);
+			}
+			
+			private function queryForExcel():void
+			{
+				flag = "excel";
+				if(rowCount > 0){
+					if(this.timeStart.text == ""){
+						Alert.show("请选择起始日期！","系统提示");
+						return;
+					} else if(this.timeEnd.text == ""){
+						Alert.show("请选择终止日期！","系统提示");
+						return;
+					} else if(this.timeStart.text > this.timeEnd.text){
+						Alert.show("起始日期不能大于终止日期！","系统提示");
+						return;
+					}
+					var sexFlag:String;// 1按男方统计，2按女方统计
+					if(this.sex.selected == true){
+						sexFlag = "1";
+					} else {
+						sexFlag = "2";
+					}
+					var areaFlag:String;// 1按家庭地址统计，2按户口地址统计
+					if(this.areaType.selected == true){
+						areaFlag = "1";
+					} else {
+						areaFlag = "2";
+					}
+					var timeFlag:String;// 1按出生日期统计，2按保存日期统计
+					if(this.ti.selected == true){
+						timeFlag = "1";
+					} else {
+						timeFlag = "2";
+					}
+					
+					var zyfmdjbRequest:ZyfmdjbRequest = new ZyfmdjbRequest();
+					zyfmdjbRequest.areaCode = this.areaCode.getAreaCode();
+					zyfmdjbRequest.areaFlag = areaFlag;
+					zyfmdjbRequest.sexFlag = sexFlag;
+					zyfmdjbRequest.timeFlag = timeFlag;
+					zyfmdjbRequest.jiwei = this.systemUser.jiwei;
+					
+					zyfmdjbRequest.date_start = this.timeStart.text;
+					zyfmdjbRequest.date_end = this.timeEnd.text;
+					zyfmdjbRequest.pageIndex = 1;
+					zyfmdjbRequest.pageSize = rowCount + 1;
+					this.deliveryService.pagerZyfmdjb(zyfmdjbRequest);
+				} else {
+					Alert.show("请先查询要导出的数据！","系统提示");
+				}
+				
+			}
+			
+			private function query():void
+			{
+				if(this.timeStart.text == ""){
+					Alert.show("请选择起始日期！","系统提示");
+					return;
+				} else if(this.timeEnd.text == ""){
+					Alert.show("请选择终止日期！","系统提示");
+					return;
+				} else if(this.timeStart.text > this.timeEnd.text){
+					Alert.show("起始日期不能大于终止日期！","系统提示");
+					return;
+				}else if((timeEnd.selectedDate.time-timeStart.selectedDate.time)>1000*3600*24*31)
+				{
+					Alert.show("查询时间不能大于一个月！","系统提示");
+					return;
+				}
+				var sexFlag:String;// 1按男方统计，2按女方统计
+				if(this.sex.selected == true){
+					sexFlag = "1";
+				} else {
+					sexFlag = "2";
+				}
+				var areaFlag:String;// 1按家庭地址统计，2按户口地址统计
+				if(this.areaType.selected == true){
+					areaFlag = "1";
+				} else {
+					areaFlag = "2";
+				}
+				var timeFlag:String;// 1按出生日期统计，2按保存日期统计
+				if(this.ti.selected == true){
+					timeFlag = "1";
+				} else {
+					timeFlag = "2";
+				}
+				
+				var zyfmdjbRequest:ZyfmdjbRequest = new ZyfmdjbRequest();
+				zyfmdjbRequest.areaCode = this.areaCode.getAreaCode();
+				zyfmdjbRequest.areaFlag = areaFlag;
+				zyfmdjbRequest.sexFlag = sexFlag;
+				zyfmdjbRequest.timeFlag = timeFlag;
+				zyfmdjbRequest.jiwei = this.systemUser.jiwei;
+				
+				zyfmdjbRequest.date_start = this.timeStart.text;
+				zyfmdjbRequest.date_end = this.timeEnd.text;
+				zyfmdjbRequest.pageIndex = 1;
+				zyfmdjbRequest.pageSize = 20;
+				this.deliveryService.pagerZyfmdjb(zyfmdjbRequest);
+			}
+			
+			private function formatDateToString(vd601:Object, column:GridColumn):String
+			{
+				var dateTimeFormatter:DateTimeFormatter = new DateTimeFormatter();
+				dateTimeFormatter.dateTimePattern = "yyyy-MM-dd HH:mm";
+				var date:Date = vd601.d60103_;
+				var dateStr:String = dateTimeFormatter.format(date);
+				return dateStr;
+			}
+			
+			private function formatNumberToString_woman(vd601:Object, column:GridColumn):String
+			{
+				var cardNo:String = vd601.d60165;//产妇身份证号
+//				return  cardNo + "&nbsp;";
+				return  "'" + cardNo;
+			}
+			private function formatNumberToString_man(vd601:Object, column:GridColumn):String
+			{
+				var cardNo:String = vd601.d60175;//男方身份证号
+				return  "'" + cardNo;
+			}
+			private function formatNumberToString_phone(vd601:Object, column:GridColumn):String
+			{
+				var cardNo:String = vd601.d60169;//联系电话
+				return  "'" + cardNo;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent  label="分娩情况统计" width="100%">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="查询条件筛选："/>
+					<s:Label text="按男方" paddingLeft="55"/><s:RadioButton id="sex" groupName="tongji"/>
+					<s:Label text="按女方"/><s:RadioButton selected="true" groupName="tongji"/>
+					<s:Label text="按家庭地址" paddingLeft="55"/><s:RadioButton selected="true" id="areaType" groupName="leixing"/>
+					<s:Label text="按户口地址"/><s:RadioButton groupName="leixing"/>
+					<s:Label text="按出生日期" paddingLeft="55"/><s:RadioButton id="ti" groupName="shijian"/>
+					<s:Label text="按保存日期"/><s:RadioButton groupName="shijian" selected="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="地址"/>
+					<component:AreaComboBoxVillageJS id="areaCode"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+					<s:Label text="统计日期"/>
+					<component:CustomRangeDateField id="timeStart" isSelectFirst="true"/>
+					<s:Label text="至"/>
+					<component:CustomRangeDateField id="timeEnd" isSelectNow="true"/>
+					<s:Button label="查询" click="query()"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="126" width="100%" height="560" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="100%" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="50" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d60102ZH" headerText="助产机构名称" width="115"/>
+						<s:GridColumn dataField="d60103_" headerText="分娩日期" width="125" labelFunction="formatDateToString"/>
+						<s:GridColumn dataField="d60105" headerText="产妇姓名" width="85" />
+						<s:GridColumn dataField="d60196ZH" headerText="产妇户口所在地" width="145" />
+						<s:GridColumn dataField="d60195ZH" headerText="产妇家庭住址" width="145" />
+						<s:GridColumn dataField="d60165" headerText="产妇身份证号" width="150" labelFunction="formatNumberToString_woman"/>
+						<s:GridColumn dataField="d60119" headerText="孕次" width="50" />
+						<s:GridColumn dataField="d60120" headerText="产次" width="50" />
+						<s:GridColumn dataField="d60155" headerText="婴儿姓名" width="85"/>
+						<s:GridColumn dataField="d60140ZH" headerText="性别" width="50"/>
+						<s:GridColumn dataField="d60169" headerText="联系电话" width="100" labelFunction="formatNumberToString_phone"/>
+						<s:GridColumn dataField="d60172" headerText="男方姓名" width="85"/>
+						<s:GridColumn dataField="d60175" headerText="男方身份证号" width="150" labelFunction="formatNumberToString_man"/>
+						<s:GridColumn dataField="d60198ZH" headerText="男方户口所在地" width="145" />
+						<s:GridColumn dataField="d60197ZH" headerText="男方家庭住址" width="145" />
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+			<s:DataGrid id="certificateDataGrid2" visible="false" editable="false" rowHeight="22" width="100%" height="340" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="序号" width="50" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d60102ZH" headerText="助产机构名称" width="115"/>
+						<s:GridColumn dataField="d60103_" headerText="分娩日期" width="125" labelFunction="formatDateToString"/>
+						<s:GridColumn dataField="d60105" headerText="产妇姓名" width="85" />
+						<s:GridColumn dataField="d60107" headerText="产妇年龄" width="85" />
+						<s:GridColumn dataField="d60188" headerText="生育证号" width="85" />
+						<s:GridColumn dataField="d60196ZH" headerText="产妇户口所在地" width="145" />
+						<s:GridColumn dataField="d60195ZH" headerText="产妇家庭住址" width="145" />
+						<s:GridColumn dataField="d60165" headerText="产妇身份证号" width="150" labelFunction="formatNumberToString_woman"/>
+						<s:GridColumn dataField="d60119" headerText="孕次" width="50" />
+						<s:GridColumn dataField="d60120" headerText="产次" width="50" />
+						<s:GridColumn dataField="d60155" headerText="婴儿姓名" width="50"/>
+						<s:GridColumn dataField="d60140ZH" headerText="婴儿性别" width="50"/>
+						<s:GridColumn dataField="d60143" headerText="出生体重(g)" width="50"/>
+						<s:GridColumn dataField="d60144" headerText="身长(cm)" width="50"/>
+						<s:GridColumn dataField="d60169" headerText="联系电话" width="100" labelFunction="formatNumberToString_phone"/>
+						<s:GridColumn dataField="d60172" headerText="男方姓名" width="85"/>
+						<s:GridColumn dataField="d60175" headerText="男方身份证号" width="150" labelFunction="formatNumberToString_man"/>
+						<s:GridColumn dataField="d60198ZH" headerText="男方户口所在地" width="145" />
+						<s:GridColumn dataField="d60197ZH" headerText="男方家庭住址" width="145" />
+						<s:GridColumn dataField="d60158" headerText="签发人员" width="100"/>
+						<s:GridColumn dataField="d60159" headerText="领证人员" width="100"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+		</s:VGroup>	
+		
+	</s:Scroller>	
+</s:Module>

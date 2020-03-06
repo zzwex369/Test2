@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns="spark.components.*"
+			   width="686" height="590" backgroundColor="#C0C0C0" chromeColor="#BBE2FA"
+			   close="closeTitleWindow()" color="#000000" contentBackgroundColor="#FFFFFF"
+			   cornerRadius="5" creationComplete="init()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="图片">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="changePicAttribute" result="changePicAttributeHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:Wipe id="image_addedEffect" direction="down" startDelay="100"/><!--播放效果-->
+		<s:Parallel id="image_removedEffect"><!--消失效果-->
+			<mx:Zoom/>
+			<mx:Fade/>
+		</s:Parallel>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";	
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[   		
+			import com.xyw.sys.custom.itemrenderer.CustomListColumnItemRenderer4;
+			import com.xyw.sys.model.PicDataRequest;
+			import com.xyw.sys.model.PicDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			import com.xyw.uploadPictures.model.PictureMessage;
+			import com.xyw.uploadPictures.model.Pictures;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.controls.ProgressBar;
+			import mx.controls.listClasses.ListBaseContentHolder;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.supportClasses.ItemRenderer;
+			private var position:String;
+			private var selectFile:Object;
+			private var file:FileReference; //要上传的文件  
+			private var fileList:FileReferenceList = new FileReferenceList(); //选择图片的文件列表   
+			private var isClosed:Boolean=false;//判断弹出的图片是否关闭  
+			private var img:Image;//弹出的大图  
+			[Bindable]
+			private var imgList:ArrayCollection=new ArrayCollection();//待上传图片列表  
+			[Bindable]
+			private var _allTip:String="";
+			private var j:int=0;//load回调函数次数  
+			private var picNum:int=0;//当前合计图片数量
+			private var selecetedNum:int=-1;//被选中的序号  
+			private var isUpload:Boolean=false;//是否已经上传  
+			private var _uploadSizeTotal:Number = 0;//总共大小
+			[Bindable]
+			public var paramsArr:Array;//0.档案人名   1. 类型代码    2 图片数量限制（最少） 3 图片数量限制（最多）
+			public var picArr:Array;//图片参数   0 sql条件 1 缩放比例   2质量参数  3图片格式 
+			public function init():void{  
+				fileList = new FileReferenceList();  //创建对象  
+				fileList.addEventListener(Event.SELECT, onSelect);//选择 监听器   
+			}
+			private function closeTitleWindow():void
+			{
+				Alert.show("是否关闭上传图片窗口","系统提示",1|2,this,_closeTitleWindow);
+			}
+			private function _closeTitleWindow(event:CloseEvent):void
+			{
+				if(event.detail==Alert.YES)
+					PopUpManager.removePopUp(this);					
+				else
+					this.hGroup.enabled=true;
+			}
+			//单位转换
+			internal function countFileSize(size:Number):String{
+				var _s:Number=Number((size/1024).toFixed(2));
+				var str:String="";
+				if(_s<1) str=size.toString()+"B";
+				else if(_s>1&&_s<1024) str=(_s.toFixed(2)).toString()+"KB";
+				else str=((_s/1024).toFixed(2)).toString()+"MB";
+				return str;
+			}
+			//---------------------------文件上传部分---------------------------------------------//    
+			private function select(position:String): void{
+				this.position=position;
+				var imageTypes:FileFilter = new FileFilter("Images (*.jpg, *.jpeg, *.png, *.bmp)", "*.jpg;*.jpeg;*.png;*.bmp");     
+				var allTypes:Array = new Array(imageTypes);    
+				fileList.browse(allTypes);//打开资源管理器时显示的类型  
+			}     
+			/** 
+			 * 选择文件事件回调函数 
+			 * */  
+			private function onSelect(e: Event): void{  
+				isUpload=false;//重置上传状态标识  
+				//_uploadSizeTotal=0;//第一次选择文件时需要把文件总大小清零
+				j=0;//load回调函数的执行次数  
+				for(var i:int=0;i<fileList.fileList.length;i++)  
+				{     
+					file=fileList.fileList[i] as FileReference; 
+					/* _uploadSizeTotal+=file.size; */
+					//为每个FileReference添加监听器  
+					file.addEventListener(Event.COMPLETE,completeHandle);
+					file.load();  
+				}  
+			}    
+			/* 
+			* load回调方法--要等到 fileList遍历完才一次性回调 
+			*/  
+			private function completeHandle(event:Event):void{  
+				if(j==fileList.fileList.length-1&&!isUpload)  
+					creatImgList();  
+				j++;  
+				
+			}     
+			//保存待上传图片到imgList列表  
+			private function creatImgList():void
+			{
+				var obj:Object;
+				var picFormat:String;
+				var _file:FileReference;
+				hGroup.enabled=false;
+				var positionStr:String="";
+				if(this.position!="0")
+					positionStr=this.position=="1"?"左":"右";
+				var imgCacheList:ArrayCollection=new ArrayCollection();
+				for(var i:int=0;i<fileList.fileList.length;i++)  
+				{     
+					++picNum;
+					_file=fileList.fileList[i] as FileReference; 
+					obj=new Object;
+					picFormat=(_file.type.toString()).toLowerCase();
+					obj.data=_file.data;
+					obj.name=paramsArr[0]+positionStr+"_"+picNum+"_"+new Date().time+picFormat;
+					obj.size=_file.size;
+					obj.type=picFormat;	
+					obj.position=this.position;
+					obj.picType=paramsArr[1];
+					_uploadSizeTotal+=obj.size; 
+					imgCacheList.addItem(obj);//添加到待图片列表  
+					_file.removeEventListener(Event.COMPLETE,completeHandle);
+					
+				} 
+				var picDataRequest:PicDataRequest=new PicDataRequest();
+				picDataRequest.picList=imgCacheList;
+				picDataRequest.picParams=picArr;
+				systemService.changePicAttribute(picDataRequest);
+			}  
+			/*------------------预览图片---------------------------------*/
+			protected function smallerimg_clickHandler(event:MouseEvent):void
+			{
+				img = new Image();
+				img.source=selectFile.data;
+				var imgPanel:PicPanel=new PicPanel();
+				imgPanel.imgByteArray=selectFile.data;
+				imgPanel.addEventListener(Event.COMPLETE, image_complete);
+				imgPanel.addEventListener(ResizeEvent.RESIZE, image_resize);
+				imgPanel.setStyle("addedEffect", image_addedEffect);
+				imgPanel.setStyle("removedEffect", image_removedEffect);
+				PopUpManager.addPopUp(imgPanel, this.parentApplication as main,true);
+				var x:Number = (this.parentApplication.width -imgPanel.width) / 2;
+				var y:Number = (this.parentApplication.height -imgPanel.height) / 2;
+				imgPanel.move(x,y)
+				imgPanel.init();
+			}
+			
+			
+			private function image_resize(evt:ResizeEvent):void 
+			{
+				PopUpManager.centerPopUp(evt.currentTarget as PicPanel);
+			}
+			private function image_complete(evt:Event):void
+			{
+				PopUpManager.centerPopUp(evt.currentTarget as PicPanel);
+			}
+			/* 
+			*删除选中图片  
+			*/  
+			protected function deletePhoto():void  
+			{      
+				//var array:Array=picList.selectedIndices;  
+				if(picList.selectedItem==null){
+					Alert.show("请选择删除的图片");
+					return ;
+				}
+				var array:Vector.<int>=picList.selectedIndices;  
+				if(array.length>0){  
+					array.sort(Array.NUMERIC);//按数字升序排序   
+					for(var i:int=0;i<array.length;i++)  
+					{  
+						imgList.removeItemAt(array[i]-i);//从待上传列表中移出  
+						fileList.fileList.splice(array[i],1);//移除的选择项按索引从大到小移除，以便移除过程中索引不超界
+					} 
+					_uploadSizeTotal=0;
+					picNum=0;
+					for(var j:Number=0;j<imgList.length;j++){	
+						++picNum;
+						var obj:Object=new Object();
+						obj=imgList[j];
+						var nameArr:Array=obj.name.split("_");
+					    name=nameArr[0]+"_"+picNum+"_"+nameArr[2];
+						obj.name=name;
+						imgList[j]=obj;
+						_uploadSizeTotal+=obj.size;				
+					}
+					photoName.text="";  
+					photoSize.text="";  
+				} 
+				picSizeComputed();
+			}  
+			/* 
+			* 显示选中条目的详细信息 
+			*/  
+			protected function photoList_itemClickHandler(event:MouseEvent):void  
+			{   
+				if(!imgList.length){
+					Alert.show("暂无图片","系统提示");
+					return ;
+				}
+				selectFile=picList.selectedItem;
+				if(selectFile!=null){  
+					photoName.text=selectFile.name;//名称  
+					photoSize.text=countFileSize(selectFile.size)//大小  
+					selecetedNum=picList.selectedIndex;//被选中的序号  
+				}  
+			}  
+			private function closeTitle(event:CloseEvent):void
+			{
+				if(event.detail==Alert.OK){
+					closeTitleWindow();
+				}
+			}
+			
+			/* ******************
+			点击上传按钮
+			******************  */
+			private function uploadHandler():void{
+				if(!picList.dataProvider.length){
+					Alert.show("您还未选择文件!","提示信息");
+					return ;
+				}
+				var picCount:int=imgList.length;
+				if(picCount<paramsArr[2])
+				{
+					Alert.show("请最少上传"+paramsArr[2]+"张图片","系统提示");
+					return;
+				}
+				if(picCount>paramsArr[3])
+				{
+					Alert.show("请最多上传"+paramsArr[3]+"张图片","系统提示");
+					return;
+				}
+				_uploadHandler();
+			}
+			
+			private  function delAllPic():void
+			{	
+				if(imgList.length){
+					picList.dataProvider.removeAll();
+					imgList.removeAll();
+					photoName.text="";  
+					photoSize.text="";  
+					_allTip="";
+					picNum=0;
+				}else{
+					Alert.show("没有图片");
+				}
+			}
+			
+			/****************上传图片并关闭窗口********************/
+			private function _uploadHandler():void
+			{
+				hGroup.enabled=false;
+				var ownerModule:Object=this.owner;		
+				ownerModule.putPictures(ArrayCollection(picList.dataProvider));
+				closeTitleWindow();
+			}
+			
+			
+			private function changePicAttributeHandler(event:ResultEvent):void
+			{
+				var picDataResponse:Object =event.result;
+				imgList.addAll(picDataResponse.picByteList);				
+				this.hGroup.enabled=true;
+				callLater(countSize);
+			}
+			
+			private function countSize():void
+			{
+				_allTip="";
+				_uploadSizeTotal=0;
+				for(var t:int=0;t<imgList.length;t++)
+				{
+					var obj:Object=imgList[t];
+					_uploadSizeTotal+=obj.size; 
+					
+				} 
+				picSizeComputed();
+			}
+			
+			/**
+			 *
+			 */
+			private function picSizeComputed():void
+			{
+				if(!imgList.length){
+					_allTip="";
+				}else{
+					_allTip="共"+picNum+"个文件，"+countFileSize(_uploadSizeTotal).toString();
+				}
+			}
+		]]>  
+	</fx:Script>
+	<s:HGroup>
+		<s:List id="picList" width="684" height="402" click="photoList_itemClickHandler(event)"
+				contentBackgroundColor="#FFFFFF" dataProvider="{imgList}"
+				itemRenderer="{new ClassFactory(CustomListColumnItemRenderer4)}">
+			<s:layout>
+				<s:TileLayout requestedColumnCount="4" requestedRowCount="3"/>
+			</s:layout>
+		</s:List>
+	</s:HGroup>
+	<s:HGroup x="0" y="401" width="684" height="49" paddingTop="10">
+		<s:Label id="labelName" width="94" height="30" fontSize="15" paddingLeft="9" text="图片名称:"
+				 verticalAlign="middle"/>
+		<s:Label id="photoName" width="582" height="30" maxDisplayedLines="1" verticalAlign="middle"/>
+	</s:HGroup>
+	<s:HGroup x="0" y="468" width="684" height="38">
+		<s:Label x="10" y="453" width="94" height="30" fontSize="15" paddingLeft="9" text="大小:"
+				 verticalAlign="middle"/>
+		<s:Label id="photoSize" x="125" y="447" width="262" height="37" maxDisplayedLines="1"
+				 verticalAlign="middle"/>
+		<s:Label id="allTip" width="315" height="36" fontSize="18" fontWeight="bold" paddingLeft="20"
+				 text="{_allTip}" verticalAlign="middle"/>	
+	</s:HGroup>
+	<!--<s:HGroup x="0" y="514" width="684" height="40" verticalAlign="middle">
+		<s:Label width="113" height="30" fontSize="15" paddingLeft="5" text="文件总进度"
+				 verticalAlign="middle"/>
+		<mx:Canvas id="totalProcess" width="471" height="22" backgroundColor="0xffffff"
+				   borderColor="0X124fc0" cornerRadius="7">
+			<mx:Canvas id="processBarTotal" height="22" backgroundAlpha="0.5"
+					   backgroundColor="#5CCA6C" cornerRadius="7"/>
+		</mx:Canvas>
+		<s:Label id="processBarTotalLabel" width="79" color="#DA2332" fontSize="15" fontWeight="bold"
+				 paddingLeft="5" text="0%"></s:Label>
+	</s:HGroup>-->
+	<s:HGroup id="hGroup" x="0" y="524" width="684" height="40" horizontalAlign="right"
+			  paddingRight="10">
+		<s:Button height="31" label="打开图片" buttonMode="true" click="select('0')" visible="{paramsArr[1]=='1'}" includeInLayout="{paramsArr[1]=='1'}" 
+				  color="#000000"/>
+		<s:Button height="31" label="打开左侧图片" buttonMode="true" click="select('1')" visible="{paramsArr[1]!='1'}" includeInLayout="{paramsArr[1]!='1'}" 
+				  color="#000000"/>
+		<s:Button height="31" label="打开右侧图片" buttonMode="true" click="select('2')" visible="{paramsArr[1]!='1'}" includeInLayout="{paramsArr[1]!='1'}" 
+				  color="#000000"/>
+		<s:Button height="31" label="预览" buttonMode="true" click="smallerimg_clickHandler(event)"
+				  color="#000000"/>
+		<s:Button height="31" label="上传全部图片" buttonMode="true" click="uploadHandler()"
+				  color="#000000"/>
+		<s:Button height="31" label="删除选中图片" buttonMode="true" click="deletePhoto()" color="#000000"/>
+		<s:Button x="176" y="433" height="31" label="删除全部图片" buttonMode="true" click="delAllPic()"
+				  color="#000000"/>
+		<s:Button height="31" label="关闭窗口" buttonMode="true" click="closeTitleWindow()"
+				  color="#000000"/>
+	</s:HGroup>	
+</s:TitleWindow>

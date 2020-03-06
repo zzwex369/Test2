@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.xyw.sys.model.D806" table="D806">
+        <comment>用户角色表</comment>
+        <id name="d80601" type="java.lang.Short">
+            <column name="D806_01" precision="4" scale="0" />
+            <generator class="sequence">
+            	<param name="sequence">D806_01_seq</param>
+            </generator>
+        </id>
+        <property name="d80602" type="java.lang.String">
+            <column name="D806_02" length="20">
+                <comment>用户序号</comment>
+            </column>
+        </property>
+        <property name="d80603" type="java.lang.Short">
+            <column name="D806_03" precision="4" scale="0">
+                <comment>角色序号</comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

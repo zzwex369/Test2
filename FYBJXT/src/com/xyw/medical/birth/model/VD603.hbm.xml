@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name="com.xyw.medical.birth.model.VD603" table="V_D603">
+        <id name="d60301" type="java.lang.Long">
+            <column name="D603_01" />
+            <generator class="sequence" >
+            	<param name="sequence">D603_01_SEQ</param>
+            </generator>
+        </id>
+        <property name="d60302" type="java.lang.String">
+            <column name="D603_02" />
+        </property>
+        <property name="d60302Zh" type="java.lang.String">
+            <column name="D603_02_ZH" />
+        </property>
+        <property name="d60303" type="java.lang.String">
+            <column name="D603_03" />
+        </property>
+        <property name="d60304" type="java.lang.String">
+            <column name="D603_04" />
+        </property>
+        <property name="d60304Zh" type="java.lang.String">
+            <column name="D603_04_ZH" />
+        </property>
+        <property name="d60305" type="java.lang.String">
+            <column name="D603_05" />
+        </property>
+        <property name="d60306" type="int">
+            <column name="D603_06" />
+        </property>
+        <property name="d60307" type="java.lang.String">
+            <column name="D603_07" />
+        </property>
+        <property name="d60307Zh" type="java.lang.String">
+            <column name="D603_07_ZH" />
+        </property>
+        <property name="d60308" type="java.lang.String">
+            <column name="D603_08" />
+        </property>
+        <property name="d60308Zh" type="java.lang.String">
+            <column name="D603_08_ZH" />
+        </property>
+        <property name="d60309" type="java.lang.String">
+            <column name="D603_09" />
+        </property>
+        <property name="d60309Zh" type="java.lang.String">
+            <column name="D603_09_ZH" />
+        </property>
+        <property name="d60310" type="int">
+            <column name="D603_10" />
+        </property>
+        <property name="d60311" type="timestamp">
+            <column name="D603_11" />
+        </property>
+        <property name="d60312" type="java.lang.String">
+            <column name="D603_12" />
+        </property>
+        <property name="d60312Zh" type="java.lang.String">
+            <column name="D603_12_ZH" />
+        </property>
+        <property name="d60313" type="java.lang.String">
+            <column name="D603_13" />
+        </property>
+        <property name="d60313Zh" type="java.lang.String">
+            <column name="D603_13_ZH" />
+        </property>
+        <property name="d60314" type="java.lang.String">
+            <column name="D603_14" />
+        </property>
+        <property name="d60315" type="timestamp">
+            <column name="D603_15" />
+        </property>
+        <property name="d60316" type="java.lang.String">
+            <column name="D603_16" />
+        </property>
+        <property name="d60316Zh" type="java.lang.String">
+            <column name="D603_16_ZH" />
+        </property>
+    </class>
+</hibernate-mapping>

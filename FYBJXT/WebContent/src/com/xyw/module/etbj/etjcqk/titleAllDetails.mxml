@@ -1,0 +1,1629 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   width="1100" height="650" backgroundColor="#FFFFFF" chromeColor="#5CACEE"
+			   close="removeWindow()" creationComplete="init()" title="综合查询"  width.etdaxq="1250"
+			   width.etsfxq="1250"
+			   width.etjcxq="1250">
+	<fx:Declarations>
+		<s:RemoteObject id="e301Service" destination="e301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE301All" result="queryE301AllHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="e304Service" destination="e304Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE304All" result="queryE304AllHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="e305Service" destination="e305Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryE305All" result="queryE305AllHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.model.E301Request;
+			import com.xyw.module.etbj.model.E304Request;
+			import com.xyw.module.etbj.model.E305Request;
+			import com.xyw.module.etbj.model.VE301;
+			import com.xyw.module.etbj.model.VE304;
+			import com.xyw.module.etbj.model.VE305;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridEvent;
+			import spark.events.GridSelectionEvent;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var systemUser:SystemUser = null;
+			public var e301Request:E301Request=null;
+			public var e305Request:E305Request =null;
+			public var e304Request:E304Request =null;
+			public var ve301:VE301;
+			public var ve301_:VE301 = null;
+			public var ve304_:VE304 = null;
+			public var ve305_:VE305 = null;
+			private var zt:String = null;
+			public function init():void
+			{
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelecte);
+				this.systemUser = this.parentApplication.systemUser;
+				this.etda.enabled = false;
+				etdaxq();
+			}
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+				if(this.zt=="da"){
+					if(flag == "S301_01")//性别
+					{
+						this.e301_04.dataProvider = comboBoxDataList;
+						this.e301_04.selectedIndex = 0;
+					}else if(flag == "S301_04")//民族
+					{
+						this.e301_08.dataProvider = comboBoxDataList;
+						this.e301_08.selectedIndex = 1;
+					}else if(flag == "S301_03")//国籍
+					{
+						var countryIndex:int = this.getCountrySelectedIndex(comboBoxDataList);
+						this.e301_07.dataProvider = comboBoxDataList;
+						this.e301_07.selectedIndex = countryIndex;
+					}else if(flag == "D101")//单位
+					{
+						this.e301_21.dataProvider = comboBoxDataList;
+						this.e301_21.selectedIndex = index;
+						this.e301_21.enabled =false;
+					}else if(flag == "S601_10")//胎数
+					{
+						this.e301_20.dataProvider = comboBoxDataList;
+						this.e301_20.selectedIndex = 1;
+					}
+				}
+				if(this.zt=="sf"){
+					if(flag == "D101")
+					{
+						this.e305_72.dataProvider = comboBoxDataList;
+						this.e305_72.selectedIndex = index;
+						this.e305_17.dataProvider = comboBoxDataList;
+						this.e305_17.selectedIndex = index;
+						this.e305_81.dataProvider = comboBoxDataList;
+						this.e305_81.selectedIndex = index;
+					}else if(flag == "s301_01")//性别
+					{
+						this.e305_03.dataProvider = comboBoxDataList;
+						this.e305_03.selectedIndex = index;
+					}else if(flag == "s601_03")//有无
+					{
+						this.e305_20.dataProvider = comboBoxDataList;
+						this.e305_20.selectedIndex = 1;
+						this.e305_23.dataProvider = comboBoxDataList;
+						this.e305_23.selectedIndex = 1;
+						this.e305_32.dataProvider = comboBoxDataList;
+						this.e305_32.selectedIndex = 1;
+						this.e305_50.dataProvider = comboBoxDataList;
+						this.e305_50.selectedIndex = 1;
+						this.e305_70.dataProvider = comboBoxDataList;
+						this.e305_70.selectedIndex = 1;
+					}else if(flag == "z303_03")//是否异常
+					{
+						this.e305_44.dataProvider = comboBoxDataList;
+						this.e305_46.dataProvider = comboBoxDataList;
+						this.e305_48.dataProvider = comboBoxDataList;
+						this.e305_52.dataProvider = comboBoxDataList;
+						this.e305_56.dataProvider = comboBoxDataList;
+						this.e305_58.dataProvider = comboBoxDataList;
+						this.e305_60.dataProvider = comboBoxDataList;
+						this.e305_62.dataProvider = comboBoxDataList;
+						this.e305_64.dataProvider = comboBoxDataList;
+						this.e305_66.dataProvider = comboBoxDataList;
+						this.e305_44.selectedIndex = 1;
+						this.e305_46.selectedIndex = 1;
+						this.e305_48.selectedIndex = 1;
+						this.e305_52.selectedIndex = 1;
+						this.e305_56.selectedIndex = 1;
+						this.e305_58.selectedIndex = 1;
+						this.e305_60.selectedIndex = 1;
+						this.e305_62.selectedIndex = 1;
+						this.e305_64.selectedIndex = 1;
+						this.e305_66.selectedIndex = 1;
+					}else if(flag == "z305_01")//母亲妊娠期患病情况
+					{
+						this.e305_16.dataProvider = comboBoxDataList;
+						this.e305_16.selectedIndex = 0;
+					}else if(flag == "z305_02")//出生情况
+					{
+						this.e305_18.dataProvider = comboBoxDataList;
+						this.e305_18.selectedIndex = 1;
+					}else if(flag == "z305_03")//新生儿听力筛查
+					{
+						this.e305_25.dataProvider = comboBoxDataList;
+						this.e305_25.selectedIndex = 1;
+					}else if(flag == "z305_04")//喂养方式
+					{
+						this.e305_29.dataProvider = comboBoxDataList;
+						this.e305_29.selectedIndex = 1;
+					}else if(flag == "z305_05")//面色
+					{
+						this.e305_38.dataProvider = comboBoxDataList;
+						this.e305_38.selectedIndex = 1;
+					}else if(flag == "z305_07")//前卤
+					{
+						this.e305_42.dataProvider = comboBoxDataList;
+						this.e305_42.selectedIndex = 1;
+					}else if(flag == "z305_08")//皮肤
+					{
+						this.e305_54.dataProvider = comboBoxDataList;
+						this.e305_54.selectedIndex = 1;
+					}else if(flag == "z305_09")//脐带
+					{
+						this.e305_68.dataProvider = comboBoxDataList;
+						this.e305_68.selectedIndex = 1;
+					}else if(flag == "z305_10")//大便
+					{
+						this.e305_33.dataProvider = comboBoxDataList;
+						this.e305_33.selectedIndex = 1;
+					}
+				}
+				if(zt=="jc"){
+					if(flag == "Z304_01")
+					{
+						this.e304_12.dataProvider = comboBoxDataList;
+						this.e304_12.selectedIndex = 1;
+					}else if(flag == "Z304_02")//民族
+					{
+						this.e304_18.dataProvider = comboBoxDataList;
+						this.e304_18.selectedIndex = 1;
+						this.e304_30.dataProvider = comboBoxDataList;
+						this.e304_30.selectedIndex = 1;
+					}
+					else if(flag == "Z304_05")//胎数
+					{
+						this.e304_31.dataProvider = comboBoxDataList;
+						this.e304_31.selectedIndex = 1;
+					}else if(flag == "Z304_06")//胎数
+					{
+						this.e304_02.dataProvider = comboBoxDataList;
+						this.e304_02.selectedIndex = 1;
+					}else if(flag == "Z304_07")//胎数
+					{
+						this.e304_06.dataProvider = comboBoxDataList;
+						this.e304_06.selectedIndex = 1;
+						this.e304_08.dataProvider = comboBoxDataList;
+						this.e304_08.selectedIndex = 1;
+					}else if(flag == "Z303_03")//胎数
+					{
+						this.e304_11.dataProvider = comboBoxDataList;
+						this.e304_16.dataProvider = comboBoxDataList;
+						this.e304_17.dataProvider = comboBoxDataList;
+						this.e304_19.dataProvider = comboBoxDataList;
+						this.e304_20.dataProvider = comboBoxDataList;
+						this.e304_21.dataProvider = comboBoxDataList;
+						this.e304_22.dataProvider = comboBoxDataList;
+						this.e304_23.dataProvider = comboBoxDataList;
+						this.e304_26.dataProvider = comboBoxDataList;
+						this.e304_11.selectedIndex = 1;
+						this.e304_16.selectedIndex = 1;
+						this.e304_17.selectedIndex = 1;
+						this.e304_19.selectedIndex = 1;
+						this.e304_20.selectedIndex = 1;
+						this.e304_21.selectedIndex = 1;
+						this.e304_22.selectedIndex = 1;
+						this.e304_23.selectedIndex = 1;
+						this.e304_26.selectedIndex = 1;
+					}else if(flag == "S601_03")//胎数
+					{
+						this.e304_15.dataProvider = comboBoxDataList;
+						this.e304_33.dataProvider = comboBoxDataList;
+						this.e304_15.selectedIndex = 1;
+						this.e304_33.selectedIndex = 1;
+					}
+					else if(flag == "D101")//
+					{
+						this.e304_35.dataProvider = comboBoxDataList;
+						this.e304_35.selectedIndex = index;
+						this.e304_45.dataProvider = comboBoxDataList;
+						this.e304_45.selectedIndex = index;
+					}else if(flag == "Z305_05")//
+					{
+						this.e304_10.dataProvider = comboBoxDataList;
+						this.e304_10.selectedIndex = 1;
+					}
+				}
+				
+			}
+			//儿童档案
+			private function etdaxq():void{
+				zt = "da";
+				this.currentState ="etdaxq";
+				this.etda.enabled = false;
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t ";
+				comboBoxDataRequest.flag = "D101";//单位
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_01";//性别
+				comboBoxDataRequest.sql = "select * from S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_03";//国籍
+				comboBoxDataRequest.sql = "select * from S301_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_04";//民族
+				comboBoxDataRequest.sql = "select * from S301_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from S301_06";
+				comboBoxDataRequest.flag ="S301_06";	
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_10";//胎数
+				comboBoxDataRequest.sql = "select * from S601_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				e301Request = new E301Request();
+				e301Request.e30117 = ve301.e30117;
+				e301Request.e30126 = ve301.e30126;
+				e301Request.e30127 = ve301.e30127;
+				this.e301Service.queryE301All(e301Request);
+			}
+			private function queryE301AllHandler(event:ResultEvent):void{
+				var e301Response:Object = event.result;
+				var e301s:ArrayCollection =e301Response.ve301s;
+				if(e301Response.state){
+					this.certificateDataGrid.dataProvider = e301s;
+					this.e30103_.visible = true;
+					this.e30126_.visible = true;
+					this.e30129_.visible =true;
+					this.e30403_.visible = false;
+					this.e30449_.visible = false;
+					this.e30402_.visible = false;
+					this.e30502_.visible = false;
+					this.e30511_.visible = false;
+					this.e30574Str_.visible = false;
+					
+				}else{
+					Alert.show(e301Response.errorMessage, "系统提示");
+				}
+			}
+			//儿童随访
+			private function etsfxq():void{
+				zt = "sf";
+				this.currentState ="etsfxq";
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "D101";//单位
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s301_01";//单位
+				comboBoxDataRequest.sql = "select * from s301_01 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z303_03";//单位
+				comboBoxDataRequest.sql = "select * from z303_03 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s601_02";//单位
+				comboBoxDataRequest.sql = "select * from s601_02 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_01";//单位
+				comboBoxDataRequest.sql = "select * from z305_01 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_02";//单位
+				comboBoxDataRequest.sql = "select * from z305_02 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_03";//单位
+				comboBoxDataRequest.sql = "select * from z305_03 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_04";//单位
+				comboBoxDataRequest.sql = "select * from z305_04 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_05";//单位
+				comboBoxDataRequest.sql = "select * from z305_05 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_06";//单位
+				comboBoxDataRequest.sql = "select * from z305_06 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_07";//单位
+				comboBoxDataRequest.sql = "select * from z305_07 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_08";//单位
+				comboBoxDataRequest.sql = "select * from z305_08 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_09";//单位
+				comboBoxDataRequest.sql = "select * from z305_09 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "z305_10";//单位
+				comboBoxDataRequest.sql = "select * from z305_10 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s601_03";//单位
+				comboBoxDataRequest.sql = "select * from s601_03 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				e305Request = new E305Request();
+				//e305Request.e30502 = ve301.e30103;
+				//e305Request.e30511 = ve301.e30126;
+				this.e305Service.queryE305All(e305Request);
+			}
+			private function queryE305AllHandler(event:ResultEvent):void{
+				var e305Response:Object = event.result;
+				var e305s:ArrayCollection =e305Response.ve305s;
+				if(e305Response.state){
+					this.certificateDataGrid.dataProvider = e305s;
+					this.e30502_.visible = true;
+					this.e30511_.visible = true;
+					this.e30574Str_.visible = true;
+					this.e30403_.visible = false;
+					this.e30449_.visible = false;
+					this.e30402_.visible = false;
+					this.e30103_.visible = false;
+					this.e30126_.visible = false;
+					this.e30129_.visible = false;
+				}else{
+					Alert.show(e305Response.errorMessage, "系统提示");
+				}
+			}
+			//儿童检查
+			private function etjcxq():void{
+				zt="jc";
+				this.currentState="etjcxq";
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "D101";//单位
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_01";//闭合
+				comboBoxDataRequest.sql = "select * from Z304_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_02";//通过
+				comboBoxDataRequest.sql = "select * from Z304_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_03";//可疑佝偻症状
+				comboBoxDataRequest.sql = "select * from Z304_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_04";//可疑佝偻病症
+				comboBoxDataRequest.sql = "select * from Z304_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_05";//患病未患病
+				comboBoxDataRequest.sql = "select * from Z304_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_06";//月龄
+				comboBoxDataRequest.sql = "select * from Z304_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_07";//上中下
+				comboBoxDataRequest.sql = "select * from Z304_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z305_05";//面色
+				comboBoxDataRequest.sql = "select * from Z305_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_03";//皮肤
+				comboBoxDataRequest.sql = "select * from Z303_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_03";//患病未患病
+				comboBoxDataRequest.sql = "select * from S601_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z307_19";//月龄
+				comboBoxDataRequest.sql = "select * from Z307_19";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z304_08";//月龄
+				comboBoxDataRequest.sql = "select * from Z304_08";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				e304Request = new E304Request();
+//				e304Request.e30403 = ve301.e30103;//婴儿姓名
+//				e304Request.e30449 = ve301.e30126;//母亲姓名
+//				e304Request.e30450 = ve301.e30127;//母亲身份证号
+				this.e304Service.queryE304All(e304Request);
+			}
+			private function queryE304AllHandler(event:ResultEvent):void{
+				var e304Response:Object = event.result;
+				var e304s:ArrayCollection =e304Response.ve304s;
+				if(e304Response.state){
+					this.certificateDataGrid.dataProvider = e304s;
+					this.e30403_.visible = true;
+					this.e30449_.visible = true;
+					this.e30402_.visible = true;
+					this.e30502_.visible = false;
+					this.e30511_.visible = false;
+					this.e30574Str_.visible = false;
+					this.e30103_.visible = false;
+					this.e30126_.visible = false;
+					this.e30129_.visible = false;
+				}else{
+					Alert.show(e304Response.errorMessage, "系统提示");
+				}
+			}
+			public function onSelecte(event:GridSelectionEvent):void{
+				this.ve301_ = DataGrid(event.target).selectedItem as VE301;
+				this.ve304_ = DataGrid(event.target).selectedItem as VE304;
+				this.ve305_ = DataGrid(event.target).selectedItem as VE305;
+				if(ve301_!=null){//当选中那条信息时通过状态跳到档案的界面
+					this.currentState="etdaxq";
+					this.e301_03.text =ve301_.e30103;
+					var e30104dataProvide:ArrayCollection =ArrayCollection(this.e301_04.dataProvider);
+					var e30104Index:int =this.getDropDownListSelectedIndex(e30104dataProvide,ve301_.e30104);
+					this.e301_04.selectedIndex =e30104Index;
+					if(ve301_.e30106Str !=null){
+						this.e301_06.text =ve301_.e30106Str;
+					}
+					var e30107dataProvide:ArrayCollection =ArrayCollection(this.e301_07.dataProvider);
+					var e30107Index:int =this.getDropDownListSelectedIndex(e30107dataProvide,ve301_.e30107);
+					this.e301_07.selectedIndex =e30107Index;
+					var e30108dataProvide:ArrayCollection =ArrayCollection(this.e301_08.dataProvider);
+					var e30108Index:int =this.getDropDownListSelectedIndex(e30108dataProvide,ve301_.e30108);
+					this.e301_08.selectedIndex =e30108Index;
+					this.e301_13.text =ve301_.e30113;
+					this.e301_17.text =ve301_.e30117;
+					var temp:String = ve301_.e30118;
+					var aa:Array=temp.split(",");
+					this.e301_18_1.text = aa[0];
+					this.e301_18_2.text = aa[1];
+					this.e301_19.text =ve301_.e30119.toString();
+					var e30120dataProvide:ArrayCollection =ArrayCollection(this.e301_20.dataProvider);
+					var e30120Index:int =this.getDropDownListSelectedIndex(e30120dataProvide,ve301_.e30120);
+					this.e301_20.selectedIndex =e30120Index;
+					var e30121dataProvide:ArrayCollection =ArrayCollection(this.e301_21.dataProvider);
+					var e30121Index:int =this.getDropDownListSelectedIndex(e30121dataProvide,ve301_.e30121);
+					this.e301_21.selectedIndex =e30121Index;
+					this.e301_22.text =ve301_.e30122.toString();
+					this.e301_23.text =ve301_.e30123.toString();
+					this.e301_30.text = ve301_.e30130.toString();
+				}
+				if(ve305_!=null){
+					this.currentState="etsfxq";
+					this.e305_02.text=ve305_.e30502;
+					this.e305_03.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_03.dataProvider),ve305_.e30503);
+					this.e305_04.text=ve305_.e30504Str;
+					this.e305_06.text=ve305_.e30506;
+					this.e305_07.text=ve305_.e30507;
+					this.e305_09.text=ve305_.e30509;
+					this.e305_11.text=ve305_.e30511;
+					this.e305_13.text=ve305_.e30513;
+					this.e305_15.text=ve305_.e30515;
+					var e30516Index:int =this.getDropDownListSelectedIndex(ArrayCollection(this.e305_16.dataProvider),ve305_.e30516);
+					this.e305_16.selectedIndex=e30516Index;
+					this.e305_17.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_17.dataProvider),ve305_.e30517);
+					this.e305_18.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_18.dataProvider),ve305_.e30518);
+					this.e305_19.text=ve305_.e30519;
+					this.e305_20.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_20.dataProvider),ve305_.e30520);
+					this.e305_21.text=ve305_.e30521;
+					this.e305_22.text=ve305_.e30522;
+					this.e305_23.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_23.dataProvider),ve305_.e30523); 
+					this.e305_24.text=ve305_.e30524;
+					this.e305_26.text=ve305_.e30526;
+					this.e305_27.text=ve305_.e30527;
+					this.e305_28.text=ve305_.e30528;
+					this.e305_29.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_29.dataProvider),ve305_.e30529);
+					this.e305_30.text=ve305_.e30530;
+					this.e305_31.text=ve305_.e30531;
+					this.e305_32.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_32.dataProvider),ve305_.e30532);
+					this.e305_33.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_33.dataProvider),ve305_.e30533);
+					this.e305_34.text=ve305_.e30534;
+					this.e305_35.text=ve305_.e30535;
+					this.e305_36.text=ve305_.e30536;
+					this.e305_37.text=ve305_.e30537;
+					this.e305_38.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_38.dataProvider),ve305_.e30538);
+					this.e305_39.text=ve305_.e30539;
+					if(ve305_.e30540 != null){
+						var e305_40:String=ve305_.e30540;
+						bb=e305_40.split(",");
+						if(bb[2] =="3")this.e305_40_2.selected =true;
+						if(bb[3] =="4")this.e305_40_2.selected =true;
+						if(bb[4] =="5")this.e305_40_2.selected =true;
+						if(bb[5] =="6")this.e305_40_2.selected =true;
+					}				
+					var e305_41:String=ve305_.e30541;
+					bb=e305_41.split(",");
+					for(i=0;i<bb.length;i++){
+						this.e305_41_0.text=bb[0];
+						this.e305_41_1.text=bb[1];
+					}				
+					this.e305_42.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_42.dataProvider),ve305_.e30542);
+					this.e305_43.text=ve305_.e30543;
+					this.e305_44.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_44.dataProvider),ve305_.e30544);
+					this.e305_45.text=ve305_.e30545;
+					this.e305_46.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_46.dataProvider),ve305_.e30546);
+					this.e305_47.text=ve305_.e30547;
+					this.e305_48.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_48.dataProvider),ve305_.e30548);
+					this.e305_49.text=ve305_.e30549;
+					this.e305_50.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_50.dataProvider),ve305_.e30550);
+					this.e305_51.text=ve305_.e30551;
+					this.e305_52.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_52.dataProvider),ve305_.e30552);
+					this.e305_53.text=ve305_.e30553;
+					this.e305_54.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_54.dataProvider),ve305_.e30554);
+					this.e305_55.text=ve305_.e30555;
+					this.e305_56.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_56.dataProvider),ve305_.e30556);
+					this.e305_57.text=ve305_.e30557;
+					this.e305_58.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_58.dataProvider),ve305_.e30558);
+					this.e305_59.text=ve305_.e30559;
+					this.e305_60.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_60.dataProvider),ve305_.e30560);
+					this.e305_61.text=ve305_.e30561;
+					this.e305_62.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_62.dataProvider),ve305_.e30562);
+					this.e305_63.text=ve305_.e30563;
+					this.e305_64.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_64.dataProvider),ve305_.e30564); 
+					this.e305_65.text=ve305_.e30565;
+					this.e305_66.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_66.dataProvider),ve305_.e30566); 
+					this.e305_67.text=ve305_.e30567;
+					this.e305_68.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_68.dataProvider),ve305_.e30568); 
+					this.e305_69.text=ve305_.e30569;
+					this.e305_70.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_70.dataProvider),ve305_.e30570); 
+					this.e305_71.text=ve305_.e30571;
+					this.e305_72.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_72.dataProvider),ve305_.e30572);			
+					this.e305_74.text=DateField.dateToString(ve305_.e30574, "YYYY-MM-DD");
+					this.e305_75.text=ve305_.e30575;
+					this.e305_76.text=DateField.dateToString(ve305_.e30576, "YYYY-MM-DD");
+					this.e305_77.text=ve305_.e30577;
+					this.e305_79.text=ve305_.e30579;
+					if(ve305_.e30573 != null){
+						var bb:Array=ve305_.e30573.split(",");
+						var i:int=0;
+						for(i=0;i<bb.length;i++){
+							if(bb[i] =="1")this.e305_73_1.selected =true;						
+							if(bb[i] =="2")this.e305_73_2.selected =true; 
+							if(bb[i] =="3")this.e305_73_3.selected =true;
+							if(bb[i] =="4")this.e305_73_4.selected =true;
+							if(bb[i] =="5")this.e305_73_5.selected =true;
+						}
+					}
+					if(ve305_.e30580 != null){
+						var temp2:Array=ve305_.e30580.split(",");
+						if(temp2[0] == "1")this.e305_80_1.selected =true;
+						if(temp2[1] == "2")this.e305_80_2.selected =true;
+						if(temp2[2] == "3")this.e305_80_3.selected =true;
+						if(temp2[3] == "4")this.e305_80_4.selected =true;
+						if(temp2[4] == "5")this.e305_80_5.selected =true;
+						if(temp2[5] == "6")this.e305_80_6.selected =true;				
+					}
+					this.e305_81.selectedIndex=this.getDropDownListSelectedIndex(ArrayCollection(this.e305_81.dataProvider),ve305_.e30581);
+				}
+				if(ve304_!=null){
+					this.currentState ="etjcxq";
+					var e3040Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_02.dataProvider),ve304_.e30402);
+					this.e304_02.selectedIndex = e3040Index;
+					this.e304_03.text=ve304_.e30403;
+					this.e304_04.text=DateField.dateToString(ve304_.e30404, "YYYY-MM-DD");
+					this.e304_05.value=ve304_.e30405;
+					var e30406Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_06.dataProvider),ve304_.e30406);
+					this.e304_06.selectedIndex = e30406Index;				
+					this.e304_07.value=ve304_.e30407;
+					var e30408Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_08.dataProvider),ve304_.e30408);
+					this.e304_08.selectedIndex=e30408Index;
+					this.e304_09.value=ve304_.e30409;
+					var e30410Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_10.dataProvider),ve304_.e30410);
+					this.e304_10.selectedIndex=e30410Index;
+					
+					var e30411Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_11.dataProvider),ve304_.e30411);
+					this.e304_11.selectedIndex=e30411Index;
+					var e30412Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_12.dataProvider),ve304_.e30412);
+					this.e304_12.selectedIndex=e30412Index;
+					this.e304_13.value=ve304_.e30413;
+					this.e304_14.value=ve304_.e30414;
+					var e30415Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_15.dataProvider),ve304_.e30415);
+					this.e304_15.selectedIndex=e30415Index;
+					var e30416Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_16.dataProvider),ve304_.e30416);
+					this.e304_16.selectedIndex=e30416Index;
+					var e30417Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_17.dataProvider),ve304_.e30417);
+					this.e304_17.selectedIndex=e30417Index;
+					var e30418Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_18.dataProvider),ve304_.e30418);
+					this.e304_18.selectedIndex=e30418Index;
+					var e30419Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_19.dataProvider),ve304_.e30419);
+					this.e304_19.selectedIndex=e30419Index;
+					var e30420Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_20.dataProvider),ve304_.e30420);
+					this.e304_20.selectedIndex=e30420Index;
+					var e30421Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_21.dataProvider),ve304_.e30421);
+					this.e304_21.selectedIndex=e30421Index;
+					var e30422Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_22.dataProvider),ve304_.e30422);
+					this.e304_22.selectedIndex=e30422Index;
+					var e30423Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_23.dataProvider),ve304_.e30423);
+					this.e304_23.selectedIndex=e30423Index;
+					if(ve304_.e30424 !=null){
+						var aa2:Array=ve304_.e30424.split(",");
+						for(i=0;i<aa2.length;i++){
+							if(aa2[0] =="1"){
+								this.e304_24_1.selected =true;
+								this.e304_24_0.selected =false;
+							}else if(aa2[0] !="1"){
+								this.e304_24_1.selected =false;
+								this.e304_24_0.selected =true;
+							}
+							if(aa2[i] =="2")this.e304_24_2.selected =true;
+							if(aa2[i] =="3")this.e304_24_3.selected =true;
+							if(aa2[i] =="4")this.e304_24_4.selected =true;
+						}
+					}
+					if(ve304_.e30425 !=null){
+						var bb2:Array=ve304_.e30425.split(",");
+						for(i=0;i<bb2.length;i++){
+							if(bb2[0] =="1"){
+								this.e304_25_1.selected =true;
+								this.e304_25_0.selected =false;
+							}else if(bb2[0] !="1"){
+								this.e304_25_1.selected =false;
+								this.e304_25_0.selected =true;
+							}
+							if(bb2[i] =="2")this.e304_25_2.selected =true;
+							if(bb2[i] =="3")this.e304_25_3.selected =true;
+							if(bb2[i] =="4")this.e304_25_4.selected =true;
+						}
+					}
+					var e30426Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_26.dataProvider),ve304_.e30426);
+					this.e304_26.selectedIndex=e30426Index;
+					this.e304_27.text=ve304_.e30427.toString();
+					this.e304_28.value=ve304_.e30428;
+					this.e304_29.value=ve304_.e30429;
+					var e30430Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_30.dataProvider),ve304_.e30430);
+					this.e304_30.selectedIndex=e30430Index;
+					var e30431Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_31.dataProvider),ve304_.e30431);
+					this.e304_31.selectedIndex=e30431Index;
+					this.e304_32.text=ve304_.e30432;
+					var e30433Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_33.dataProvider),ve304_.e30433);
+					this.e304_33.selectedIndex=e30433Index;
+					this.e304_34.text=ve304_.e30434;
+					var e30435Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_35.dataProvider),ve304_.e30435);
+					this.e304_35.selectedIndex=e30435Index;
+					if(ve304_.e30436 !=null){
+						var cc:Array=ve304_.e30436.split(",");
+						for(i=0;i<cc.length;i++){
+							if(cc[0] =="1")this.e304_36_1.selected =true;
+							if(cc[i] =="2")this.e304_36_2.selected =true;
+							if(cc[i] =="3")this.e304_36_3.selected =true;
+							if(cc[i] =="4")this.e304_36_4.selected =true;
+							if(cc[i] =="5")this.e304_36_5.selected =true;
+						}
+					}
+					this.e304_37.text=DateField.dateToString(ve304_.e30437, "YYYY-MM-DD");
+					this.e304_38.text=ve304_.e30438;
+					this.e304_39.text=ve304_.e30439;
+					this.e304_40.text=ve304_.e30440.toString();
+					var e30445Index:int = this.getDropDownListSelectedIndex(ArrayCollection(this.e304_45.dataProvider),ve304_.e30445);
+					this.e304_45.selectedIndex=e30445Index;
+					if(ve304_.e30452 != null){
+						var temp3:Array=ve304_.e30452.split(",");
+						if(temp3[0] == "1")this.e304_52_1.selected =true;
+						if(temp3[1] == "2")this.e304_52_2.selected =true;
+						if(temp3[2] == "3")this.e304_52_3.selected =true;
+						if(temp3[3] == "4")this.e304_52_4.selected =true; 
+						if(temp3[4] == "5")this.e304_52_5.selected =true;
+						if(temp3[5] == "6")this.e304_52_6.selected =true;
+					}
+				}
+			}
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}	
+				return index;
+			}
+			/*-----------------默认国籍 中国---------------------*/
+			private function getCountrySelectedIndex(arrayCollection:ArrayCollection):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == "CHN") {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="etdaxq" stateGroups="group" />
+		<s:State name="etsfxq" stateGroups="group" />
+		<s:State name="etjcxq" stateGroups="group" />
+	</s:states>
+	<s:VGroup width="285" height="781"  verticalAlign="middle">
+		<s:HGroup width="284" height="30" contentBackgroundColor="#FF0000"
+				  horizontalAlign="left" paddingBottom="20" paddingLeft="10" paddingRight="20"
+				  paddingTop="10" verticalAlign="middle">
+			<s:Button width="80"  label="儿童档案" click="etdaxq()" id="da_" useHandCursor="true" buttonMode="true"/>
+			<s:Button label="儿童随访" click="etsfxq()" useHandCursor="true" buttonMode="true"/>
+			<s:Button label="儿童检查" click="etjcxq()" useHandCursor="true" buttonMode="true"/>
+		</s:HGroup>
+		<s:HGroup  width="100%" height="100%" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF">
+			<s:DataGrid id="certificateDataGrid" width="285" height="166"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" chromeColor="#5CACEE"
+						editable="true" rowHeight="22"
+						height.etdaxq="579" height.etsfxq="579" height.etjcxq="579">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn width="80" dataField="e30103" headerText="婴儿姓名" id="e30103_" visible="false"/>
+						<s:GridColumn width="80" dataField="e30126" headerText="母亲姓名" id="e30126_" visible="false"/>
+						<s:GridColumn width="140" dataField="e30129" headerText="母亲证件证号" id="e30129_" visible="false"/>
+						<s:GridColumn width="80" dataField="e30403" headerText="婴儿姓名" id="e30403_" visible="false"/>
+						<s:GridColumn width="80" dataField="e30449" headerText="母亲姓名" id="e30449_" visible="false"/>
+						<s:GridColumn width="140" dataField="e30402" headerText="月龄" id="e30402_" visible="false"/>
+						<s:GridColumn width="80" dataField="e30502" headerText="婴儿姓名" id="e30502_" visible="false"/>
+						<s:GridColumn width="80" dataField="e30511" headerText="母亲姓名" id="e30511_" visible="false"/>
+						<s:GridColumn width="140" dataField="e30574Str" headerText="本次访视日期" id="e30574Str_" visible="false"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<s:VGroup width="803" height="510" contentBackgroundColor="#FFFFFF" paddingTop="10">
+				<mx:TabNavigator width="750" chromeColor="#ffffff" creationPolicy="all" includeIn="etdaxq">
+					<s:NavigatorContent width="100%" label="（儿童档案信息）">
+						<mx:Grid paddingLeft="8" paddingBottom="10" id="etda">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="儿  童   姓  名"/>
+									<s:TextInput id="e301_03" width="130"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="性　          别" paddingRight="1"/>
+									<s:DropDownList id="e301_04" width="130"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出  生   日  期" paddingRight="1"/>
+									<mx:DateField  id="e301_06" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+												   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+												   formatString="YYYY-MM-DD" yearNavigationEnabled="true"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="国　          籍"  paddingRight="1"/>
+									<s:DropDownList id="e301_07" width="130"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="民　       　族" />
+									<s:DropDownList id="e301_08" width="130"/>
+								</mx:GridItem>
+								<mx:GridItem>  
+									<s:Label text="出   生  证  号" paddingRight="2"/>
+									<s:TextInput id="e301_13" width="130"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="身       高(cm)"/>
+									<s:TextInput id="e301_30" restrict="0-9." text="0"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="体        重(kg)"/>
+									<s:TextInput id="e301_19" restrict="0-9." text="0"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="胎              龄"/>
+									<s:TextInput id="e301_18_1" width="60" text="0"/>
+									<s:Label text="周"/>
+									<s:TextInput id="e301_18_2" width="20" text="0" restrict="0-7"/><s:Label text="天"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="胎             数" paddingRight="2"/>
+									<s:DropDownList id="e301_20" width="130"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="孕             次" paddingRight="2"/>
+									<s:TextInput id="e301_22" x="59" width="130" text="0" maxChars="2" restrict="0-9"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="产              次"/>
+									<s:TextInput id="e301_23" x="56"  width="130"  text="0" maxChars="2" restrict="0-9"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="妇  保   卡  号" />
+									<s:TextInput id="e301_17" width="130" enabled="false"/>
+									<s:Label text="*" styleName="must"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出   生  机  构"/>
+									<s:DropDownList id="e301_21" width="130"/>
+									<!--<s:Label text="*" styleName="must"/>-->
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>  
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				<!--*****************************************************儿童随访*******************************************************-->
+				<mx:TabNavigator width="780" chromeColor="#ffffff" creationPolicy="all" includeIn="etsfxq">
+					<s:NavigatorContent width="100%" label="（儿童随访）">
+						<mx:Grid paddingBottom="10" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="儿童姓名" paddingRight="2"/>
+									<s:TextInput id="e305_02" width="130" enabled="false"/>
+									<!--	<s:TextInput id="e305_78" width="0" visible="false"/> -->
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="性                  别" enabled="false" paddingRight="2"/>
+									<s:DropDownList id="e305_03" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="出    生    时    间" enabled="false"/>
+									<mx:DateField id="e305_04" width="130"
+												  dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+												  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+												  formatString="YYYY-MM-DD" yearNavigationEnabled="true" enabled="false"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="家庭住址" enabled="false" paddingRight="2"/>
+									<s:TextInput id="e305_06" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="父    亲    姓    名" enabled="false"/>
+									<s:TextInput id="e305_07" width="130" enabled="false"/>
+									<!--<s:Label styleName="must" text="*"/>-->
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="联    系    电    话"/>
+									<s:TextInput id="e305_09" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="母亲姓名" paddingRight="2"/>
+									<s:TextInput id="e305_11" width="130" enabled="false"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								<!--<mx:GridItem>
+								<s:Label text="职                    业"/>
+								<s:DropDownList id="e305_12" width="130" enabled="false"/>
+								</mx:GridItem>-->
+								<mx:GridItem>
+									<s:Label text="联    系    电    话"/>
+									<s:TextInput id="e305_13" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="母亲 妊娠期 患病" paddingLeft="15" paddingRight="1"/>
+									<s:DropDownList id="e305_16" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem> 
+									<s:Label text="出生孕周" paddingRight="2"/>
+									<s:TextInput id="e305_15" width="130" enabled="false"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label text="助    产    机    构"/>
+									<s:DropDownList id="e305_17" width="130" enabled="false"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出    生    情    况" paddingLeft="15" />
+									<s:DropDownList id="e305_18" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="其他情况" paddingRight="2"/>
+									<s:TextInput id="e305_19" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>  
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				
+				<mx:TabNavigator width="780" height="300" chromeColor="#ffffff" creationPolicy="all" includeIn="etsfxq">
+					<s:NavigatorContent width="100%" label="新生儿信息1">
+						<mx:Grid paddingBottom="10" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="窒               息"/>
+									<s:DropDownList id="e305_20" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="apgar 1  分 钟" paddingRight="2"/>
+									<s:TextInput id="e305_21" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="apgar 5  分 钟" paddingRight="3"/>
+									<s:TextInput id="e305_22" width="130" enabled="false"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="是   否   畸  形" paddingRight="2"/>
+									<s:DropDownList id="e305_23" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="畸    形  描  述"/>
+									<s:TextInput id="e305_24" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="听   力   筛  查" paddingLeft="15" paddingRight="1"/>
+									<s:DropDownList id="e305_25" width="130" enabled="false"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="出   生  体   重" paddingRight="2"/>
+									<s:TextInput id="e305_26" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="目   前   体  重"/>
+									<s:TextInput id="e305_27" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="出   生   身  长" paddingRight="1"/>
+									<s:TextInput id="e305_28" width="130" enabled="false"/>
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="喂   养  方   式" paddingRight="2"/>
+									<s:DropDownList id="e305_29" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="吃      奶     量" paddingRight="1"/>
+									<s:TextInput id="e305_30" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="吃   奶  次   数" paddingRight="1"/>
+									<s:TextInput id="e305_31" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="呕               吐"/>
+									<s:DropDownList id="e305_32" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="大              便" paddingRight="2"/>
+									<s:DropDownList id="e305_33" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="大   便   次  数" paddingRight="1"/>
+									<s:TextInput id="e305_34" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="体               温"/>
+									<s:TextInput id="e305_35" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="脉              率" paddingRight="2"/>
+									<s:TextInput id="e305_36" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="呼   吸  频  率" paddingRight="5"/>
+									<s:TextInput id="e305_37" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="面               色"/>
+									<s:DropDownList id="e305_38" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="面   色   其  他" />
+									<s:TextInput id="e305_39" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="前              卤" paddingRight="3"/>
+									<s:TextInput id="e305_41_0" width="55" enabled="false"/>
+									<s:Label text="/"/>
+									<s:TextInput id="e305_41_1" width="55" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="前   卤   评  判" paddingRight="2"/>
+									<s:DropDownList id="e305_42" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="其             他" paddingRight="6"/>
+									<s:TextInput id="e305_43" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="2">
+									<s:Label text="黄    疸  部  位"/>
+									<s:RadioButton id="e305_40_0"  groupName="operation1" selected="{e305_38.selectedIndex==1}" enabled="false"/><s:Label text="无"/>
+									<!--<s:TextInput id="e305_73" width="130"/>-->
+									<s:RadioButton id="e305_40_1"  selected="{e305_38.selectedIndex==2 || e305_38.selectedIndex==3}" enabled="false"/><s:Label text="有"/>
+									<mx:CheckBox id="e305_40_2" enabled="false"/><s:Label text="面部" enabled="false"/>
+									<mx:CheckBox id="e305_40_3" enabled="false"/><s:Label text="躯干" enabled="false"/>
+									<mx:CheckBox id="e305_40_4" enabled="false"/><s:Label text="四肢" enabled="false"/>
+									<mx:CheckBox id="e305_40_5" enabled="false"/><s:Label text="手足" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>  
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" label="新生儿信息2">
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="眼       外     观" paddingRight="1"/>
+									<s:DropDownList id="e305_44" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="眼 外 观 异  常" paddingRight="6"/> 
+									<s:TextInput id="e305_45" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="四 肢活 动 度"/>
+									<s:DropDownList id="e305_46" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="异   常   评   判"/>
+									<s:TextInput id="e305_47" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="耳       外      观" paddingRight="1"/>
+									<s:DropDownList id="e305_48" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="耳 外 观 其他" paddingLeft="15"/>
+									<s:TextInput id="e305_49" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="颈   部  包   块" paddingRight="4"/>
+									<s:DropDownList id="e305_50" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="包   块    说   明"/>
+									<s:TextInput id="e305_51" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="鼻" paddingRight="64"/>
+									<s:DropDownList id="e305_52" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="鼻  异 常 说 明" paddingRight="3"/>
+									<s:TextInput id="e305_53" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="皮                肤" paddingRight="2"/>
+									<s:DropDownList id="e305_54" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="皮  肤 异  常" paddingLeft="15" paddingRight="5"/>
+									<s:TextInput id="e305_55" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="口               腔" paddingRight="2"/>
+									<s:DropDownList id="e305_56" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="口    腔   异   常"/>
+									<s:TextInput id="e305_57" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="肛            门" paddingRight="3"/>
+									<s:DropDownList id="e305_58" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label  text="肛   门   异   常"/>
+									<s:TextInput id="e305_59" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="心    肺   听   诊"/>
+									<s:DropDownList id="e305_60" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="听  诊  说  明" paddingRight="1"/>
+									<s:TextInput id="e305_61" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="外    生  殖   器" />
+									<s:DropDownList id="e305_62" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="外生 殖 器 说明" paddingRight="2"/>
+									<s:TextInput id="e305_63" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="腹  部   触 诊" paddingLeft="15" paddingRight="1"/>
+									<s:DropDownList id="e305_64" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="触    诊   说  明"/>
+									<s:TextInput id="e305_65" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="脊                柱" paddingRight="2"/>
+									<s:DropDownList id="e305_66" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="脊   柱 说  明" paddingRight="1"/>
+									<s:TextInput id="e305_67" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="脐               带" paddingRight="2"/>
+									<s:DropDownList id="e305_68" width="130" enabled="false"/>
+								</mx:GridItem>	
+								<mx:GridItem>
+									<s:Label  text="脐    带   说   明"/>
+									<s:TextInput id="e305_69" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+						<mx:Label includeInLayout="false" visible="false" text="隐藏的Label" fontWeight="bold"/>
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" label="随访信息">
+						<mx:Grid paddingBottom="10" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="转      诊   建    议" paddingRight="3"/>
+									<s:DropDownList id="e305_70" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="转   诊  原   因"/>
+									<s:TextInput id="e305_71" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="转   诊  机   构"/>
+									<s:DropDownList id="e305_72" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="转      诊   科    室" paddingRight="3"/>
+									<s:TextInput id="e305_79" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="随   访   机  构" />
+									<s:DropDownList id="e305_81" width="130" enabled="false"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="随   访  日   期" paddingLeft="15"/>
+									<mx:DateField id="e305_74" width="130"
+												  dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+												  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+												  formatString="YYYY-MM-DD" yearNavigationEnabled="true" enabled="false"/>
+									<s:Label styleName="must" text="*"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="下 次  随 访  日 期" paddingRight="2"/>
+									<mx:DateField id="e305_76" width="130"
+												  dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+												  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+												  formatString="YYYY-MM-DD" yearNavigationEnabled="true" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="随   访  医  生" paddingRight="4"/>
+									<s:TextInput id="e305_77" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="15" text="下次随 访地点" paddingRight="2"/>
+									<s:TextInput id="e305_75" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="5">
+									<s:Label  text="中  医 健 康 管  理" paddingRight="2"/>
+									<mx:CheckBox id="e305_80_1" enabled="false"/><s:Label text="饮食调养指导"/>
+									<mx:CheckBox id="e305_80_2" enabled="false"/><s:Label text="起居调摄指导"/>
+									<mx:CheckBox id="e305_80_3" enabled="false"/><s:Label text="摩腹、捏脊"/>
+									<mx:CheckBox id="e305_80_4" enabled="false"/><s:Label text="揉肺经、揉足三里"/>
+									<mx:CheckBox id="e305_80_5" enabled="false"/><s:Label text="揉四神聪"/>
+									<mx:CheckBox id="e305_80_6" enabled="false"/><s:Label text="健康教育处方"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="5">
+									<s:Label text="指                    导" paddingRight="2"/>
+									<!--<s:TextInput id="e305_73" width="125"/>-->
+									<mx:CheckBox id="e305_73_1" enabled="false"/><s:Label text="科学喂养"/>
+									<mx:CheckBox id="e305_73_2" enabled="false"/><s:Label text="生长发育"/>
+									<mx:CheckBox id="e305_73_3" enabled="false"/><s:Label text="疾病预防"/>
+									<mx:CheckBox id="e305_73_4" enabled="false"/><s:Label text="预防意外伤害"/>
+									<mx:CheckBox id="e305_73_5" enabled="false"/><s:Label text="口腔保健"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="5">
+									<s:Label text="随访儿童 其他信息" paddingRight="1"/>
+									<s:TextInput id="e305_82" width="370" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+						<mx:Label includeInLayout="false" visible="false" text="隐藏的Label" fontWeight="bold"/>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				<!--********************************************儿童检查**********************************************-->
+				<mx:TabNavigator width="936" chromeColor="#ffffff" creationPolicy="all" includeIn="etjcxq" >
+					<s:NavigatorContent width="100%" label="（儿童检查）">
+						<mx:Grid paddingBottom="10" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="儿    童     姓     名" paddingLeft="10"/>
+									<s:TextInput id="e304_03" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="10" text="月                   龄" paddingRight="3"/>
+									<s:DropDownList id="e304_02" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="10" text="体              重(kg)"/>
+									<s:NumericStepper id="e304_05" width="130" maximum="10000"
+													  minimum="0.0" stepSize="0.1" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="体     重     范    围" paddingLeft="10"/>
+									<s:DropDownList id="e304_06" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="身             高(cm)" paddingLeft="10" />
+									<s:NumericStepper id="e304_07" width="130" maximum="10000" minimum="0" stepSize="0.1" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="身     高    范    围" paddingLeft="10"/>
+									<s:DropDownList id="e304_08" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label paddingLeft="10" text="头             围(cm)" paddingRight="5"/>
+									<s:NumericStepper id="e304_09" width="130" maximum="10000" minimum="0" stepSize="0.1" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="面                   色" paddingLeft="10" paddingRight="2"/>
+									<s:DropDownList id="e304_10" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>  
+									<s:Label text="皮                   肤" paddingLeft="10" paddingRight="2"/>
+									<s:DropDownList id="e304_11" width="130" enabled="false"/>
+								</mx:GridItem>	
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label  text="前                    卤" paddingLeft="10" paddingRight="3"/>
+									<s:NumericStepper id="e304_13" width="55" maximum="100" minimum="0" stepSize="0.1" enabled="false"/>
+									<s:Label text="/"/>
+									<s:NumericStepper id="e304_14" width="55" maximum="100" minimum="0" stepSize="0.1" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="前     卤    评    判" paddingLeft="10"/>
+									<s:DropDownList id="e304_12" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="颈     部    包    块" paddingLeft="10"/>
+									<s:DropDownList id="e304_15" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>	
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="眼         外        观" paddingLeft="10" paddingRight="2"/>
+									<s:DropDownList id="e304_16" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>		
+									<s:Label text="耳         外       观" paddingLeft="10" paddingRight="1"/>
+									<s:DropDownList id="e304_17" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="听                   力" paddingLeft="10" paddingRight="1"/>
+									<s:DropDownList id="e304_18" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="口                    腔" paddingLeft="10" paddingRight="2"/>
+									<s:DropDownList id="e304_19" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="心                   肺" paddingLeft="10" paddingRight="1"/>
+									<s:DropDownList id="e304_20" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="10" text="腹                   部" paddingRight="1"/>
+									<s:DropDownList id="e304_21" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label  text="脐                    部" paddingLeft="10" paddingRight="2"/>
+									<s:DropDownList id="e304_22" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="四                   肢" paddingLeft="10" paddingRight="1"/>
+									<s:DropDownList id="e304_23" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="肛   门/外   生  殖" paddingLeft="10" paddingRight="2"/>
+									<s:DropDownList id="e304_26" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>						
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="血   红   蛋  白  值" paddingLeft="10" paddingRight="3"/>
+									<s:TextInput id="e304_27" width="130" restrict="0-9." enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="户   外  活  动(时)" paddingLeft="10" paddingRight="2"/>
+									<s:NumericStepper id="e304_28" width="130" maximum="100" minimum="0"
+													  stepSize="0.1" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="服  用  维  生 素D" paddingLeft="10" paddingRight="1"/>
+									<s:NumericStepper id="e304_29" width="130" maximum="800" minimum="0"
+													  stepSize="0.1" enabled="false"/>
+								</mx:GridItem> 								
+							</mx:GridRow> 
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label paddingLeft="10" text="发     育    评    估" paddingRight="4"/>
+									<s:DropDownList id="e304_30" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="两次 随 访 间患病" paddingLeft="10"/>
+									<s:DropDownList id="e304_31" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem> 
+									<s:Label text="其                   他" paddingLeft="10" paddingRight="1"/>
+									<s:TextInput id="e304_32" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow> 
+							<mx:GridRow>
+								<mx:GridItem colSpan="3">
+									<s:Label  text="中 医 健  康  管 理" paddingLeft="10"/>
+									<mx:CheckBox id="e304_52_1" enabled="false"/><s:Label id="e304_52_1_1" text="饮食调养指导"/>
+									<mx:CheckBox id="e304_52_2" enabled="false"/><s:Label id="e304_52_2_1" text="起居调摄指导"/>
+									<mx:CheckBox id="e304_52_3" enabled="false"/><s:Label id="e304_52_3_1" text="摩腹、捏脊"/>
+									<mx:CheckBox id="e304_52_4" enabled="false"/><s:Label id="e304_52_4_1" text="揉肺经、揉足三里"/>
+									<mx:CheckBox id="e304_52_5" enabled="false"/><s:Label id="e304_52_5_1" text="揉四神聪"/>
+									<mx:CheckBox id="e304_52_6" enabled="false"/><s:Label id="e304_52_6_1" text="健康教育处方"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="3">
+									<s:Label  text="指                    导" paddingLeft="10" />
+									<mx:CheckBox id="e304_36_1" enabled="false"/><s:Label id="e304_36_1_1" text="科学喂养"/>
+									<mx:CheckBox id="e304_36_2" enabled="false"/><s:Label id="e304_36_2_1" text="生长发育"/>
+									<mx:CheckBox id="e304_36_3" enabled="false"/><s:Label id="e304_36_3_1" text="疾病预防"/>
+									<mx:CheckBox id="e304_36_4" enabled="false"/><s:Label id="e304_36_4_1" text="预防意外伤害"/>
+									<mx:CheckBox id="e304_36_5" enabled="false"/><s:Label id="e304_36_5_1" text="口腔保健"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="3">
+									<s:Label text="可疑 佝 偻 病 体征" paddingLeft="10"/>
+									<s:RadioButton id="e304_25_1" enabled="false" groupName="operation" selected="true"/><s:Label text="无"/>
+									<s:RadioButton id="e304_25_0" enabled="false" groupName="operation"/><s:Label text="有"/>
+									<mx:CheckBox id="e304_25_2" enabled="false"/><s:Label id="e304_25_2_1" text="颅骨软化"/>
+									<mx:CheckBox id="e304_25_3" enabled="false"/><s:Label id="e304_25_3_1" text="方卤"/>
+									<mx:CheckBox id="e304_25_4" enabled="false"/><s:Label id="e304_25_4_1" text="枕秃"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="3">
+									<s:Label text="可疑 佝 偻 病 症状" paddingLeft="10"/>
+									<s:RadioButton id="e304_24_1"  groupName="operation1" enabled="false"  selected="true"/><s:Label text="无"/>
+									<s:RadioButton id="e304_24_0"  groupName="operation1" enabled="false"/><s:Label text="有" />
+									<mx:CheckBox id="e304_24_2" enabled="false"/><s:Label id="e304_24_2_1"  text="夜惊" width="30"/>
+									<mx:CheckBox id="e304_24_3" enabled="false"/><s:Label id="e304_24_3_1"  text="多汗" width="30"/>
+									<mx:CheckBox id="e304_24_4" enabled="false"/><s:Label id="e304_24_4_1"  text="烦躁" width="30"/>
+									<!--<s:DropDownList id="e304_24" width="125"/>-->
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>  
+					</s:NavigatorContent>
+					<s:NavigatorContent width="100%" label="随访信息">
+						<mx:Grid paddingBottom="10" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="转  诊  建  议"/>
+									<s:DropDownList id="e304_33" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="20" text="转   诊  原   因"/>
+									<s:TextInput id="e304_34" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="10" text="转   诊  机  构"/>
+									<s:DropDownList id="e304_35" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="转  诊  科  室"/>
+									<s:TextInput id="e304_39" width="130" enabled="false"/>
+									<s:TextInput id="e304_40" width="0" visible="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label paddingLeft="20" text="检   查   机  构"/>
+									<s:DropDownList id="e304_45" width="130" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="检   查  医  生" paddingLeft="10"/>
+									<s:TextInput id="e304_38" width="130" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label  text="检  查  时  间"/>
+									<mx:DateField id="e304_04" width="130"
+												  dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+												  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+												  formatString="YYYY-MM-DD" yearNavigationEnabled="true" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label  text="下次检查 时间" paddingLeft="20" paddingRight="2"/>
+									<mx:DateField id="e304_37" width="130"
+												  dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+												  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+												  formatString="YYYY-MM-DD" yearNavigationEnabled="true" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow> 
+						</mx:Grid>  
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+	<s:HGroup x="1135" y="590" contentBackgroundColor="#FF0000">
+		<s:Button label="关闭" click="removeWindow()"/>
+	</s:HGroup>
+</s:TitleWindow>

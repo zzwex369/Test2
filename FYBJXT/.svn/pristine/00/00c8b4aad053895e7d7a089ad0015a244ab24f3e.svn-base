@@ -1,0 +1,734 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:skin="com.xyw.sys.custom.skin.*"
+			   width="900"  borderAlpha="1.0" borderColor="#D5700D"
+			   borderVisible="true" chromeColor="#5CACEE" close="closeHandler()"
+			   cornerRadius="5"  title="宫颈癌随访">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>	
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="l304Service" destination="l304Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveL304" result="saveL304Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace component "com.xyw.sys.custom.component.*";
+		@namespace skin "com.xyw.sys.custom.skin.*";
+		
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		.myGrid {
+			verticalAlign:middle;
+		}
+		.myTextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		.errorTip
+		{
+			font-size: 15;
+			border-color: red;/* //控制背景色 */
+			color: #fff;
+			font-weight: bold;
+			paddingBottom:1; 
+			cornerRadius:5;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L304;
+			import com.xyw.module.msss.la.model.VL302;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			[Bindable]
+			private var systemUser:SystemUser;
+			[Bindable]
+			public var vl302:Object =null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private function closeHandler():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			private function init():void
+			{
+				systemUser=this.parentApplication.systemUser;
+				initializeComboBox();
+			}
+			
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t ";
+				comboBoxDataRequest.flag = "D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_03 t";
+				comboBoxDataRequest.flag = "S601_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_04 t";
+				comboBoxDataRequest.flag = "S601_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_05 t";
+				comboBoxDataRequest.flag = "S601_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA302_22 t";
+				comboBoxDataRequest.flag = "LA302_22";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA304_01 t";
+				comboBoxDataRequest.flag = "LA304_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA304_02 t";
+				comboBoxDataRequest.flag = "LA304_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA304_03 t";
+				comboBoxDataRequest.flag = "LA304_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA304_04 t";
+				comboBoxDataRequest.flag = "LA304_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA304_05 t";
+				comboBoxDataRequest.flag = "LA304_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA304_06 t";
+				comboBoxDataRequest.flag = "LA304_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from LA304_07 t";
+				comboBoxDataRequest.flag = "LA304_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+			}
+			
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+					var index:int=CompMethod.getDropDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					L304_31.dataProvider =L304_34.dataProvider = comboBoxDataList;
+					L304_31.selectedIndex=L304_34.selectedIndex=index;
+				}else if(flag == "S601_03"){
+					this.L304_17.dataProvider = comboBoxDataList;
+					this.L304_21.dataProvider = comboBoxDataList;
+					L304_17.selectedIndex=L304_21.selectedIndex=2;
+				}else if(flag == "S601_04"){
+					this.L304_05.dataProvider = comboBoxDataList;
+					this.L304_08.dataProvider = comboBoxDataList;
+					this.L304_13.dataProvider = comboBoxDataList;
+					this.L304_28.dataProvider = comboBoxDataList;
+					L304_05.selectedIndex=1;
+					L304_08.selectedIndex=1;
+					L304_13.selectedIndex=1;
+					L304_28.selectedIndex=1;
+				}else if(flag == "S601_05"){
+					this.L304_14.dataProvider = comboBoxDataList;
+					L304_14.selectedIndex=0;
+				}else if(flag == "LA302_22"){
+					this.L304_06.dataProvider = comboBoxDataList;
+					L304_06.selectedIndex=0;
+				}else if(flag == "LA304_01"){
+					this.L304_09.dataProvider = comboBoxDataList;
+					L304_09.selectedIndex=0;
+				}else if(flag == "LA304_02"){
+					this.L304_10.dataProvider = comboBoxDataList;
+					L304_10.selectedIndex=0;
+				}else if(flag == "LA304_03"){
+					this.L304_11.dataProvider = comboBoxDataList;
+					L304_11.selectedIndex=0;
+				}else if(flag == "LA304_04"){
+					this.L304_12.dataProvider = comboBoxDataList;
+					L304_12.selectedIndex=0;
+				}else if(flag == "LA304_05"){
+					this.L304_18.dataProvider = comboBoxDataList;
+					L304_18.selectedIndex=0;
+				}else if(flag == "LA304_06"){
+					this.L304_22.dataProvider = comboBoxDataList;
+					L304_22.selectedIndex=1;
+				}else if(flag == "LA304_07"){
+					this.L304_29.dataProvider = comboBoxDataList;
+					L304_29.selectedIndex=0;
+				}
+			}
+			
+			
+			protected function L304_18_clickHandler():void
+			{
+				if(L304_18.selectedIndex==1)
+					L304_18_label.text='未治疗原因';
+				else if(L304_18.selectedIndex==7)
+					L304_18_label.text='其他治疗方式';
+				
+			}
+			
+			private function validate():void
+			{
+				if(CompMethod.validate('1',L304_43,'联系方式'))
+					return;
+				
+				if(CompMethod.validate('2',L304_05,'病理组织学诊断检查'))
+					return;
+				if(L304_05.selectedIndex==1)
+				{
+					if(CompMethod.validate('2',L304_06,'病理组织学诊断结果'))
+						return;
+					if(L304_06.selectedIndex==7)
+					{
+						if(CompMethod.validate('1',L304_06,'病理组织学诊断其他结果'))
+							return;					
+					}
+					if(CompMethod.validate('1',L304_40,'病例组织诊断日期'))
+						return;
+				}
+				
+				if(CompMethod.validate('2',L304_08,'临床分期检查'))
+					return;		
+				if(L304_08.selectedIndex==1)
+				{
+					if(CompMethod.validate('2',L304_09,'临床分期检查结果'))
+						return;		
+					if(L304_09.selectedIndex==1)
+					{
+						if(CompMethod.validate('2',L304_10,'临床分期检查Ⅰ期结果'))
+							return;							
+					}
+					else if(L304_09.selectedIndex==2)
+					{
+						if(CompMethod.validate('2',L304_11,'临床分期检查Ⅱ期结果'))
+							return;								
+					}
+					else if(L304_09.selectedIndex==3)
+					{
+						if(CompMethod.validate('2',L304_12,'临床分期检查Ⅲ期结果'))
+							return;								
+					}
+					if(CompMethod.validate('1',L304_39,'临床分析诊断日期'))
+						return;		
+				}
+				
+				if(CompMethod.validate('2',L304_13,'高危型HPV检查'))
+					return;	
+				if(L304_13.selectedIndex==1)
+				{
+					if(CompMethod.validate('2',L304_14,'高危型HPV检查结果'))
+						return;	
+					if(L304_14.selectedIndex==2)
+					{
+						if(CompMethod.validate('1',L304_15,'高危型HPV检测阳性结果'))
+							return;	
+					}
+					if(CompMethod.validate('1',L304_16,'高危型HPV检测日期'))
+						return;	
+				}
+				
+				if(CompMethod.validate('2',L304_17,'是否治疗'))
+					return;	
+				if(L304_17.selectedIndex==1)
+				{
+					if(CompMethod.validate('2',L304_18,'治疗方式结果'))
+						return;	
+					if(L304_18.selectedIndex==7)
+					{
+						if(CompMethod.validate('1',L304_18_text,'其他治疗方式'))
+							return;	
+					}
+					else if(L304_18.selectedIndex==1)
+					{
+						if(CompMethod.validate('1',L304_18_text,'原因未治疗'))
+							return;	
+					}
+					if(CompMethod.validate('1',L304_16,'高危型HPV检测日期'))
+						return;	
+				}
+				
+				if(CompMethod.validate('2',L304_21,'随访结果'))
+					return;	
+				if(L304_21.selectedIndex==1)
+				{
+					if(CompMethod.validate('2',L304_22,'治疗方式结果'))
+						return;	
+					if(L304_22.selectedIndex==2)
+					{
+						if(CompMethod.validate('1',time,'复发日期'))
+							return;						
+					}
+					else if(L304_22.selectedIndex==3)
+					{
+						if(CompMethod.validate('1',time,'转移日期'))
+							return;							
+					}
+					else if(L304_22.selectedIndex==4)
+					{
+						if(CompMethod.validate('1',time,'死亡日期'))
+							return;	
+						if(CompMethod.validate('1',reason,'死亡原因'))
+							return;	
+					}
+					else if(L304_22.selectedIndex==5)
+					{
+						if(CompMethod.validate('1',reason,'失访原因'))
+							return;							
+					}
+				}
+				
+				if(CompMethod.validate('2',L304_28,'随访结果'))
+					return;		
+				
+				if(L304_28.selectedIndex==1)
+				{
+					if(CompMethod.validate('2',L304_29,'随访结果'))
+						return;		
+					if(CompMethod.validate('2',L304_31,'随访单位'))
+						return;		
+					if(CompMethod.validate('1',L304_32,'随访日期'))
+						return;		
+					if(CompMethod.validate('1',L304_33,'随访人'))
+						return;		
+					if(L304_29.selectedIndex==4)
+					{
+						if(CompMethod.validate('1',L304_30,'其他随访方式'))
+							return;							
+					}
+				}
+				
+				
+				if(CompMethod.validate('2',L304_34,'操作单位'))
+					return;		
+				if(CompMethod.validate('1',L304_36,'操作员'))
+					return;		
+				if(CompMethod.validate('1',L304_37,'操作日期'))
+					return;		
+				if(CompMethod.validate('1',L304_43,'联系方式'))
+					return;		
+				
+				saveL304();
+			}
+			
+			private function saveL304():void
+			{
+				var l304:L304=new L304();
+				l304.l30402=vl302.l30201;
+				l304.l30403=vl302.l30202;
+				l304.l30404=vl302.l30205;
+				l304.l30441=StringUtil.trim(L304_41.text);
+				l304.l30442=StringUtil.trim(L304_42.text);
+				l304.l30443=StringUtil.trim(L304_43.text);
+				l304.l30405=L304_05.selectedItem.data;
+				l304.l30408=L304_08.selectedItem.data;
+				l304.l30413=L304_13.selectedItem.data;
+				l304.l30417=L304_17.selectedItem.data;
+				l304.l30421=L304_21.selectedItem.data;
+				l304.l30428=L304_28.selectedItem.data;
+				l304.l30434=L304_34.selectedItem.data;
+				l304.l30444=L304_34.selectedItem.label;
+				l304.l30435=L304_34.selectedItem.data+'01';
+				l304.l30436=StringUtil.trim(L304_36.text);
+				l304.l30437=DateField.stringToDate(L304_37.text,'YYYY-MM-DD');
+				l304.l30438=l304.l30437;
+				
+				
+				if(L304_05.selectedIndex==1)
+				{
+					if(L304_06.selectedIndex==7)
+						l304.l30407=StringUtil.trim(L304_07.text);
+					l304.l30406=L304_06.selectedItem.data;	
+					l304.l30440=DateField.stringToDate(L304_40.text,'YYYY-MM-DD');
+				}
+				
+				if(L304_08.selectedIndex==1)
+				{
+					if(L304_09.selectedIndex==1)
+						l304.l30410=L304_10.selectedItem.data;	
+					else if(L304_09.selectedIndex==2)
+						l304.l30411=L304_11.selectedItem.data;	
+					else if(L304_09.selectedIndex==3)
+						l304.l30412=L304_12.selectedItem.data;	
+					l304.l30409=L304_09.selectedItem.data;	
+					l304.l30439=DateField.stringToDate(L304_39.text,'YYYY-MM-DD');
+				}
+				
+				if(L304_13.selectedIndex==1)
+				{
+					if(L304_14.selectedIndex==2)
+						l304.l30415=StringUtil.trim(L304_15.text);
+					l304.l30414=L304_14.selectedItem.data;	
+					l304.l30416=DateField.stringToDate(L304_16.text,'YYYY-MM-DD');
+				}
+				
+				if(L304_17.selectedIndex==1)
+				{
+					if(L304_18.selectedIndex==1)
+						l304.l30419=StringUtil.trim(L304_18_text.text);
+					else if(L304_18.selectedIndex==7)
+						l304.l30420=StringUtil.trim(L304_18_text.text);
+					l304.l30418=L304_18.selectedItem.data;	
+				}
+				
+				if(L304_21.selectedIndex==1)
+				{
+					if(L304_22.selectedIndex==2)
+						l304.l30423=DateField.stringToDate(time.text,'YYYY-MM-DD');
+					else if(L304_22.selectedIndex==3)
+						l304.l30424=DateField.stringToDate(time.text,'YYYY-MM-DD');
+					else if(L304_22.selectedIndex==4)
+					{
+						l304.l30425=DateField.stringToDate(time.text,'YYYY-MM-DD');
+						l304.l30426=StringUtil.trim(reason.text);			
+					}
+					else if(L304_22.selectedIndex==5)
+						l304.l30427=StringUtil.trim(reason.text);
+					l304.l30422=L304_22.selectedItem.data;	
+				}
+				
+				if(L304_28.selectedIndex==1)
+				{
+					if(L304_29.selectedIndex==1)
+						l304.l30430=StringUtil.trim(L304_30.text);
+					l304.l30429=L304_29.selectedItem.data;	
+					l304.l30431=L304_31.selectedItem.data;	
+					l304.l30432=DateField.stringToDate(L304_32.text,'YYYY-MM-DD');
+					l304.l30433=StringUtil.trim(L304_33.text);
+				}
+				
+				l304Service.saveL304(l304);
+			}
+				
+			
+			private function saveL304Handler(event:ResultEvent):void
+			{
+				var l304Response:Object=event.result;
+				if(l304Response.state)
+				{
+					Alert.show(l304Response.promptMessage,"系统提示",1,this,closeHandlerL304);
+				}else
+					Alert.show(l304Response.errorMessage,"系统提示");
+			}
+			
+			private function closeHandlerL304(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var index:Object=this.owner;
+					index.refresh();
+					this.closeHandler();
+				}
+			}
+			
+			
+				protected function L304_22_changeHandler():void
+				{
+					if(L304_22.selectedIndex==2)
+						L304_22_label.text='复发日期'
+					else if(L304_22.selectedIndex==3)
+						L304_22_label.text='转移日期'
+					else if(L304_22.selectedIndex==4)
+					{
+						L304_22_label.text='死亡日期'
+						reasonLabel.text='死亡原因'
+					}
+					else if(L304_22.selectedIndex==5)
+						reasonLabel.text='失访原因'
+					
+				}
+				
+		]]>
+	</fx:Script>
+	
+
+	<s:Scroller  width="100%" height="100%" horizontalScrollPolicy="auto"
+				 chromeColor="#cccccc" verticalScrollPolicy="auto">
+		<s:VGroup horizontalAlign="center" paddingTop="10" creationComplete="init()">
+			<mx:TabNavigator width="830" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="诊断信息">	
+					<mx:Grid>
+						<mx:GridRow paddingBottom="3">
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="姓        名" paddingLeft="5"/>
+								<s:TextInput id="L304_41" text="{vl302.l30203}" width="130" restrict="^0-9" editable="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="证件号码"/>
+								<s:TextInput id="L304_42" text="{vl302.l30204}" width="130" restrict="0-9-X" editable="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="电        话 "/>
+								<s:TextInput id="L304_43"  width="130" restrict="0-9"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="编       号"/>
+								<s:TextInput id="L304_04" text="{vl302.l30205}" width="170" editable="false"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label styleName="myLabel" paddingLeft="5" text="病理组织&#13;学诊断"/>
+								<s:DropDownList id="L304_05" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="病理组织&#13;检查结果"/>
+								<s:DropDownList id="L304_06" width="130" enabled="{L304_05.selectedIndex==1}" change="if(L304_06.selectedIndex!=9)L304_07.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem  colSpan="2">
+								<s:Label styleName="myLabel" text="检查结果&#13;(其他)"/>
+								<s:TextInput id="L304_07" width="360" editable="{L304_06.selectedIndex==9}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label styleName="myLabel" paddingLeft="5" text="临床分期"/>
+								<s:DropDownList id="L304_08" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="临床分期&#13;检查结果"/>
+								<s:DropDownList id="L304_09" width="130" enabled="{L304_08.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="临床分期&#13;(Ⅰ期)"/>
+								<s:DropDownList id="L304_10" width="130" enabled="{L304_09.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="临床分期&#13;(Ⅱ期)"/>
+								<s:DropDownList id="L304_11" width="169" enabled="{L304_09.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						
+						<mx:GridRow>
+							<mx:GridItem colSpan="4">
+								<s:Label paddingLeft="5" styleName="myLabel"  text="临床分期&#13;(Ⅲ期)"/>
+								<s:DropDownList id="L304_12" width="130" enabled="{L304_09.selectedIndex==3}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label styleName="myLabel"  paddingLeft="5" text="高危型   &#13;HPV检测"/>
+								<s:DropDownList id="L304_13" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="HPV检查    &#13;结果"/>
+								<s:DropDownList id="L304_14" width="130"  enabled="{L304_13.selectedIndex==1}" 
+												change="if(L304_14.selectedIndex!=2)L304_15.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem  colSpan="2">
+								<s:Label styleName="myLabel" text="检查结果&#13;(阳性)"/>
+								<s:TextInput id="L304_15" width="360" editable="{L304_14.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label paddingLeft="5" styleName="myLabel" text="病例组织&#13;诊断日期"/>
+								<mx:DateField id="L304_40" width="130"
+										enabled="{L304_05.selectedIndex==1}"
+										dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										formatString="YYYY-MM-DD"  	yearNavigationEnabled="true"
+										monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"/>
+							</mx:GridItem>
+							
+							<mx:GridItem >
+								<s:Label  styleName="myLabel" text="临床分析&#13;诊断日期"/>
+								<mx:DateField id="L304_39" width="130"
+											  enabled="{L304_08.selectedIndex==1}"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"  	yearNavigationEnabled="true"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"/>
+							</mx:GridItem>
+							
+							<mx:GridItem colSpan="2">
+								<s:Label  styleName="myLabel" text="HPV检测&#13;诊断日期"/>
+								<mx:DateField id="L304_16" width="130"
+											  enabled="{L304_13.selectedIndex==1}"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"  	yearNavigationEnabled="true"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="830" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="治疗随访信息">	
+					<mx:Grid>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="是否治疗 "/>
+								<s:DropDownList id="L304_17" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="治疗方式&#13;结果"/>
+								<s:DropDownList id="L304_18" width="130" enabled="{L304_17.selectedIndex==2}" change="L304_18_clickHandler()"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:Label width="48" styleName="myLabel" id="L304_18_label" text="未治疗  &#13;(其他)"/>
+								<s:TextInput id="L304_18_text" width="360" editable="{L304_18.selectedIndex==1||L304_18.selectedIndex==7}"/>
+							</mx:GridItem>	
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="有无随访&#13;结果 "/>
+								<s:DropDownList id="L304_21" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="随访结果"/>
+								<s:DropDownList id="L304_22" width="130" enabled="{L304_21.selectedIndex==2}" change="L304_22_changeHandler()"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:Label styleName="myLabel" id="L304_22_label" text="复发时间"/>
+								<mx:DateField id="time" width="130"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD" yearNavigationEnabled="true" 
+											  enabled="{L304_22.selectedIndex==2||L304_22.selectedIndex==3||L304_22.selectedIndex==4}"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"/>
+							</mx:GridItem>	
+						</mx:GridRow>
+						
+						<mx:GridRow enabled="{L304_22.selectedIndex==4||L304_22.selectedIndex==5}">
+							<mx:GridItem colSpan="4">
+								<s:Label paddingLeft="5" id="reasonLabel" styleName="myLabel" text="死亡原因"/>
+								<s:TextInput id="reason" width="100%"/>
+							</mx:GridItem>	
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem >
+								<s:Label styleName="myLabel" paddingLeft="5" text="有无随访&#13;方式"/>
+								<s:DropDownList id="L304_28" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel"  text="随访方式"/>
+								<s:DropDownList id="L304_29" width="130" enabled="{L304_28.selectedIndex==1}" 
+												change="if(L304_29.selectedIndex!=9)L304_30.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem  colSpan="2">
+								<s:Label styleName="myLabel" text="随访方式&#13;(其他)"/>
+								<s:TextInput id="L304_30" width="360" editable="{L304_29.selectedIndex==4}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow >
+							<mx:GridItem>
+								<s:Label paddingLeft="5" styleName="myLabel" text="随访单位"/>
+								<s:DropDownList id="L304_31" width="130"/>				
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="随访人员"/>
+								<s:TextInput id="L304_33" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem colSpan="2">
+								<s:Label styleName="myLabel" text="随访日期"/>
+								<mx:DateField id="L304_32" width="130"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											   yearNavigationEnabled="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+					
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="830" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="录入信息">			
+					<mx:Grid>
+						
+						
+						<mx:GridRow paddingLeft="5">
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="操作单位"/>
+								<s:DropDownList id="L304_34" width="130" mouseChildren="false"/>				
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="操作人员"/>
+								<s:TextInput id="L304_36" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label styleName="myLabel" text="操作时间"/>
+								<mx:DateField id="L304_37" width="130"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  yearNavigationEnabled="true"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup width="830" height="30" contentBackgroundColor="#FF0000" horizontalAlign="center"
+					  paddingBottom="20" paddingLeft="10" paddingTop="10" verticalAlign="middle">
+				<s:Button id="save" label="保存" buttonMode="true" chromeColor="#CCCCCC" click="validate()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>

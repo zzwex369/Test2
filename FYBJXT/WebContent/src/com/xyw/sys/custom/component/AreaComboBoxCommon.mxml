@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  verticalAlign="middle" horizontalAlign="center"
+		  creationComplete="hgroupCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getCustomAreaComboBoxData" result="getCustomAreaComboBoxDataHandler(event)"/>
+			<s:method name="getCustomAreaComboBoxDataCommon" result="getCustomAreaComboBoxDataCommonHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.cszsl.index;
+			import com.xyw.sys.event.CustomAreaCityEvent;
+			import com.xyw.sys.event.CustomAreaCountyEvent;
+			import com.xyw.sys.event.CustomAreaTownEvent;
+			import com.xyw.sys.model.AreaRequest;
+			import com.xyw.sys.model.AreaResponse;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			private var areaRequest:AreaRequest = null;
+			[Bindable]
+			private var areaCode:String = "";
+			
+			private var _flag:Boolean = true;
+			
+			[Bindable]
+			private var idx:index = null;
+			
+			private function hgroupCreationCompleteHandler(event:FlexEvent):void
+			{
+				/*this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = "__";
+				this.areaRequest.showPrompt = false;
+				this.areaRequest.areaFlag = "province";
+				this.systemService.getCustomAreaComboBoxData(areaRequest);//省
+				*/
+				this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = "defaultValue";
+				this.areaRequest.showPrompt = false;
+				this.areaRequest.areaFlag = "province";
+				this.systemService.getCustomAreaComboBoxData(areaRequest);//省
+				
+				this.province.addEventListener(IndexChangeEvent.CHANGE, provinceDropDownListIndexChangeHandler);
+				this.city.addEventListener(IndexChangeEvent.CHANGE, cityDropDownListIndexChangeHandler);
+				this.county.addEventListener(IndexChangeEvent.CHANGE, countyDropDownListIndexChangeHandler);
+				this.town.addEventListener(IndexChangeEvent.CHANGE, townDropDownListIndexChangeHandler);
+				//this.country.addEventListener(IndexChangeEvent.CHANGE, countryDropDownListIndexChangeHandler);
+				this.province.selectedIndex = 0;
+				this.city.selectedIndex = 0;
+				this.county.selectedIndex = 0;
+				this.town.selectedIndex = 0;
+				//this.country.selectedIndex = 0;
+				//this.group.selectedIndex = 0;
+			}
+			
+			public function getAreaName():String{
+				var areaName:String = null;
+				try{
+					if(province.selectedItem.data!=""){
+						areaName=province.selectedItem.label;
+					}
+				}catch(e:Error){}
+				try{
+					if(city.selectedItem.data!=""){
+						areaName+=city.selectedItem.label;
+					}
+				}catch(e:Error){}
+				try{
+					if(county.selectedItem.data!=""){
+						areaName+=county.selectedItem.label;
+					}
+				}catch(e:Error){}
+				try{
+					if(town.selectedItem.data!=""){
+						areaName+=town.selectedItem.label;
+					}
+				}catch(e:Error){}
+				/*
+				try{
+					if(country.selectedItem.data!=""){
+						areaName+=country.selectedItem.label;
+					}
+				}catch(e:Error){}
+				try {
+					if(this.group.selectedItem.data != "") {
+						areaName+=group.selectedItem.label;
+					}
+				}catch(e:Error){}
+				*/
+				return areaName;
+			}
+			
+			public function setAreaCode(areaCode:String):void
+			{
+				this.areaCode = areaCode;
+				if(this.areaCode != null && this.areaCode != ""){
+					//省级
+					if(areaCode.length == 2) {
+						
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = "defaultValue";
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "province";
+						this.systemService.getCustomAreaComboBoxData(areaRequest);//省
+					}
+					//市级
+					if(areaCode.length == 4) {
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = "defaultValue";
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "province";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//省
+						
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = areaCode.substr(0, 2);
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "city";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//市
+						
+					}
+					//县级
+					if(areaCode.length == 6) {
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = "defaultValue";
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "province";
+						
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//省
+						
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = areaCode.substr(0, 2);
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "city";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//市
+						
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = areaCode.substr(0, 4);
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "county";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//县
+					}
+					//乡镇级
+					if(areaCode.length == 9){
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = "defaultValue";
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "province";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//省
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = areaCode.substr(0, 2);
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "city";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//市
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = areaCode.substr(0, 4);
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "county";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//县
+						
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = areaCode.substr(0, 6);
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "town";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//县
+						/*
+						this.areaRequest = new AreaRequest();
+						this.areaRequest.areaCode = areaCode;
+						this.areaRequest.showPrompt = false;
+						this.areaRequest.areaFlag = "town";
+						this.systemService.getCustomAreaComboBoxData(this.areaRequest);//乡镇
+						*/
+					}
+					this.city.addEventListener(IndexChangeEvent.CHANGE, cityDropDownListIndexChangeHandler);
+					this.county.addEventListener(IndexChangeEvent.CHANGE, countyDropDownListIndexChangeHandler);
+					this.town.addEventListener(IndexChangeEvent.CHANGE, townDropDownListIndexChangeHandler);
+					//this.country.addEventListener(IndexChangeEvent.CHANGE, countryDropDownListIndexChangeHandler);
+					//this.province.selectedIndex = 0;
+					//this.city.selectedIndex = 0;
+					//this.county.selectedIndex = 0;
+					//this.town.selectedIndex = 0;
+					//this.country.selectedIndex = 0;
+				}
+			}
+			
+			
+			private function provinceDropDownListIndexChangeHandler(event:IndexChangeEvent):void
+			{
+				var provinceData:String = DropDownList(event.target).selectedItem.data;
+				this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = provinceData;
+				this.areaRequest.showPrompt = true;
+				this.areaRequest.areaFlag = "province";
+				this.systemService.getCustomAreaComboBoxData(this.areaRequest);
+			}
+			
+			private function cityDropDownListIndexChangeHandler(event:IndexChangeEvent):void
+			{
+				var cityData:String = DropDownList(event.target).selectedItem.data;
+				this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = cityData;
+				this.areaRequest.showPrompt = true;
+				this.areaRequest.areaFlag = "city";
+				this.systemService.getCustomAreaComboBoxData(this.areaRequest);
+				if(this.areaCode.length == 2) {
+					this.dispatchEvent(new CustomAreaCityEvent(this.getAreaCode(), CustomAreaCityEvent.CUSTOMAREACITYEVENT, true));
+				}
+			}
+			
+			private function countyDropDownListIndexChangeHandler(event:IndexChangeEvent):void
+			{
+				var countyData:String = DropDownList(event.target).selectedItem.data;
+				this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = countyData;
+				this.areaRequest.showPrompt = true;
+				this.areaRequest.areaFlag = "county";
+				this.systemService.getCustomAreaComboBoxData(this.areaRequest);
+				
+				if(this.areaCode.length == 4) {
+					this.dispatchEvent(new CustomAreaCountyEvent(this.getAreaCode(), CustomAreaCountyEvent.CUSTOMAREACOUNTYEVENT, true));
+				}
+				
+			}
+			
+			 private function townDropDownListIndexChangeHandler(event:IndexChangeEvent):void
+			{
+				var townData:String = DropDownList(event.target).selectedItem.data;
+				this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = townData;
+				this.areaRequest.showPrompt = true;
+				this.areaRequest.areaFlag = "town";
+				this.systemService.getCustomAreaComboBoxData(this.areaRequest);
+				if(this.areaCode.length == 6) {
+					this.dispatchEvent(new CustomAreaTownEvent(this.getAreaCode(), CustomAreaTownEvent.CUSTOMAREATOWNEVENT, true));
+				}
+			}  
+			
+			private function countryDropDownListIndexChangeHandler(event:IndexChangeEvent):void
+			{
+				var groupData:String = DropDownList(event.target).selectedItem.data;
+				this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = groupData;
+				this.areaRequest.showPrompt = true;
+				this.areaRequest.areaFlag = "country";
+				this.systemService.getCustomAreaComboBoxData(this.areaRequest);
+
+			}
+			
+			private function commityDropDownListIndexChangeHandler(event:IndexChangeEvent):void
+			{
+				
+			}
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			private function getCustomAreaComboBoxDataHandler(event:ResultEvent):void
+			{
+				var areaResponse:Object = event.result;
+				var areaFlag:String = areaResponse.areaFlag;
+				var showPrompt:Boolean = areaResponse.showPrompt;
+				var comboBoxDataList:ArrayCollection = areaResponse.comboBoxDataList;
+				if(areaFlag == "province") {
+					if(showPrompt) {
+						this.city.dataProvider = comboBoxDataList
+						this.city.selectedIndex = 0;
+						var dex:int = this.getDropDownListSelectedIndex(new ArrayCollection(this.city.dataProvider.toArray()), "4113");
+						this.city.selectedIndex = dex;
+						
+						if(dex != 0){
+							this.areaRequest = new AreaRequest();
+							this.areaRequest.areaCode = "4113";
+							this.areaRequest.showPrompt = true;
+							this.areaRequest.areaFlag = "city";
+							this.systemService.getCustomAreaComboBoxData(this.areaRequest);
+						}
+						if(this.areaCode != "") {
+							this.city.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.city.dataProvider.toArray()), this.areaCode.substr(0, 4));
+							this.province.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.province.dataProvider.toArray()), this.areaCode.substr(0, 2));
+						}
+						
+						this.county.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						this.county.selectedIndex = 0;
+						this.town.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						this.town.selectedIndex = 0;
+					} else {
+						this.province.dataProvider = comboBoxDataList;
+						comboBoxDataList.addItemAt({label:"选择", data:""}, 0);
+						this.province.selectedIndex = 0;
+						if(this.areaCode != "") {
+							this.province.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.province.dataProvider.toArray()), this.areaCode.substr(0, 2));
+						}else {
+							this.province.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.province.dataProvider.toArray()), "41");
+							this.areaRequest = new AreaRequest();
+							this.areaRequest.areaCode = "41";
+							this.areaRequest.showPrompt = true;
+							this.areaRequest.areaFlag = "province";
+							this.systemService.getCustomAreaComboBoxData(this.areaRequest);
+						}
+						
+						this.city.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						this.city.selectedIndex = 0;
+						this.county.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						this.county.selectedIndex = 0;
+						this.town.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						this.town.selectedIndex = 0;
+						//this.country.selectedIndex = 0;
+						//this.group.selectedIndex = 0;
+					}
+				} else if(areaFlag == "city") {
+					if(showPrompt) {
+						this.county.dataProvider = comboBoxDataList;
+						this.county.selectedIndex = 0;
+						if(this.areaCode != "") {
+							this.county.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.county.dataProvider.toArray()), this.areaCode.substr(0, 6));
+							this.city.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.city.dataProvider.toArray()), this.areaCode.substr(0, 4));
+						}
+						
+						this.town.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.country.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.group.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.county.selectedIndex = 0;
+					} else {
+						this.city.dataProvider = comboBoxDataList;
+						this.city.selectedIndex = 0;
+						if(this.areaCode != "") {
+							this.city.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.city.dataProvider.toArray()), this.areaCode.substr(0, 4));
+						}
+						
+						this.county.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						this.town.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.country.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.group.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						
+					}
+					this.town.selectedIndex = 0;
+					//this.country.selectedIndex = 0;
+				} else if(areaFlag == "county") {
+					if(showPrompt) {
+						this.town.dataProvider = comboBoxDataList;
+						this.town.selectedIndex = 0;
+						if(this.areaCode != "") {
+							this.county.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.county.dataProvider.toArray()), this.areaCode.substr(0, 6));
+							this.town.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.town.dataProvider.toArray()), this.areaCode.substr(0, 8));
+						}
+						
+						//this.country.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.group.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						
+						//this.group.selectedIndex = 0;
+					} else {
+						
+						this.county.dataProvider = comboBoxDataList;
+						this.county.selectedIndex = 0;
+						if(this.areaCode != "") {
+							this.county.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.county.dataProvider.toArray()), this.areaCode.substr(0, 6));
+						}
+						this.town.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.country.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.group.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						
+						//this.country.selectedIndex = 0;
+						//this.group.selectedIndex = 0;
+					}
+				} else if(areaFlag == "town") {
+					if(showPrompt) {
+						//this.country.dataProvider = comboBoxDataList;
+						//this.group.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.country.selectedIndex = 0;
+						//this.group.selectedIndex = 0;
+					} else {
+						
+						this.town.dataProvider = comboBoxDataList;
+						//this.country.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						//this.group.dataProvider = new ArrayCollection([{label:"选择", data:""}]);
+						this.town.selectedIndex = 0;
+						//this.group.selectedIndex = 0;
+						if(this.areaCode != "") {
+							this.town.selectedIndex = this.getDropDownListSelectedIndex(new ArrayCollection(this.town.dataProvider.toArray()), this.areaCode.substr(0, 9));
+						}
+					}
+				}
+				
+				this.hasSubClass(this.getAreaCode());
+			}
+			
+			public function getAreaCode():String
+			{
+				var areaCode:String = null;
+				if(this.city.selectedItem.data == "") {
+					areaCode = 	this.province.selectedItem.data;
+					return areaCode;
+				} else if(this.county.selectedItem.data == "") {
+					areaCode = 	this.city.selectedItem.data;
+					return areaCode;
+				} else if(this.town.selectedItem.data == "") {
+					areaCode = 	this.county.selectedItem.data;
+					return areaCode;
+				} else {
+					areaCode = this.town.selectedItem.data;
+					return areaCode;
+				}
+				
+				return null;
+				
+				/*
+				else if(this.country.selectedItem.data == ""){
+					areaCode = 	this.town.selectedItem.data;
+					return areaCode;
+				} else if(this.group.selectedItem.data == ""){
+					areaCode = this.country.selectedItem.data;
+					return areaCode;
+				} else {
+					areaCode = this.group.selectedItem.data;
+					return areaCode;
+				}
+				*/
+			}
+			
+			public function get flag():Boolean
+			{
+				return this._flag;
+			}
+			
+			public function hasSubClass(_areaCode:String):void {
+				this.areaRequest = new AreaRequest();
+				this.areaRequest.areaCode = _areaCode;
+				this.systemService.getCustomAreaComboBoxDataCommon(this.areaRequest);//县
+			}
+			
+			private function getCustomAreaComboBoxDataCommonHandler(event:ResultEvent):void
+			{
+				var areaResponse:Object = event.result;
+				var comboBoxDataList:ArrayCollection = areaResponse.comboBoxDataList;
+				if(comboBoxDataList.length < 1) {
+					this.areaCode = "";
+					this._flag = false;
+				}else {
+					this._flag = true;
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Label text="省" width="15"/><s:DropDownList id="province" width="100%"/><s:Label text="市" width="15"/><s:DropDownList id="city" width="100%"/>
+	<s:Label text="县区" width="30"/><s:DropDownList id="county" width="100%"/><s:Label text="乡镇" width="30"/><s:DropDownList id="town" width="100%"/>
+	<!--
+	<s:Label text="村"/><s:DropDownList id="country" width="160"/><s:Label text="组"/><s:DropDownList id="group" width="150"/>
+	-->
+</s:HGroup>

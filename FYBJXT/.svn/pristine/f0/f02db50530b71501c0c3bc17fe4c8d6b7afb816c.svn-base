@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+		<mx:TabNavigator  chromeColor="#ffffff"
+						 creationPolicy="all">
+			<s:NavigatorContent width="100%"
+								label="乳腺X线评估BI-RADS分级（0级、3级及以上附报告单）">
+				<s:VGroup width="100%" height="100%" >
+							<s:HGroup width="100%" horizontalAlign="center"
+									  verticalAlign="middle">
+								<s:Label fontSize="14" fontWeight="bold"
+										 text="左 乳"/>
+							</s:HGroup>
+							<mx:Grid >
+								<mx:GridRow height="23">
+									<mx:GridItem
+												 verticalAlign="middle">
+										<s:Label text="分级"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="4">
+										<s:RadioButton id="L402_87_01" label="0级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj"
+													   selected="true"/>
+									
+										<s:RadioButton id="L402_87_02" label="1级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj"/>
+									
+										<s:RadioButton id="L402_87_03" label="2级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj"/>
+									
+										<s:RadioButton id="L402_87_04" label="3级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj"/>
+									
+										<s:RadioButton id="L402_87_05" label="4级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj"/>
+								
+										<s:RadioButton id="L402_87_06" label="5级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow  height="23">
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="肿块"/>
+									</mx:GridItem>
+									<mx:GridItem >
+										<s:RadioButton id="L402_88_01" label="无"
+													   buttonMode="true"
+													   groupName="rxxxjczk"
+													   selected="true"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="3">
+										<s:RadioButton id="L402_88_02" label="有"
+													   buttonMode="true"
+													   groupName="rxxxjczk"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="zrxxxzky"  height="23">
+									<mx:GridItem/>
+									<mx:GridItem colSpan="4">
+										<s:Label paddingTop="5" text="大小"/>
+										<s:BorderContainer width="150"
+														   height="22">
+											<s:TextInput id="L402_89_01"
+														 visible="true"
+														 width="41" height="20"
+														 borderColor="#FFFFFF"
+														 maxChars="4"
+														 restrict="0-9."/>
+											<s:Label x="47" y="5" text="mm"/>
+											<s:Label x="75" y="5" text="X"/>
+											<s:TextInput id="L402_89_02"
+														 visible="true" x="90"
+														 width="30" height="20"
+														 borderColor="#FFFFFF"
+														 maxChars="4"
+														 restrict="0-9."/>
+											<s:Label x="123" y="6" text="mm"/>
+										</s:BorderContainer>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="zrxxxzkkygh" height="23">
+									<mx:GridItem/>
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="可疑钙化"/>
+									</mx:GridItem>
+									<mx:GridItem>
+										<s:RadioButton id="L402_90_01" label="无"
+													   buttonMode="true"
+													   groupName="rxxxjczkkygh"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="2">
+										<s:RadioButton id="L402_90_02" label="有"
+													   buttonMode="true"
+													   groupName="rxxxjczkkygh"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="zrxxxzkjgwl" height="23">
+									<mx:GridItem/>
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="结构紊乱"/>
+									</mx:GridItem>
+									<mx:GridItem>
+										<s:RadioButton id="L402_91_01" label="无"
+													   buttonMode="true"
+													   groupName="rxxxjczkjgwl"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="2">
+										<s:RadioButton id="L402_91_02" label="有"
+													   buttonMode="true"
+													   groupName="rxxxjczkjgwl"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="zrxxxzkbw" height="23">
+									   <mx:GridItem/>
+									   <mx:GridItem width="35" verticalAlign="middle">
+										   <s:Label text="部位"/>
+									   </mx:GridItem>
+									   <mx:GridItem>
+										   <s:RadioButton id="L402_9202_01"
+														  label="外上"
+														  buttonMode="true"
+														  groupName="rxxxjczkkywlbw"/>
+									   </mx:GridItem>
+									   <mx:GridItem>
+										   <s:RadioButton id="L402_9202_02"
+														  label="外下"
+														  buttonMode="true"
+														  groupName="rxxxjczkkywlbw"/>
+									   </mx:GridItem>
+									   <mx:GridItem>
+										   <s:RadioButton id="L402_9202_03"
+														  label="内上"
+														  buttonMode="true"
+														  groupName="rxxxjczkkywlbw"/>
+									   </mx:GridItem>
+									 
+								   </mx:GridRow>
+								<mx:GridRow  height="23">
+									<mx:GridItem colSpan="2"/>
+									<mx:GridItem>
+										<s:RadioButton id="L402_9202_04"
+													   label="内下象限"
+													   buttonMode="true"
+													   groupName="rxxxjczkkywlbw"/>
+									</mx:GridItem>
+									<mx:GridItem>
+										<s:RadioButton id="L402_9202_05"
+													   label="中央区"
+													   buttonMode="true"
+													   groupName="rxxxjczkkywlbw"/>
+									</mx:GridItem>
+									<mx:GridItem>
+										<s:RadioButton id="L402_9202_06"
+													   label="乳晕后"
+													   buttonMode="true"
+													   groupName="rxxxjczkkywlbw"/>
+									</mx:GridItem>
+  								</mx:GridRow>
+								<mx:GridRow  height="23">
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="其他："/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="4">
+										<s:TextInput id="L402_93" width="100%" text="无"/>
+									</mx:GridItem>
+								</mx:GridRow>
+							</mx:Grid>
+				
+					
+							
+							<mx:Grid >
+								<mx:GridRow  height="23"
+											>
+									<mx:GridItem 
+												 verticalAlign="middle">
+										<s:Label text="分级"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="4">
+										<s:RadioButton id="L402_94_01" label="0级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj1"
+													   selected="true"/>
+								
+										<s:RadioButton id="L402_94_02" label="1级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj1"/>
+									
+										<s:RadioButton id="L402_94_03" label="2级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj1"/>
+									
+										<s:RadioButton id="L402_94_04" label="3级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj1"/>
+									
+										<s:RadioButton id="L402_94_05" label="4级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj1"/>
+									
+										<s:RadioButton id="L402_94_06" label="5级"
+													   buttonMode="true"
+													   groupName="rxxxjcfj1"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow  height="23"
+											>
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="肿块"/>
+									</mx:GridItem>
+									<mx:GridItem >
+										<s:RadioButton id="L402_95_01" label="无"
+													   buttonMode="true"
+													   click="L402_95_01_clickHandler(event)"
+													   groupName="rxxxjczk1"
+													   selected="true"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="3">
+										<s:RadioButton id="L402_95_02" label="有"
+													   buttonMode="true"
+													   groupName="rxxxjczk1"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="yrxxxzky"  height="23">
+									<mx:GridItem/>
+
+									<mx:GridItem colSpan="4"
+												 enabled="{L402_95_02.selected}">
+										<s:Label paddingTop="5" text="大小"/>
+										<s:BorderContainer width="150"
+														   height="22">
+											<s:TextInput id="L402_96_01"
+														 visible="true"
+														 width="41" height="20"
+														 borderColor="#FFFFFF"
+														 maxChars="4"
+														 restrict="0-9."/>
+											<s:Label x="47" y="5" text="mm"/>
+											<s:Label x="75" y="5" text="X"/>
+											<s:TextInput id="L402_96_02"
+														 visible="true" x="90"
+														 width="30" height="20"
+														 borderColor="#FFFFFF"
+														 maxChars="4"
+														 restrict="0-9."/>
+											<s:Label x="123" y="6" text="mm"/>
+										</s:BorderContainer>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="yrxxxzkkygh" 
+											height="23"
+											enabled="{L402_95_02.selected}"
+											>
+									<mx:GridItem/>
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="可疑钙化"/>
+									</mx:GridItem>
+									<mx:GridItem>
+										<s:RadioButton id="L402_97_01" label="无"
+													   buttonMode="true"
+													   groupName="rxxxjczkkygh1"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="2">
+										<s:RadioButton id="L402_97_02" label="有"
+													   buttonMode="true"
+													   groupName="rxxxjczkkygh1"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="yrxxxzkjgwl" height="23">
+									<mx:GridItem/>
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="结构紊乱"/>
+									</mx:GridItem>
+									<mx:GridItem>
+										<s:RadioButton id="L402_98_01" label="无"
+													   buttonMode="true"
+													   groupName="rxxxjczkjgwl1"/>
+									</mx:GridItem>
+									<mx:GridItem colSpan="2">
+										<s:RadioButton id="L402_98_02" label="有"
+													   buttonMode="true"
+													   groupName="rxxxjczkjgwl1"/>
+									</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow id="yrxxxzkbw" height="23" >
+									   <mx:GridItem/>
+									   <mx:GridItem verticalAlign="middle">
+										   <s:Label text="部位"/>
+									   </mx:GridItem>
+									   <mx:GridItem>
+										   <s:RadioButton id="L402_9902_01"
+														  label="外上"
+														  buttonMode="true"
+														  groupName="rxxxjczkkywlbw1"/>
+									   </mx:GridItem>
+									   <mx:GridItem>
+										   <s:RadioButton id="L402_9902_02"
+														  label="外下"
+														  buttonMode="true"
+														  groupName="rxxxjczkkywlbw1"/>
+									   </mx:GridItem>
+									   <mx:GridItem>
+										   <s:RadioButton id="L402_9902_03"
+														  label="内上"
+														  buttonMode="true"
+														  groupName="rxxxjczkkywlbw1"/>
+									   </mx:GridItem>
+									 
+								   </mx:GridRow>
+								
+								<mx:GridRow  height="23" >
+									<mx:GridItem colSpan="2"/>
+								<mx:GridItem>
+									<s:RadioButton id="L402_9902_04"
+												   label="内下象限"
+												   buttonMode="true"
+												   groupName="rxxxjczkkywlbw1"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:RadioButton id="L402_9902_05"
+												   label="中央区"
+												   buttonMode="true"
+												   groupName="rxxxjczkkywlbw1"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:RadioButton id="L402_9902_06"
+												   label="乳晕后"
+												   buttonMode="true"
+												   groupName="rxxxjczkkywlbw1"/>
+								</mx:GridItem>
+  								</mx:GridRow>
+								<mx:GridRow  height="23">
+									<mx:GridItem verticalAlign="middle">
+										<s:Label text="其他："/>
+									</mx:GridItem>
+						
+									<mx:GridItem colSpan="4">
+										<s:Label paddingTop="5" text="其他"/>
+										<s:TextInput id="L402_100" text="无" width="100%"/>
+									</mx:GridItem>
+								</mx:GridRow>
+							</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<mx:TabNavigator  chromeColor="#ffffff"
+						 creationPolicy="all">
+			<s:NavigatorContent width="100%" label="建 议">
+				<s:HGroup width="100%" height="100%" paddingBottom="5"
+						   verticalAlign="middle">
+					<s:Label text="建 议:"/>
+					<s:VGroup width="100%" height="100%" >
+						<s:HGroup>
+							<s:RadioButton id="L402_101_01" 
+										   label="1.定期检查" buttonMode="true"
+										   groupName="rxxxjcjy" selected="true"/>
+							<s:RadioButton id="L402_101_02" 
+										   label="2.短期随访（6个月后复查乳腺X线）"
+										   buttonMode="true"
+										   groupName="rxxxjcjy"/>
+						</s:HGroup>
+						<s:HGroup>
+							<s:RadioButton id="L402_101_03" 
+										   label="3.活检" buttonMode="true"
+										   groupName="rxxxjcjy"/>
+							<s:RadioButton id="L402_101_04" 
+										   label="4.其他" buttonMode="true"
+										   groupName="rxxxjcjy"/>
+							
+						</s:HGroup>
+					</s:VGroup>  
+					
+					
+					
+				</s:HGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		
+		
+		
+	</s:VGroup>
+	
+

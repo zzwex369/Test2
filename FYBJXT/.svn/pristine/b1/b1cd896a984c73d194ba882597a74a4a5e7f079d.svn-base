@@ -1,0 +1,721 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  xmlns:fnrxa="com.xyw.module.msss.la.fnrxajc.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="l402Service" destination="l402Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryL402" result="queryL402Handler(event)"/>
+			<s:method name="renewL402" result="delL402Handler(event)"/>
+
+			<s:method name="delL402" result="delL402Handler(event)"/>
+		</s:RemoteObject>
+		
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+
+		<fx:XMLList id="modelListUpdate">
+			<state label="修改检查信息">   
+				<state label="1.病史情况" data="0" currentState="bs"/>   
+				<state label="2.乳腺触诊" data="1" currentState="rxcz"/>   
+				<state label="3.乳腺彩超超声检查" data="2" currentState="rxcc"/> 
+				<state label="4.初筛临床建议" data="5" currentState="csjy"/>   
+				<state label="5.乳腺X线检查" data="3" currentState="rxxx"/>
+				<state label="6.乳腺X线临床建议" data="6" currentState="xxjy"/>   
+				<state label="7.最终随访结果" data="4" currentState="rxsf"/>   
+			</state>
+		</fx:XMLList>
+		
+		<fx:XMLList id="modelListRegister">
+			<state label="登记检查信息">   
+				<state label="1.乳腺触诊" data="1" currentState="rxcz"/>   
+				<state label="2.乳腺彩超超声检查" data="2" currentState="rxcc"/>  
+				<state label="3.初筛临床建议" data="5" currentState="csjy"/>   
+				<state label="4.乳腺X线检查" data="3" currentState="rxxx"/>
+				<state label="5.乳腺X线临床建议" data="6" currentState="xxjy"/>   
+				<state label="6.最终随访结果" data="4" currentState="rxsf"/>  
+			</state>
+		</fx:XMLList>
+		
+		<fx:XMLList id="modelListDel">
+			<state label="删除检查信息">   
+				<state label="1.病史情况" data="0"/>   
+				<state label="2.乳腺触诊" data="1"/>   
+				<state label="3.乳腺彩超超声检查" data="2"/>   
+				<state label="4.初筛临床建议" data="5"/>   
+				<state label="5.乳腺X线检查" data="3"/>
+				<state label="6.乳腺X线临床建议" data="6"/>   
+				<state label="7.最终随访结果" data="4"/>    
+			</state>
+		</fx:XMLList>
+		
+	
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		mx|MenuBar
+		{
+			cornerRadius:3;
+			fillAlphas: 1.0, 1.0; 
+			/*fillColors: #C0C0C0,#C0C0C0;    //通过此方法进行menubar顶级菜单栏的背景色设置 */
+			contentBackgroundColor:#f2f1f1;/*  //通过此方法进行menubar子菜单栏的背景色设置 */
+			chromeColor:#CCCCCC;/*按钮背景颜色*/
+			rollOverColor:#65a1fc;/*列表悬浮颜色*/
+			letterSpacing: 2;
+			itemOverSkin:ClassReference("com.xyw.sys.custom.skin.MenuBarActiveSkin");
+			itemDownSkin:ClassReference("com.xyw.sys.custom.skin.MenuBarActiveSkin");
+		}
+		s|TextInput:normalWithPrompt {
+			color: #D60505;
+			fontStyle:normal;
+		}
+		mx|ToolTip
+		{
+			fontSize:15;  
+			color:#FF6699; 
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.fngjadacx.finishCaseWindow;
+			import com.xyw.module.msss.la.fngjajccx.picTitleWindow;
+			import com.xyw.module.msss.la.model.L402;
+			import com.xyw.module.msss.la.model.L402Request;
+			import com.xyw.module.msss.la.model.L402Response;
+			import com.xyw.module.msss.la.model.VL402;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.managers.PopUpManager;
+			import mx.messaging.AbstractConsumer;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridEvent;
+			import spark.events.GridSelectionEvent;
+			[Bindable]
+			private var vl402:VL402 =null;
+			public var l402Request:L402Request =null; 
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			[Bindable]
+			private var xmlListCollectionRegister:XMLListCollection;
+			[Bindable]
+			private var xmlListCollectionUpdate:XMLListCollection ; 
+			[Bindable]
+			private var xmlListCollectionDel:XMLListCollection;
+			private var codeArr:Array;//录入机构字段
+			private static const PREFIX:String="l402";
+			private var comboBoxDataList:ArrayCollection =new ArrayCollection() ;
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				initializeComboBox();
+				this.systemUser = this.parentApplication.systemUser;
+				xmlListCollectionUpdate=new XMLListCollection(modelListUpdate);
+				xmlListCollectionRegister=new XMLListCollection(modelListRegister);
+				xmlListCollectionDel=new XMLListCollection(modelListDel);
+				
+				codeArr=['123','44','84','128','174','165','168'];
+			}
+			
+			private function initializeComboBox():void
+			{
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.sql = "select d101_01,d101_02 from D101 where d101_06>2";
+				comboBoxDataRequest.flag = "D101";
+				comboBoxDataRequest.showPrompt = false;
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+			}
+			
+			
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				comboBoxDataList = comboBoxDataResponse.comboBoxDataList;
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vl402 = DataGrid(event.target).selectedItem as VL402;
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				var code:String;
+				var l402:L402=new L402();
+				l402Request = new L402Request();
+				try{
+						var type:String = L402_123.getLastSelectedInstitution();
+						var l402_123:String = L402_123.getLastSelectedInstitutionCode();
+					
+						code =type=="8"?l402_123:l402_123.substring(0,Number(type));
+						var l40203:String=StringUtil.trim(L402_03.text);
+						var l40204:String=StringUtil.trim(L402_04.text);
+						if(l40203||l40204)
+						{
+							l402.l40203=l40203;
+							l402.l40204=l40204;
+						}else
+						{
+							l402Request.timeStr=DateField.stringToDate(timeStart.text,"YYYY-MM-DD");
+							l402Request.timeEnd=DateField.stringToDate(timeEnd.text,"YYYY-MM-DD");
+							l402.l402148=CompMethod.getRadioButtonValue([L402_148]);//是否宫颈结案
+							l402.l402150=CompMethod.getRadioButtonValue([L402_150]);//超声上传图片
+							l402.l402151=CompMethod.getRadioButtonValue([L402_151]);//x线上传图片
+						}
+					
+					vl402=null;
+					l402Request.l402=l402;
+					l402Request.suffixSql=' and ('+getSuffixSql(code)+')';
+				}catch(e:Error)
+				{
+					Alert.show("查询异常","系统提示");
+				}
+				
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function getSuffixSql(code:String):String
+			{
+				var isFull:Boolean=code.length==14;
+				var sql:String=setCodeSql(code,'l402_123',isFull)+
+					setCodeSql(code,'l402_44',isFull)+
+					setCodeSql(code,'l402_84',isFull)+
+					setCodeSql(code,'l402_102',isFull)+
+					setCodeSql(code,'l402_105',isFull);
+				sql=sql.slice(sql.indexOf('l402_123'));
+				return sql;
+			}
+			
+			/**
+			 *
+			 */
+			private function setCodeSql(code:String,field:String,isFull:Boolean):String
+			{
+				var codeSql:String=' or '+field ;
+				codeSql+=isFull?'=':' like '
+				codeSql+="'"+code;
+				codeSql+=isFull?"'":"%'";
+				return codeSql;
+			}
+			
+			private function query():void
+			{
+				_query(1,20);
+			}
+			protected function queryL402Handler(event:ResultEvent):void
+			{
+				var l402Response:Object = event.result;
+				var vl402s:ArrayCollection = l402Response.vl402s;
+				var rowCount:Number = l402Response.rowCount;
+				this.pagerBar.dataGrid = this.certificateDataGrid;
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = vl402s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}	
+				if(!l402Response.state)
+				{
+					Alert.show(l402Response.errorMessage,"系统提示");
+					return;
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				_query(currentPageIndex,pageSize);
+			}
+			
+			public function refresh():void
+			{
+				_query(this.pagerBar.currentPageIndex,20);
+			}
+			
+			private function _query(currentPageIndex:int,pageSize:int):void
+			{
+				this.initQueryParam();
+				l402Request.parameterPageindex = currentPageIndex;
+				l402Request.parameterPagesize = pageSize;
+				this.l402Service.queryL402(l402Request);	
+			}
+			
+			private function readCard():void
+			{
+				var arr:Array=CompMethod.readCard();
+				if(arr!=null)
+				{
+					var boolean:Boolean=CompMethod.sex("女",arr[1]);
+					if(boolean)
+					{
+						L402_03.text=arr[0];
+						L402_04.text=arr[5];
+						query();
+					}
+				}else
+				{					
+					Alert.show("读卡失败","系统提示");
+				}
+			}
+			private function labelFunction(item:Object,col:GridColumn):String
+			{
+				var flag:String;
+				var field:String=col.dataField;
+				var idx:int=CompMethod.getDropDownListSelectedIndex(comboBoxDataList,item[field]);
+				flag=!idx?"未登记":comboBoxDataList.getItemAt(idx).label.toString();
+				var flagWith:int=flag.length*14;
+				col.width=!idx?col.width:flagWith>col.width?flagWith:col.width;
+				return flag;
+			}
+			
+			/**
+			 *
+			 */
+			private function getItemData(event:MenuEvent):Array
+			{
+				var dataId:String=event.item.@data;
+				var code:String=vl402[PREFIX+codeArr[Number(dataId)]];
+				return new Array(dataId,code);
+			}
+			
+			
+			private function itemClickHandler(event:MenuEvent):void
+			{
+				if(!hasFieldVal(null,null,true))
+					return;
+				var state:String=event.item.@currentState;
+				var dataId:String=event.item.@data;
+				var title:String=(event.item.@label).toString().substring(2);
+				var window:titleWindow=new titleWindow();
+				var id:Object=event.target;
+				if(id==popUpdate)
+				{
+					window.state="0";//修改状态
+					window.titleName=title+"修改";			
+				}			
+				else if(id==popRegister)
+				{
+					window.state="1";//首次登记状态
+					window.titleName=title+"登记";					
+				}
+				if(!validate(getItemData(event)[1],id,window.state))
+					return;
+				
+				window.dataId=state;
+				window._disabledRanges=timeEnd.disabledRanges;
+				window.vl402=this.vl402;
+				CompMethod.popUpTitleWindow(window,this);
+
+			}
+			
+			
+			/**
+			 *验证是否符合登记或者修改信息   
+			 * 参数1.登记机构
+			 * 参数2.点击按钮
+			 * 参数3.修改还是登记  状态
+			 */
+			private function validate(institutionCode:Object,id:Object,status:String):Boolean
+			{
+				if(status=="1")
+				{
+					if(id==popRegister&&institutionCode)
+					{
+						Alert.show("不能重复登记","系统提示");
+						return false;
+					}
+				}
+				else if(status=="0") {
+					if(!hasFieldVal(institutionCode,['没有登记无法修改','不是原单位登记的信息，不能修改']))
+						return false;
+					
+				}
+				return true;
+			
+			}
+			
+			
+			private function printjc():void
+			{
+				navigateToURL(new URLRequest(this.parentApplication.contextRoot + 
+					"/print_new/ms/rxa/rxady.jsp?l30101=" + vl402.l40202+"&isL301=2"),null);
+			}
+			
+			private function lxsf():void
+			{
+				var window:rxalxsf = new rxalxsf();
+				window.vl402=vl402;
+				CompMethod.popUpTitleWindow(window,this);
+
+			}
+			
+			private function qzsf():void
+			{
+				var window:rxaqzsf = new rxaqzsf();
+				window.vl402=vl402;
+				CompMethod.popUpTitleWindow(window,this);
+			}
+			
+			
+			private function finishCase():void
+			{
+				if(!hasFieldVal(null,null,true))
+					return;
+				else if(!(vl402.l40244&&vl402.l40284))//结案前判断
+				{
+					Alert.show("请先登记乳腺触诊和乳腺彩超检查","系统提示");
+					return;
+				}else if(!vl402.l402165)//初筛临床建议
+				{
+					Alert.show("请先登记初筛临床建议!","系统提示");
+					return;
+				}else {
+					if(vl402.l40283=='2'||vl402.l40283=='3')//乳腺X线
+					{
+						if(vl402.l40283=='2')
+						{
+							if(!vl402.l402128)
+							{
+								Alert.show("乳腺彩超建议为乳腺X线检查，请登记乳腺X线检查！","系统提示");
+								return;
+							}else if(vl402.l402102&&!vl402.l402168)//接受 X线检查 验证是否 登记临床建议
+							{
+								Alert.show("乳腺X线检查已登记，请先登记乳腺X线临床建议！","系统提示");
+								return;
+							}
+								
+							
+						}else 
+						{//登记了乳腺x线
+							if(vl402.l402101=='3')
+							{
+								if(!vl402.l402176)
+								{
+									Alert.show("腺X线临床建议为活检，请登记乳腺随访！","系统提示");
+									return;
+								}
+							}
+						}
+					}
+					if(this.systemUser.institutionCode!=vl402.l402123)
+					{
+						Alert.show("不是本单位登记的病史是无法结案的！","系统提示");
+						return;
+					}
+					else
+					{
+						Alert.show("结案之后就无法修改对应检查信息，请确认","系统提示",3,this,popHandler);
+					}
+			   }
+			}
+			
+			private function popHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var window:finishCaseWindow=new finishCaseWindow();
+					window.dataArr=new Array(vl402.l40202,vl402.l40203,vl402.l40204,
+						vl402.l40205,false,!Boolean(vl402.l402148),true);
+					CompMethod.popUpTitleWindow(window,this);
+				}
+			}
+			
+			private function setL402148(item:Object,col:GridColumn):String
+			{
+				return item[col.dataField]?"是":"否";
+			}
+			//反馈卡
+			public function feedback():void{
+				navigateToURL(new URLRequest(this.parentApplication.contextRoot + "/print_new/ms/la/la.jsp?l40201=" +vl402.l40201),null);
+			}
+			
+			/**
+			 *查看图片
+			 */
+			private function queryPic():void
+			{
+				var l402150:String=vl402.l402150;
+				var l402151:String=vl402.l402151;
+				if(!l402150&&!l402151)
+				{
+					Alert.show("该信息尚未上传任何图片！","系统提示");
+					return;
+				}
+				var picTypeArr:Array=[""];
+				picTypeArr.push(l402150?"2":l402150)
+				picTypeArr.push(l402151?"3":l402151)
+				var window:picTitleWindow=new picTitleWindow();
+				window.picTypeArr=picTypeArr;
+				window.parentID=vl402.l40201;
+				CompMethod.popUpTitleWindow(window,this,true);
+			}
+			
+			
+			/**
+			 *
+			 */
+			private function hasFieldVal(institutionCode:Object,text:Array,hasL402148:Boolean=false):Boolean
+			{
+				if(hasL402148)
+				{
+					if(vl402.l402148)
+					{
+						Alert.show("乳腺癌已结案，无法进行任何操作!","系统提示");
+						return false;
+					}
+				}else
+				{
+					if(!institutionCode)
+					{
+						Alert.show(text[0],"系统提示");
+						return false;
+					}
+					if(institutionCode!=this.systemUser.institutionCode)
+					{
+						Alert.show(text[1],"系统提示");
+						return false;
+					}
+				}
+				
+				return true;
+			}
+			
+			
+			private function del_itemClickHandler(event:MenuEvent):void
+			{
+				
+				var dataArr:Array=getItemData(event);
+				if(!hasFieldVal(null,null,true))
+					return;
+				
+				if(!hasFieldVal(dataArr[1],['没有登记无法删除','不是原单位登记的信息，不能删除']))
+					return ;
+				doDelItem(dataArr[0]);
+			}
+			
+			/**
+			 *
+			 */
+			private function hasOtherCode():Boolean
+			{
+				for(var i:int=1; i<codeArr.length;i++)
+				{
+					if(vl402[PREFIX+codeArr[i]])
+						return true;
+				}
+				return false;
+			}
+			
+			/**
+			 *
+			 */
+			private function doDelItem(flag:String):void
+			{
+				var l402Request:L402Request=new L402Request();
+				if(flag!='0')
+				{
+					var l402:L402=new L402();
+					l402.l40201=vl402.l40201;
+					l402.l40202=vl402.l40202;
+					l402Request.l402=l402;
+					l402Request.flag=flag;
+					l402Service.renewL402(l402Request);
+					
+				}else
+				{
+					if(hasOtherCode())
+					{
+						Alert.show("该信息其他项已检查，不能删除病史信息！","系统提示");
+						return;
+					}
+					l402Request.l40201=vl402.l40201;
+					l402Service.delL402(l402Request);
+					
+				}
+				
+			}
+			
+			/**
+			 *
+			 */
+			private function delL402Handler(event:ResultEvent):void
+			{
+				var l402Response:Object=event.result;
+				if(l402Response.state)
+				{
+					this.refresh();
+					Alert.show('删除成功',"系统提示");
+					return ;
+				}
+				Alert.show('删除失败',"系统提示");
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="100%">
+	<mx:TabNavigator id="tab" width="1200"  chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label color="#ED1313" fontSize="16"
+							 text="友情提示:只要登记过检查都可以查询，跟是否登记过病史无关，结案需要病史登记机构登记！"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="登记机构"/>
+					<component:InstitutionComboBox id="L402_123" width="618"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5">
+					<s:HGroup id="L402_148" width="347" gap="35"  paddingLeft="10"
+							  paddingRight="10" verticalAlign="middle">
+						<s:Label width="75" text="乳腺癌结案"/>
+						<s:RadioButton label="全部" groupName="L402_148" selected="true" value=""/>
+						<s:RadioButton label="已结案" groupName="L402_148" value=" is not null "/>
+						<s:RadioButton label="未结案" groupName="L402_148" value=" is null "/>
+					</s:HGroup>
+						<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+								  verticalAlign="middle">
+							<s:Label text="病史登记日期"/>
+							<component:CustomRangeDateField  id="timeStart" isSelectNow="true" isQuerySysDate="false" getRangesDate="{timeEnd.disabledRanges}"/>
+
+							<s:Label text="至"/>
+							<component:CustomRangeDateField  id="timeEnd"  isSelectNow="true"/>
+
+							
+						</s:HGroup>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5">
+					<s:HGroup id="L402_150" width="347" gap="35" paddingLeft="10"
+							  paddingRight="10" verticalAlign="middle">
+						<s:Label text="上传超声图片"/>
+						<s:RadioButton label="全部" groupName="L402_150" selected="true" value=""/>
+						<s:RadioButton label="是" groupName="L402_150" value="1"/>
+						<s:RadioButton label="否" groupName="L402_150" value="2"/>
+					</s:HGroup>
+					<s:HGroup id="L402_151" width="347" gap="35" paddingLeft="10"
+							  paddingRight="10" verticalAlign="middle">
+						<s:Label text="上传x线图片"/>
+						<s:RadioButton label="全部" groupName="L402_151" selected="true" value=""/>
+						<s:RadioButton label="是" groupName="L402_151" value="1"/>
+						<s:RadioButton label="否" groupName="L402_151" value="2"/>
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="姓名"/><s:TextInput id="L402_03"/>
+					<s:Label text="证件号码"/><s:TextInput id="L402_04" width="200"/>
+					<s:Button id="duka1" width="60" label="读卡" buttonMode="true" click="readCard()"
+							  enabled="{systemUser.duka=='1'}"/>
+					
+				</s:HGroup>
+				
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Button label="查询" click="query()"/>
+					<s:Button label="打印" click="printjc()" enabled="{vl402!=null}"/>
+					<s:Button label="结案登记" buttonMode="true" click="finishCase()"
+							  enabled="{vl402!=null}"/>
+					<s:Button label="反馈卡" buttonMode="true" click="feedback()"
+							  enabled="{vl402!=null}"/>
+					<s:Button label="查看图片" buttonMode="true" click="queryPic()"
+							  enabled="{vl402!=null}"/>
+					<s:Button label="乳腺癌良性病人随访登记" buttonMode="true" click="lxsf()"
+							  enabled="{vl402!=null}"/>
+					<s:Button label="乳腺癌确诊随访登记" buttonMode="true" click="qzsf()"
+							  enabled="{vl402!=null}"/>
+					<mx:MenuBar id="popUpdate" buttonMode="true"
+								dataProvider="{xmlListCollectionUpdate}" enabled="{vl402}"
+								itemClick="itemClickHandler(event)" labelField="@label"
+								textIndent="0"/>
+					<mx:MenuBar id="popRegister" buttonMode="true"
+								dataProvider="{xmlListCollectionRegister}" enabled="{vl402}"
+								itemClick="itemClickHandler(event)" labelField="@label"
+								textIndent="0"/>
+					<mx:MenuBar  id="popDel" labelField="@label" dataProvider="{xmlListCollectionDel}"  textIndent="0" buttonMode="true" 
+								 itemClick="CompMethod.delConfirm(del_itemClickHandler,event)" enabled="{vl402!=null}"/>
+					</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="218" width="1200"  horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="1200" paddingBottom="10">
+			<s:DataGrid id="certificateDataGrid" width="100%" height="340"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="false" rowHeight="22"
+						selectionChange="onSelected(event)"
+						skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="l40201" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号"
+									  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="150" dataField="l40203" headerText="姓名"/>
+						<s:GridColumn width="150" dataField="l40204" headerText="证件号码"/>
+						<s:GridColumn width="180" dataField="l40205" headerText="档案编号"/>
+						<s:GridColumn width="120" dataField="l402148" headerText="是否结案"
+									  labelFunction="setL402148"/>
+						<s:GridColumn width="145" dataField="l40244" headerText="乳腺触诊检查"
+									  labelFunction="labelFunction"  resizable="false"/>
+						<s:GridColumn width="145" dataField="l40284" headerText="乳腺彩色超声检查"
+									  labelFunction="labelFunction"  resizable="false"/>
+						<s:GridColumn width="145" dataField="l402165" headerText="初筛临床建议"
+									  labelFunction="labelFunction"  resizable="false"/>
+						<s:GridColumn width="145" dataField="l402128" headerText="乳腺X线检查"
+									  labelFunction="labelFunction"  resizable="false"/>
+						<s:GridColumn width="145" dataField="l402168" headerText="乳腺X线临床建议"
+									  labelFunction="labelFunction"  resizable="false"/>
+						<s:GridColumn width="145" dataField="l402174" headerText="随访结果登记"
+									  labelFunction="labelFunction"  resizable="false"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false"
+								isPrinter="false"/>
+			
+		</s:VGroup>	
+	</s:Scroller>	
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>
+

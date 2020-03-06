@@ -1,0 +1,787 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationComplete()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)" />
+		</s:RemoteObject>
+		<s:RemoteObject id="csqxrService" destination="csqxrService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="saveD606" result="saveD606Handler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace
+		mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:right;
+			verticalAlign:middle;
+		}
+		s|HGroup
+		{
+			horizontalAlign:right;
+			verticalAlign:middle;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.mustQuery {
+			color:red;
+			fontSize:14px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.delivery.model.D606;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.controls.Text;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			
+			
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			public var systemUser:SystemUser = null;
+			private var d606:D606;
+			
+			public function moduleCreationComplete():void{
+				this.systemUser = this.parentApplication.systemUser;
+				this.initializeComboBox();
+				
+			}
+			public function initializeComboBox():void{
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "D101";
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s301_04";
+				comboBoxDataRequest.sql = "select * from s301_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s606_01";
+				comboBoxDataRequest.sql = "select * from s606_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_02";
+				comboBoxDataRequest.sql = "select * from s604_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s601_01";
+				comboBoxDataRequest.sql = "select * from s601_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s301_01";
+				comboBoxDataRequest.sql = "select * from s301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s601_10";
+				comboBoxDataRequest.sql = "select * from s601_10";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s606_02";
+				comboBoxDataRequest.sql = "select * from s606_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s604_06";
+				comboBoxDataRequest.sql = "select * from s604_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "s606_03";
+				comboBoxDataRequest.sql = "select * from s606_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+			}
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag == "D101")
+				{
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.D606_51.dataProvider = comboBoxDataList;
+					this.D606_51.selectedIndex = index;
+					this.D606_51.enabled = false;
+				}else if(flag == "s301_01")
+				{
+					this.D606_05.dataProvider = comboBoxDataList;
+					this.D606_05.selectedIndex = 0;
+					this.D606_17.dataProvider = comboBoxDataList;
+					this.D606_17.selectedIndex = 0;
+				}else if(flag == "s301_04")
+				{
+					this.D606_09.dataProvider = comboBoxDataList;
+					this.D606_09.selectedIndex = 0;
+				}else if(flag == "s606_01")
+				{
+					this.D606_13.dataProvider = comboBoxDataList;
+					this.D606_13.selectedIndex = 0;
+				}else if(flag == "s604_02")
+				{
+					this.D606_14.dataProvider = comboBoxDataList;
+					this.D606_14.selectedIndex = 0;
+				}else if(flag == "s601_01")
+				{
+					this.D606_15.dataProvider = comboBoxDataList;
+					this.D606_15.selectedIndex = 0;
+				}else if(flag == "s601_10")
+				{
+					this.D606_21.dataProvider = comboBoxDataList;
+					this.D606_21.selectedIndex = 0;
+				}else if(flag == "s606_02")
+				{
+					this.D606_22.dataProvider = comboBoxDataList;
+					this.D606_22.selectedIndex = 0;
+				}else if(flag == "s604_06")
+				{
+					this.D606_23.dataProvider = comboBoxDataList;
+					this.D606_23.selectedIndex = 0;
+				}else if(flag == "s606_03")
+				{
+					this.D606_24.dataProvider = comboBoxDataList;
+					this.D606_24.selectedIndex = 0;
+				}
+			}
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			public function saveD606():void{
+				this.d606 = new D606();
+				d606.d60602 = this.D606_02.text;
+				d606.d60603 = this.D606_03.text;
+				d606.d60604 = this.D606_04.text;
+				d606.d60605 = this.D606_05.selectedItem.data;
+				d606.d60606 = this.D606_06.selectedDate;
+				var patternMonther:RegExp = /^(\d{18,18}|\d{15,15}|\d{17,17}X|\d{17,17}x)$/g;
+				if( !patternMonther.test(this.D606_07.text))
+				{	//验证身份证格式是否正确
+					Alert.show("孕产妇身份证号码有误!","系统提示");
+					return;
+				}
+				d606.d60607 = this.D606_07.text;
+				d606.d60608 = this.D606_08.text;
+				d606.d60609 = this.D606_09.selectedItem.data;
+				d606.d60610 = this.D606_10.text;
+				d606.d60611 = Number(this.D606_11.text);
+				d606.d60612 = Number(this.D606_12.text);
+				d606.d60613 = this.D606_13.selectedItem.data;
+				d606.d60614 = this.D606_14.selectedItem.data;
+				d606.d60615 = this.D606_15.selectedItem.data;
+				d606.d60616 = this.D606_16.text;
+				d606.d60617 = this.D606_17.selectedItem.data;
+				d606.d60618 = this.D606_18.selectedDate;
+				d606.d60619 = Number(this.D606_19.text);
+				d606.d60620 = this.D606_20.value;
+				d606.d60621 = this.D606_21.selectedItem.data;
+				d606.d60622 = this.D606_22.selectedItem.data;
+				d606.d60623 = this.D606_23.selectedItem.data;
+				d606.d60624 = this.D606_24.selectedItem.data;
+				d606.d60625 = this.D606_25.selectedDate;
+				d606.d60626 = Number(this.D606_26.text);
+				
+				var D606_27:String = "";
+				if( this.d1.selected ){ D606_27+="1;";}else{D606_27+="0;";}
+				if( this.d2.selected ){ D606_27+="2;";}else{D606_27+="0;";}
+				if( this.d3.selected ){ D606_27+="3;";}else{D606_27+="0;";}
+				if( this.d4.selected ){ D606_27+="4;";}else{D606_27+="0;";}
+				if( this.d5.selected ){ D606_27+="5;";}else{D606_27+="0;";}
+				if( this.d6.selected ){ D606_27+="6;";}else{D606_27+="0;";}
+				if( this.d7.selected ){ D606_27+="7;";}else{D606_27+="0;";}
+				if( this.d8.selected ){ D606_27+="8;";}else{D606_27+="0;";}
+				if( this.d9.selected ){ D606_27+="9;";}else{D606_27+="0;";}
+				if( this.d10.selected ){ D606_27+="10;";}else{D606_27+="0;";}
+				if( this.d11.selected ){ D606_27+="11;";}else{D606_27+="0;";}
+				if( this.d12.selected ){ D606_27+="12;";}else{D606_27+="0;";}
+				if( this.d13.selected ){ D606_27+="13;";}else{D606_27+="0;";}
+				if( this.d14.selected ){ D606_27+="14;";}else{D606_27+="0;";}
+				if( this.d15.selected ){ D606_27+="15;";}else{D606_27+="0;";}
+				if( this.d16.selected ){ D606_27+="16;";}else{D606_27+="0;";}
+				if( this.d17.selected ){ D606_27+="17;";}else{D606_27+="0;";}
+				if( this.d18.selected ){ D606_27+="18;";}else{D606_27+="0;";}
+				if( this.d19.selected ){ D606_27+="19;";}else{D606_27+="0;";}
+				
+				if( this.d20.selected ){ D606_27+="20;";}else{D606_27+="0;";}
+				if( this.d21.selected ){ D606_27+="21;";}else{D606_27+="0;";}
+				if( this.d22.selected ){ D606_27+="22;";}else{D606_27+="0;";}
+				if( this.d23.selected ){ D606_27+="23;";}else{D606_27+="0;";}
+				if( this.d24.selected ){ D606_27+="24;";}else{D606_27+="0;";}
+				if( this.d25.selected ){ D606_27+="25;";}else{D606_27+="0;";}
+				if( this.d26.selected ){ D606_27+="26;";}else{D606_27+="0;";}
+				if( this.d27.selected ){ D606_27+="27;";}else{D606_27+="0;";}
+				
+				d606.d60627 = D606_27;
+				
+				d606.d60628 = this.D606_28.text;
+				d606.d60629 = this.D606_29.text;
+				d606.d60630 = this.D606_30.text;
+				d606.d60631 = this.D606_31.text;
+				d606.d60632 = this.D606_32.text;
+				d606.d60633 = this.D606_33.text;
+				d606.d60634 = this.D606_34.text;
+				d606.d60635 = this.D606_35.text;
+				d606.d60636 = this.D606_36.text;
+				d606.d60637 = this.D606_37.text;
+				d606.d60638 = this.D606_38.text;
+				d606.d60639 = Number(this.D606_39.text);
+				d606.d60640 = Number(this.D606_40.text);
+				d606.d60641 = Number(this.D606_41.text);
+				d606.d60642 = this.D606_42.text;
+				d606.d60643 = this.D606_43.text;
+				d606.d60644 = this.D606_44.text;
+				d606.d60645 = this.D606_45.text;
+				d606.d60646 = this.D606_46.text;
+				d606.d60647 = this.D606_47.text;
+				d606.d60648 = this.D606_48.text;
+				d606.d60649 = this.D606_49.text;
+				d606.d60650 = this.D606_50.text;
+				d606.d60651 = this.D606_51.selectedItem.data;
+				d606.d60652 = this.D606_52.text;
+				d606.d60653 = this.D606_53.selectedDate;
+				this.csqxrService.saveD606(d606);
+			}
+			public function saveD606Handler(event:ResultEvent):void{
+				var d606Response:Object = event.result;
+				if(d606Response.errorMessage == null || d606Response.errorMessage == ""){
+					Alert.show(d606Response.promptMessage,"系统提示");
+					this.saveButton.enabled = false;
+					var url:String = this.parentApplication.contextRoot + "/CsqxrServlet?flagF=0&d60607=" + this.d606.d60607 ;
+					if(this.d606.d60616!=null && this.d606.d60616!=""){
+						url = url+"&d60616=" + encodeURIComponent(this.d606.d60616);
+					}
+					navigateToURL(new URLRequest(url), null);
+				}else {
+					Alert.show(d606Response.errorMessage,"系统提示");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%"
+				horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator width="100%"
+							 chromeColor="#ffffff" creationPolicy="all" paddingBottom="10"
+							 paddingLeft="10">
+				<s:NavigatorContent label="基本信息" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10"
+							  paddingRight="10">
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="产妇姓名 " />
+									<s:TextInput id="D606_04" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="身 份 证 号" />
+									<s:TextInput id="D606_07" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="产 妇 性 别 " />
+									<s:DropDownList id="D606_05" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出生日期" />
+									<mx:DateField id="D606_06" x="61" width="117"
+												  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+												  formatString="YYYY-MM-DD"
+												  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+												  yearNavigationEnabled="true" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="民       族 " />
+									<s:DropDownList id="D606_09" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="住  院 号" />
+									<s:TextInput id="D606_10" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="缺陷儿姓名" />
+									<s:TextInput id="D606_16" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="缺陷儿性别" />
+									<s:DropDownList id="D606_17" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出生日期" />
+									<mx:DateField id="D606_18" x="61" width="117"
+												  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+												  formatString="YYYY-MM-DD"
+												  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+												  yearNavigationEnabled="true" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="家庭年人均收入" />
+									<s:DropDownList id="D606_14" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="胎       龄" />
+									<s:TextInput id="D606_19" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="体           重" />
+									<s:NumericStepper id="D606_20" x="70" width="127" maximum="100"
+													  minimum="0" stepSize="0.1"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="胎           数" />
+									<s:DropDownList id="D606_21" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="孕       次" />
+									<s:TextInput id="D606_11" x="59" width="116"  text="1" maxChars="2" restrict="0-9"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="常  住 地" />
+									<s:DropDownList id="D606_13" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="区       县" />
+									<s:TextInput id="D606_02" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="医           院" />
+									<s:TextInput id="D606_03" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="文 化 程 度" />
+									<s:DropDownList id="D606_15" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="产      次" />
+									<s:TextInput id="D606_12" x="56" width="117"  text="1" maxChars="2" restrict="0-9"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem colSpan="2">
+									<s:Label text="家庭地址 " />
+									<s:TextInput id="D606_08" x="59" width="333" />
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff"
+							 creationPolicy="all" paddingLeft="10" paddingBottom="10" width="100%">
+				<s:NavigatorContent label="缺陷分析" width="100%">
+					<s:VGroup>
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="磺胺类药" />
+									<s:TextInput id="D606_29" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="饮       酒" />
+									<s:TextInput id="D606_34" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="诊   断  结  果" />
+									<s:DropDownList id="D606_22" x="80" width="128" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="诊断缺陷治疗引产" />
+									<s:DropDownList id="D606_23" x="112" width="128" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="诊    断    依    据" />
+									<s:DropDownList id="D606_24" x="112" width="128" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="抗  生  素" />
+									<s:TextInput id="D606_30" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="农       药" />
+									<s:TextInput id="D606_35" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="产 前（孕 周)" />
+									<s:TextInput id="D606_26" x="96" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="畸  形  确 诊 时 间" />
+									<mx:DateField id="D606_25" x="112" width="128"
+												  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+												  formatString="YYYY-MM-DD"
+												  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+												  yearNavigationEnabled="true" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="孕早期情况患病" />
+									<s:TextInput id="D606_28" x="112" width="128" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="避  孕  药" />
+									<s:TextInput id="D606_31" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="射       线" />
+									<s:TextInput id="D606_36" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="缺      陷     名" />
+									<s:TextInput id="D606_42" x="80" width="128" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="家庭遗传史缺陷名1" />
+									<s:TextInput id="D606_43" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="与缺陷儿亲缘关系1" />
+									<s:TextInput id="D606_44" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="镇  静 药 " />
+									<s:TextInput id="D606_32" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="化学制剂" />
+									<s:TextInput id="D606_37" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="缺陷儿多少例" />
+									<s:TextInput id="D606_41" x="80" width="128" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="家庭遗传史缺陷名2" />
+									<s:TextInput id="D606_45" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="与缺陷儿亲缘关系2" />
+									<s:TextInput id="D606_46" />
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="其       他" />
+									<s:TextInput id="D606_33" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="其       他" />
+									<s:TextInput id="D606_38" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="近 亲 婚 配 史" />
+									<s:TextInput id="D606_49" x="80" width="128" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="家庭遗传史缺陷名3" />
+									<s:TextInput id="D606_47" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="与缺陷儿亲缘关系3" />
+									<s:TextInput id="D606_48" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="死       胎" />
+									<s:TextInput id="D606_39" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="自然流产" />
+									<s:TextInput id="D606_40" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="关                系" />
+									<s:TextInput id="D606_50" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="糖           尿           病" />
+									<s:TextInput id="D606_59" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="病  毒  感  染  类  型" />
+									<s:TextInput id="D606_58" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="填  报 人" />
+									<s:TextInput id="D606_52" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="填报单位" />
+									<s:DropDownList id="D606_51" width="128" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="填   报  日  期" />
+									<mx:DateField id="D606_53" x="80" width="128"
+												  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+												  formatString="YYYY-MM-DD"
+												  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+												  yearNavigationEnabled="true" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="发    烧   ( ＞ 38℃ )" />
+									<s:TextInput id="D606_56" />
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="患      病      其      他" />
+									<s:TextInput id="D606_60" />
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1133" chromeColor="#ffffff" paddingBottom="10" paddingLeft="10">
+				<s:NavigatorContent label="出生缺陷诊断">
+					<s:VGroup>
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem horizontalAlign="left" >
+									<!--<s:Label text="出生缺陷诊断 D606_27"/> -->
+									<s:Label text="多指(Q69)左右"/>
+									<s:CheckBox id="d15" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem width="123" horizontalAlign="left">
+									<s:Label text="脊柱裂(Q05) " paddingLeft="5" />
+									<s:CheckBox id="d2" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="腭裂(Q35)左右" paddingLeft="5" />
+									<s:CheckBox id="d5" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="食道闭锁或狭窄( Q39 )" paddingLeft="5" />
+									<s:CheckBox id="d10" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="唐氏综合征 (21-三体综合征)(Q90)" paddingLeft="5" />
+									<s:CheckBox id="d25" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="直 肠 肛 门 闭  锁  或 狭 窄 ( 包 括 无 肛 )( Q42 )"
+											 paddingLeft="5" />
+									<s:CheckBox id="d11" selected="true" />
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem horizontalAlign="left" >
+									<s:Label text="并指(Q70)左右"/>
+									<s:CheckBox id="d17" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="脑彭出(Q01) " paddingLeft="5" />
+									<s:CheckBox id="d3" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="唇裂(Q36)左右" paddingLeft="5" />
+									<s:CheckBox id="d6" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="先 天 性 脑 积 水 (Q03)" paddingLeft="5" />
+									<s:CheckBox id="d4" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="小耳(包括无耳)(Q17.2,Q16.0)左右" paddingLeft="5" />
+									<s:CheckBox id="d8" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="外 耳 其 他  畸 形 (小耳,无 耳 除 外) Q17 ) 左 右"
+											 paddingLeft="5" />
+									<s:CheckBox id="d9" selected="true" />
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="腹  裂 ( Q79.3 )"/>
+									<s:CheckBox id="d23" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem width="128" horizontalAlign="left">
+									<s:Label text="脐  膨 出 (Q79.2)" paddingLeft="5" />
+									<s:CheckBox id="d22" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="尿道下裂(Q54)" paddingLeft="5" />
+									<s:CheckBox id="d12" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="先 天 性 膈  疝( Q79.0 )" paddingLeft="5" />
+									<s:CheckBox id="d21" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="唇  裂 合  并   腭  裂  ( Q37 )  左  右"
+											 paddingLeft="5" />
+									<s:CheckBox id="d7" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="肢体短缩[包括缺指(趾),裂手(足)]上肢(Q71)左右"
+											 paddingLeft="5" />
+									<s:CheckBox id="d19" selected="true" />
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem horizontalAlign="left" >
+									<s:Label text="并趾(Q70)左右" />
+									<s:CheckBox id="d18" selected="true" />
+									
+								</mx:GridItem>
+								<mx:GridItem width="141" horizontalAlign="left">
+									<s:Label text="多  趾(Q69) 左右" paddingLeft="5"/>
+									<s:CheckBox id="d16" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem width="123" horizontalAlign="left">
+									<s:Label text="膀胱外翻(Q64.1)" paddingLeft="5" />
+									<s:CheckBox id="d13" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="先天性心脏病(Q20-26)" paddingLeft="5" />
+									<s:CheckBox id="d26" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="马  蹄  内  翻  足  (  Q66.0  )  左   右"
+											 paddingLeft="5" />
+									<s:CheckBox id="d14" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left">
+									<s:Label text="肢体短缩[包括缺指(趾),裂手(足)]下肢(Q72)左右"
+											 paddingLeft="5" />
+									<s:CheckBox id="d20" selected="true" />
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem width="150" horizontalAlign="left">
+									<s:Label text="无脑畸形(Q00)"/>
+									<s:CheckBox id="d1" selected="true" />
+								</mx:GridItem>
+								<mx:GridItem width="141" horizontalAlign="left">
+									<s:Label text="联体双胎(Q89.4)" paddingLeft="5" />
+									<s:CheckBox id="d24" selected="true" />
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem horizontalAlign="left" colSpan="3">
+									<s:Label text="先天性心脏病类型" />
+									<s:TextInput id="D606_55" width="324" />
+								</mx:GridItem>
+								<mx:GridItem width="169" horizontalAlign="left">
+									<s:Label text="其他(写明病名并详细描述)" paddingLeft="5" />
+									<s:CheckBox id="d27" width="15" selected="true"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="left" colSpan="2">
+									<s:Label text="出生缺陷诊断其他" paddingLeft="5" />
+									<s:TextInput id="D606_54"  width="393" />
+								</mx:GridItem>
+							</mx:GridRow>
+							<!--<mx:GridRow> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_61"/> 
+							</mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_62"/> 
+							</mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_63"/> 
+							</mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_64"/> 
+							</mx:GridItem> </mx:GridRow> <mx:GridRow> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_65"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_66"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_67"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_68"/> </mx:GridItem> </mx:GridRow> <mx:GridRow> <mx:GridItem horizontalAlign="left"> <s:Label 
+							text="备注"/><s:TextInput id="D606_69"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label 
+							text="备注"/><s:TextInput id="D606_70"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label 
+							text="备注"/><s:TextInput id="D606_71"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label 
+							text="备注"/><s:TextInput id="D606_72"/> </mx:GridItem> </mx:GridRow> <mx:GridRow> 
+							<mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_73"/> </mx:GridItem> 
+							<mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_74"/> </mx:GridItem> 
+							<mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_75"/> </mx:GridItem> 
+							<mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput id="D606_76"/> </mx:GridItem> 
+							</mx:GridRow> <mx:GridRow> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_77"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_78"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_79"/> </mx:GridItem> <mx:GridItem horizontalAlign="left"> <s:Label text="备注"/><s:TextInput 
+							id="D606_80"/> </mx:GridItem> </mx:GridRow> -->
+						</mx:Grid>
+						<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle"
+								  horizontalAlign="right" paddingBottom="20" paddingTop="10"
+								  paddingLeft="10" width="80%" paddingRight="50" height="30">
+							<s:Button label="确定" id="saveButton" click="saveD606()" />
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

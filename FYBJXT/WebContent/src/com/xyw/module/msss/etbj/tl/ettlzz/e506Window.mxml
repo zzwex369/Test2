@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			    backgroundColor="white" cornerRadius="5"
+			   chromeColor="#5CACEE" close="close()"
+			    width="750" height="280" 
+			   title="儿童听力结案" 
+			    creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="e506Service" destination="e506Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryByE506Id" result="queryByE506IdHandler(event)"/>
+			<s:method name="saveE506" result="saveOrRenewE506Handler(event)"/>
+			<s:method name="renewE506" result="saveOrRenewE506Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		.myLabel {
+			fontSize:12px;
+			paddingTop:4px;
+		}
+		.myGrid {
+			verticalAlign:middle;
+		}
+		.myTextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+		.errorTip
+		{
+			font-size: 15;
+			border-color: red;/* //控制背景色 */
+			color: #fff;
+			font-weight: bold;
+			paddingBottom:1; 
+			cornerRadius:5;
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.etbj.model.E504;
+			import com.xyw.module.msss.etbj.model.E506;
+			import com.xyw.module.msss.etbj.model.VE504;
+			import com.xyw.module.msss.etbj.model.VE505AndVE504;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var comboBoxDataList:ArrayCollection;
+			private var  systemUser:SystemUser=null;
+			private var resE506:E506=null;
+			[Bindable]
+			public var ve505AndVe504:Object;
+			public var modify:Boolean=false;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			
+			
+			private function close():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function init():void{
+				if(modify)
+					e506Service.queryByE506Id(ve505AndVe504.e50401);
+				systemUser=this.parentApplication.systemUser;
+				initializeComboBox();
+				
+			}
+			
+			private function queryByE506IdHandler(event:ResultEvent):void
+			{
+				var e506Response:Object=event.result;
+				if(!e506Response.state){
+					Alert.show(e506Response.errorMessage,"系统提示");
+					return ;
+				}
+				resE506=e506Response.e506;
+			}
+			
+			private function _initializeComboBox(sql:String,flag:String,showPrompt:Boolean=false):void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = showPrompt;
+				comboBoxDataRequest.sql =sql;
+				comboBoxDataRequest.flag = flag;
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			
+			private function initializeComboBox():void
+			{
+				_initializeComboBox("select t.d101_01, t.d101_02 from D101 t ","D101");
+				
+				_initializeComboBox("select * from S301_01 t ","S301_01");
+				
+				if(!modify)
+				{
+					_initializeComboBox("select t.s_01,t.s_02 from S301_10 t where t.S_05='8' and t.S_04 ="+this.systemUser.userCode,"S301_10_1");
+				
+					_initializeComboBox("select t.s_01,t.s_02 from S301_10 t where t.S_05='1' and t.S_04 ="+this.systemUser.userCode,"S301_10_2");
+				}
+
+			}
+			
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+
+					E506_10.dataProvider = E506_12.dataProvider =comboBoxDataList;
+					E506_12.selectedIndex =CompMethod.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);	
+					E506_10.selectedIndex =CompMethod.getDropDownListSelectedIndex(comboBoxDataList, "41000000000002");
+				}else if(flag=="S301_01")
+				{
+					E506_07.dataProvider=comboBoxDataList;
+					E506_07.selectedIndex=(Number(ve505AndVe504.e50504)-1);
+					if(modify)
+						putE506();
+				}else if(!modify)
+				{
+					if(flag=="S301_10_1")
+					{
+						E506_11.dataProvider=comboBoxDataList;
+						E506_11.selectedIndex=0;
+					}else if(flag == "S301_10_2")
+					{
+						E506_13.dataProvider = comboBoxDataList;
+						E506_13.selectedIndex = 0;
+					}
+				}
+			}
+			
+			private function putE506():void
+			{
+				if(!resE506)
+					callLater(putE506);
+				else{
+					E506_11.text=resE506.e50611;
+					E506_13.text=resE506.e50613;
+					E506_09.text=DateField.dateToString(resE506.e50609,"YYYY-MM-DD");
+					E506_14.text=DateField.dateToString(resE506.e50614,"YYYY-MM-DD");		
+					E506_10.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(E506_10.dataProvider),resE506.e50610);
+					E506_12.selectedIndex=CompMethod.getDropDownListSelectedIndex(ArrayCollection(E506_12.dataProvider),resE506.e50612);
+				}
+			}
+			
+			private function saveE506():void
+			{
+				if(!StringUtil.trim(E506_11.text))
+				{
+					Alert.show("请输入转诊医生","系统提示");
+					return;
+				}
+				
+				if(!StringUtil.trim(E506_13.text))
+				{
+					Alert.show("请输入录入人员","系统提示");
+					return;
+				}
+				var e506:E506=new E506();
+				e506.e50605=E506_05.text;
+				e506.e50606=E506_06.text;
+				e506.e50602=ve505AndVe504.e50401;
+				e506.e50603=ve505AndVe504.e50501;
+				e506.e50604=ve505AndVe504.e50404;
+				e506.e50608=ve505AndVe504.e50414;
+				e506.e50607=E506_07.selectedItem.data;
+				e506.e50610=E506_10.selectedItem.data;
+				e506.e50612=E506_12.selectedItem.data;
+				e506.e50611=StringUtil.trim(E506_11.text);
+				e506.e50613=StringUtil.trim(E506_13.text);
+				e506.e50609=DateField.stringToDate(E506_09.text,"YYYY-MM-DD");
+				e506.e50614=DateField.stringToDate(E506_14.text,"YYYY-MM-DD");
+				if(!modify)
+					e506Service.saveE506(e506);
+				else
+				{
+					e506.e50601=resE506.e50601;
+					e506Service.renewE506(e506);
+				}
+			}
+			
+			private function saveOrRenewE506Handler(event:ResultEvent):void
+			{
+				var e506Response:Object=event.result;
+				if(!e506Response.state){
+					Alert.show(e506Response.errorMessage,"系统提示");
+					return ;
+				}
+				Alert.show(e506Response.promptMessage,"系统提示",1,this,closeHandler);
+			}
+			
+			private function closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==1)
+				{
+					var index:Object=this.owner;
+					index.refresh();
+					this.close();
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" chromeColor="#cccccc">
+		<s:VGroup horizontalAlign="center">
+			<mx:TabNavigator width="700" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="基本信息">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" >
+						<mx:Grid>
+							<mx:GridRow >
+								<mx:GridItem>
+									<s:Label styleName="myLabel"  text="母亲姓名" />
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:TextInput id="E506_05" width="130" text="{ve505AndVe504.e50406}" editable="false"/>	
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="myLabel"  text="档案编号"/>
+								</mx:GridItem>
+								<mx:GridItem width="363" colSpan="3">
+									<s:TextInput id="E506_15" width="346" text="{ve505AndVe504.e50404}" editable="false"/>	
+								</mx:GridItem>
+								
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+									
+										<s:Label styleName="myLabel"  text="婴儿姓名"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+										<s:TextInput id="E506_06" width="130" text="{ve505AndVe504.e50405}" editable="false"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>	
+									
+										<s:Label styleName="myLabel"  text="婴儿性别"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+										<s:DropDownList id="E506_07" width="130" mouseChildren="false"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+										<s:Label styleName="myLabel" text="出生日期" />
+								</mx:GridItem>
+								
+								<mx:GridItem>
+										
+									<component:CustomRangeDateField  id="E506_08" width="130" mouseChildren="false" />
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="700" label="报告信息">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label styleName="myLabel" text="转诊医生" paddingLeft="8"/>
+									<component:FindSelectedItemComboBox editable="true" height="21"  width="120" id="E506_11"/>
+									<s:Label styleName="must myLabel" text="*"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="myLabel" text="转往单位"/>
+									<s:DropDownList id="E506_10" width="124" enabled="false"/>
+									<s:Label styleName="must myLabel" text="*"/>
+								</mx:GridItem>
+								
+								<mx:GridItem>
+									<s:Label styleName="myLabel" text="转诊日期"/>
+									
+									<component:CustomRangeDateField  id="E506_09" width="130" isSelectNow="true"/>
+									<s:Label styleName="must myLabel" text="*"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label styleName="myLabel" text="录入人员" paddingLeft="8"/>
+									<component:FindSelectedItemComboBox editable="true" height="21"  width="120" id="E506_13"/>
+									<s:Label styleName="must myLabel" text="*"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label styleName="myLabel" text="录入单位"/>
+									<s:DropDownList id="E506_12" width="124" enabled="false"/><s:Label styleName="must myLabel" text="*"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label styleName="myLabel" text="录入时间"/>
+									
+									<component:CustomRangeDateField isSelectNow="true"  id="E506_14" enabled="false" width="130" />
+
+									<s:Label styleName="must myLabel" text="*"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup width="100%" height="30" contentBackgroundColor="#FF0000"
+					  horizontalAlign="center" paddingBottom="20" paddingLeft="10" paddingTop="10"
+					  verticalAlign="middle">
+				<s:Button id="save" label="保存" buttonMode="true" click="saveE506()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>

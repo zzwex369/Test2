@@ -1,0 +1,99 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   xmlns:component = "com.xyw.sys.custom.component.*"
+			   title="超声筛查申请信息加载" backgroundColor="#FFFFFF"
+			   chromeColor="#5CACEE" close="removeWindow()" width="1024" height="246"
+			   creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="f501Service" destination="f501Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF501" result="queryF501Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F501Request;
+			import com.xyw.module.fnbj.model.VF501;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.GridSelectionEvent;			
+			public var f50103:String;
+			public var f50105:String;
+			public var f50126:String;
+			public var vf501:VF501;
+			public function init():void {
+				var f501Request:F501Request  = new F501Request();
+				f501Request.f50103 = this.f50103;
+				f501Request.f50105 = this.f50105;
+				//	f501Request.f50126 = this.f50126;
+				f501Request.parameterPageindex = 1;
+				f501Request.parameterPagesize = 20;
+				
+				this.f501Service.queryF501(f501Request);
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			public function queryF501Handler(event:ResultEvent):void {
+				var f501Response:Object = event.result;
+				
+				if(f501Response.state){
+					this.certificateDataGrid.dataProvider = f501Response.vf501s;
+				}else{
+					Alert.show(f501Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function onSelected(event:Event):void{
+				this.vf501 = DataGrid(event.target).selectedItem as VF501;
+				 if(this.vf501 == null){
+					Alert.show("请选择要加载的数据！","系统提示");
+					this.vf501 =null;
+				}
+			var csscdj:RegistrationTitleWindow = this.owner as RegistrationTitleWindow;
+			csscdj.loadF501(vf501);
+			removeWindow();
+			}
+			
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" horizontalAlign="center" verticalAlign="middle">
+		<s:HGroup paddingBottom="5" paddingLeft="15" paddingTop="10"  paddingRight="5" width="100%" height="100%" chromeColor="#F6F8FA" contentBackgroundColor="#FFFFFF">
+			<s:DataGrid id="certificateDataGrid" alternatingRowColors="[#FFFFFF,#EEEEEE]" chromeColor="#5CACEE" editable="true" rowHeight="22" width="980" height="158" >
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn dataField="f50101" headerText="主键" visible="false"/>
+						<s:GridColumn dataField="f50102" headerText="主键2" visible="false"/>
+						<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="f50103" headerText="产妇姓名" width="90"/>
+						<s:GridColumn dataField="f50105" headerText="产妇身份证号" width="140"/>
+						<s:GridColumn dataField="f50106Str" headerText="出生日期" width="90"/>
+						<s:GridColumn dataField="f50107" headerText="联系方式" width="70"/>
+						<s:GridColumn dataField="f50108" headerText="体重" width="90"/>
+						<s:GridColumn dataField="f50114Zh" headerText="本次胎儿数" width="100"/>
+						<s:GridColumn dataField="f50115" headerText="本次胎数" width="90"/>
+						<s:GridColumn dataField="f50118" headerText="月经周期天" width="90"/>
+						<s:GridColumn dataField="f50117Str" headerText="末次月经" width="90"/>
+						<s:GridColumn dataField="f50123" headerText="临床诊断" width="140"/>
+						<s:GridColumn dataField="f50124" headerText="申请医生" width="90"/>
+						<s:GridColumn dataField="f50125Str" headerText="申请日期" width="90"/>
+						<s:GridColumn dataField="f50126Zh" headerText="申请单位" width="100"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>					
+		</s:HGroup>
+		
+		<s:HGroup contentBackgroundColor="#FF0000" verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="20" width="100%" height="30">
+			<s:Button label="关闭" click="removeWindow();"/>
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:TitleWindow>

@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+	<class name="com.xyw.medical.birth.model.VD401" table="V_D401">
+		<id name="d40101" type="long">
+			<column name="D401_01" precision="10" scale="0" />
+			<generator class="sequence">
+				<param name="sequence">D401_01_SEQ</param>
+			</generator>
+		</id>
+		  <property name="d40102" type="string">
+                <column name="D401_02" length="20"/>
+            </property>
+            <property name="d40103" type="string">
+                <column name="D401_03" length="1"/>
+            </property>
+            <property name="d40104" type="date">
+                <column name="D401_04" length="7"/>
+            </property>
+            <property name="d40105" type="string">
+                <column name="D401_05" length="20"/>
+            </property>
+            <property name="d40106" type="string">
+                <column name="D401_06" length="2"/>
+            </property>
+            <property name="d40107" type="string">
+                <column name="D401_07" length="100"/>
+            </property>
+            <property name="d40108" type="date">
+                <column name="D401_08" length="7"/>
+            </property>
+            <property name="d40109" type="string">
+                <column name="D401_09" length="20"/>
+            </property>
+            <property name="d40110" type="string">
+                <column name="D401_10" length="14"/>
+            </property>
+            <property name="d40111" type="string">
+                <column name="D401_11" length="20"/>
+            </property>
+            <property name="d40112" type="string">
+                <column name="D401_12" length="14"/>
+            </property>
+            <property name="d40113" type="string">
+                <column name="D401_13" length="12"/>
+            </property>
+            <property name="d40114" type="java.lang.Long">
+                <column name="D401_14" precision="10" scale="0"/>
+            </property>
+            <property name="d40115" type="string">
+                <column name="D401_15" length="200"/>
+            </property>
+            <property name="d40116" type="date">
+                <column name="D401_16" length="7"/>
+            </property>
+            <property name="d40117" type="string">
+                <column name="D401_17" length="100"/>
+            </property>
+            <property name="d40118" type="string">
+                <column name="D401_18" length="200"/>
+            </property>
+            <property name="d40119" type="string">
+                <column name="D401_19" length="200"/>
+            </property>
+            <property name="d40120" type="string">
+                <column name="D401_20" length="20"/>
+            </property>
+            <property name="d40121" type="string">
+                <column name="D401_21" length="20"/>
+            </property>
+            <property name="d40122" type="string">
+                <column name="D401_22" length="20"/>
+            </property>
+            <property name="d40123" type="date">
+                <column name="D401_23" length="7"/>
+            </property>
+            <property name="d40124" type="string">
+                <column name="D401_24" length="1"/>
+            </property>
+            <property name="d40125" type="string">
+                <column name="D401_25" length="1"/>
+            </property>
+            <property name="d40126" type="string">
+                <column name="D401_26" length="100"/>
+            </property>
+            <property name="d40127" type="string">
+                <column name="D401_27" length="100"/>
+            </property>
+            <property name="d40128" type="string">
+                <column name="D401_28" length="100"/>
+            </property>
+            <property name="d40129" type="string">
+                <column name="D401_29" length="100"/>
+            </property>
+            <property name="d40130" type="string">
+                <column name="D401_30" length="100"/>
+            </property>
+            <property name="d40131" type="string">
+                <column name="D401_31" length="100"/>
+            </property>
+            <property name="d40132" type="string">
+                <column name="D401_32" length="100"/>
+            </property>
+            <property name="d40133" type="string">
+                <column name="D401_33" length="100"/>
+            </property>
+            <property name="d40134" type="string">
+                <column name="D401_34" length="100"/>
+            </property>
+            <property name="d40135" type="string">
+                <column name="D401_35" length="100"/>
+            </property>
+            <property name="d40136" type="string">
+                <column name="D401_36" length="100"/>
+            </property>
+            <property name="d40137" type="string">
+                <column name="D401_37" length="100"/>
+            </property>
+            <property name="d40138" type="string">
+                <column name="D401_38" length="100"/>
+            </property>
+            <property name="d40139" type="string">
+                <column name="D401_39" length="100"/>
+            </property>
+            <property name="d40140" type="string">
+                <column name="D401_40" length="100"/>
+            </property>
+            <property name="d40110Zh" type="string">
+                <column name="D401_10_ZH" length="50"/>
+            </property>
+            <property name="d40112Zh" type="string">
+                <column name="D401_12_ZH" length="50"/>
+            </property>
+            <property name="d40106Zh" type="string">
+                <column name="D401_06_ZH" length="20"/>
+            </property>
+            <property name="d40103Zh" type="string">
+                <column name="D401_03_ZH" length="20"/>
+            </property>
+            <property name="d40113Zh" type="string">
+                <column name="D401_13_ZH" length="50"/>
+            </property>
+            <property name="d40124Zh" type="string">
+                <column name="D401_24_ZH" length="6"/>
+            </property>
+	</class>
+</hibernate-mapping>

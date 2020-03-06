@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 2015-4-7 10:19:25 by Hibernate Tools 3.4.0.CR1 -->
+<hibernate-mapping>
+    <class name="com.xyw.medical.fnbj.model.F501" table="F501">
+      <id name="f50101" type="java.lang.String">
+        <column name="F501_01" precision="10" scale="0"/>
+    		<generator class="guid" />
+     </id>
+      <property name="f50102" type="java.lang.Long">
+                <column name="F501_02" precision="10" scale="0" />
+            </property>
+            <property name="f50103" type="java.lang.String">
+                <column name="F501_03" length="50" />
+            </property>
+            <property name="f50104" type="java.lang.String">
+                <column name="F501_04" length="2" />
+            </property>
+            <property name="f50105" type="java.lang.String">
+                <column name="F501_05" length="50" />
+            </property>
+            <property name="f50106" type="date">
+                <column name="F501_06" length="7" />
+            </property>
+            <property name="f50107" type="java.lang.String">
+                <column name="F501_07" length="50" />
+            </property>
+            <property name="f50108" type="java.lang.Double">
+                <column name="F501_08" precision="8" />
+            </property>
+            <property name="f50109" type="java.lang.String">
+                <column name="F501_09" length="2" />
+            </property>
+            <property name="f50110" type="java.lang.String">
+                <column name="F501_10" length="2" />
+            </property>
+            <property name="f50111" type="java.lang.String">
+                <column name="F501_11" length="2" />
+            </property>
+            <property name="f50112" type="java.lang.String">
+                <column name="F501_12" length="2" />
+            </property>
+            <property name="f50113" type="date">
+                <column name="F501_13" length="7" />
+            </property>
+            <property name="f50114" type="java.lang.String">
+                <column name="F501_14" length="2" />
+            </property>
+            <property name="f50115" type="java.lang.Long">
+                <column name="F501_15" precision="4" scale="0" />
+            </property>
+            <property name="f50116" type="java.lang.String">
+                <column name="F501_16" length="200" />
+            </property>
+            <property name="f50117" type="date">
+                <column name="F501_17" length="7" />
+            </property>
+            <property name="f50118" type="java.lang.Long">
+                <column name="F501_18" precision="4" scale="0" />
+            </property>
+            <property name="f50119" type="java.lang.String">
+                <column name="F501_19" length="20" />
+            </property>
+            <property name="f50120" type="java.lang.String">
+                <column name="F501_20" length="2" />
+            </property>
+            <property name="f50121" type="java.lang.String">
+                <column name="F501_21" length="200" />
+            </property>
+            <property name="f50122" type="java.lang.String">
+                <column name="F501_22" length="200" />
+            </property>
+            <property name="f50123" type="java.lang.String">
+                <column name="F501_23" length="200" />
+            </property>
+            <property name="f50124" type="java.lang.String">
+                <column name="F501_24" length="50" />
+            </property>
+            <property name="f50125" type="date">
+                <column name="F501_25" length="7" />
+            </property>
+            <property name="f50126" type="java.lang.String">
+                <column name="F501_26" length="14" />
+            </property>
+            <property name="f50127" type="java.lang.String">
+                <column name="F501_27" length="200" />
+            </property>
+            <property name="f50128" type="date">
+                <column name="F501_28" length="7" />
+            </property>
+            <property name="f50129" type="java.lang.String">
+                <column name="F501_29" length="200" />
+            </property>
+            <property name="f50130" type="java.lang.String">
+                <column name="F501_30" length="2" />
+            </property>
+            <property name="f50131" type="java.lang.Long">
+                <column name="F501_31" precision="2" scale="0" />
+            </property>
+            <property name="f50132" type="java.lang.String">
+                <column name="F501_32" length="2" />
+            </property>
+            <property name="f50133" type="java.lang.String">
+                <column name="F501_33" length="2" />
+            </property>
+            <property name="f50134" type="java.lang.String">
+                <column name="F501_34" length="12" />
+            </property>
+            <property name="f50135" type="java.lang.String">
+                <column name="F501_35" length="200" />
+            </property>
+            <property name="f50136" type="java.lang.Long">
+                <column name="F501_36" precision="2" scale="0" />
+            </property>
+            <property name="f50137" type="java.lang.Long">
+                <column name="F501_37" precision="2" scale="0" />
+            </property>
+            <property name="f50138" type="java.lang.String">
+                <column name="F501_38" length="20" />
+            </property>
+            <property name="f50139" type="java.lang.String">
+                <column name="F501_39" length="200" />
+            </property>
+            <property name="f50140" type="date">
+                <column name="F501_40" length="7" />
+            </property>
+            <property name="f50141" type="java.lang.String">
+                <column name="F501_41" length="200" />
+            </property>
+            <property name="f50142" type="java.lang.String">
+                <column name="F501_42" length="200" />
+            </property>
+            <property name="f50143" type="java.lang.String">
+                <column name="F501_43" length="200" />
+            </property>
+            <property name="f50144" type="java.lang.String">
+                <column name="F501_44" length="200" />
+            </property>
+            <property name="f50145" type="java.lang.String">
+                <column name="F501_45" length="200" />
+            </property>
+            <property name="f50146" type="java.lang.String">
+                <column name="F501_46" length="200" />
+            </property>
+           <property name="f50147" type="java.lang.String">
+                <column name="F501_47" length="1" />
+            </property>
+            <property name="f50148" type="date">
+                <column name="F501_48" length="7" />
+            </property>
+            <property name="f50149" type="java.lang.String">
+                <column name="F501_49" length="200" />
+            </property>
+            <property name="f50150" type="java.lang.String">
+                <column name="F501_50" length="200" />
+            </property>    
+             <property name="f50152" type="java.lang.String">
+                <column name="F501_52" length="1" />
+            </property> 
+            <property name="f50153" type="java.lang.String">
+                <column name="F501_53" length="1" />
+            </property>                                                             
+    </class>
+</hibernate-mapping>

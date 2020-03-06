@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.custom.component.*;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.custom.component.CustomIcon;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			public var systemUser:SystemUser = null;
+			
+			protected function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.institution.town.enabled=true;
+				this.systemUser = this.parentApplication.systemUser;
+			}
+			
+			
+			private function query():void
+			{
+				
+//				if(institution.town.selectedItem.data==0){
+//					Alert.show("请选择到最下级","系统提示");
+//					return;
+//				}  
+				if(this.date_satrt.text == "")
+				{
+					Alert.show("请选择开始时间!","系统提示!");
+					return;
+				}
+				if(this.date_end.text == "")
+				{
+					Alert.show("请选择结束时间!","系统提示!");
+					return;
+				}
+				
+				var dateStr:String = this.date_satrt.text;
+				var dateEnd:String = this.date_end.text;
+				if(dateStr>dateEnd){
+					Alert.show("开始时间不能大于结束时间!","系统提示!");
+					return;
+				}
+				var time_str:Number = date_satrt.selectedDate.getTime();
+				var time_end:Number = date_end.selectedDate.getTime();
+				var time_se:Number = (time_end - time_str)/1000;
+				if(time_se > 31536000){
+					Alert.show("请选择一年内的时间","系统提示!");
+					return;
+				}
+				//Alert.show(String(time_se),"系统提示!");
+				
+				var code:String = this.institution.getLastSelectedInstitutionCode();
+//				var institutionType:String = this.institution.getLastSelectedInstitution();	
+//				var date_status:String=null;
+//				var hospital:String=this.systemUser.institution;
+//				var address_status:String=null;
+//				var address:String=null;
+//				institution=institutionType == "14"?institution:
+//					institution.substring(0,Number(institutionType));
+			
+				
+				
+				
+				var L302_62:String = CompMethod.getRadioButtonValue(L302_62);
+				var L301_29:String = CompMethod.getRadioButtonValue(L301_29);
+				var L301_30:String = CompMethod.getRadioButtonValue(L301_30);
+				
+				var urlRequest:URLRequest = new URLRequest();
+				var variables:URLVariables = new URLVariables();
+				
+				variables.institution=code;
+				variables.dateStr=dateStr;
+				variables.dateEnd=dateEnd;
+				variables.L302_62=L302_62;
+				variables.L301_29=L301_29;
+				variables.L301_30=L301_30;
+				
+				urlRequest.data=variables;
+				urlRequest.method=URLRequestMethod.POST;
+				urlRequest.url=this.parentApplication.contextRoot+"/print_new/fnbj/gjahpv/giahpvjcsdjgscwcqktjb.jsp";
+				//urlRequest.url=this.parentApplication.contextRoot + 
+				//	"/print_new/fnbj/giahpv/giahpvjcsdjgscwcqktjb.jsp";
+				navigateToURL(urlRequest);
+				//Alert.show(this.parentApplication.contextRoot,"系统提示!");
+				//var url:String = this.parentApplication.contextRoot + "/Fnbjgjahpvjdtjb?date_start="+date_start+"&date_end="+date_end+"&code="+code;
+				//navigateToURL(new URLRequest(url), null);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup width="1077">
+		<mx:TabNavigator  width="1063" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="HPV筛查完成情况统计表" width="100%">
+				<s:VGroup width="1038" paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<mx:Grid width="100%">
+						
+						<mx:GridRow>
+							<mx:GridItem>
+							 	<s:Label text="筛查单位"/>
+								<component:InstitutionComboBox id="institution" width="888" villageVisible="true" />
+							</mx:GridItem>
+						</mx:GridRow>
+						
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:HGroup id="L302_62" width="205">
+									<s:Label  text="HPV检查" paddingTop="4"/>
+									<s:RadioButton buttonMode="true" label="全部" value="3" groupName="L302_62"  selected="true"/>
+									<s:RadioButton buttonMode="true" label="阳性" value="1" groupName="L302_62"/>
+									<s:RadioButton buttonMode="true" label="阴性"  value="2" groupName="L302_62" />
+								</s:HGroup>
+								
+								<s:HGroup id="L301_29" width="205">
+									<s:Label  text="建卡贫困户" paddingTop="4"/>
+									<s:RadioButton groupName="L301_29" value="3" label="全部" buttonMode="true"/>
+									<s:RadioButton groupName="L301_29" value="1" label="是" buttonMode="true"/>
+									<s:RadioButton groupName="L301_29" value="2" label="否" buttonMode="true" selected="true"/>
+								</s:HGroup>
+								
+								<s:HGroup id="L301_30" width="205" >
+									<s:Label text="城市低保" paddingTop="4"/>
+									<s:RadioButton groupName="L301_30" value="3" label="全部" buttonMode="true"/>
+									<s:RadioButton groupName="L301_30" value="1" label="是" buttonMode="true"/>
+									<s:RadioButton groupName="L301_30" value="2" label="否" buttonMode="true" selected="true"/>
+								</s:HGroup>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label width="69" text="录入日期"/>
+								
+								<component:CustomRangeDateField  id="date_satrt" isSelectFirst="true" />
+								<s:Label text="至"/>
+								
+								<component:CustomRangeDateField  id="date_end" isSelectNow="true" />
+								<s:Button label="查询" id="loadBirth" click="query()" icon="{CustomIcon.QUERY}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

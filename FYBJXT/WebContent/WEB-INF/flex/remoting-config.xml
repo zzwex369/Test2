@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<service id="remoting-service" 
+    class="flex.messaging.services.RemotingService">
+
+    <adapters>
+        <adapter-definition id="java-object" class="flex.messaging.services.remoting.adapters.JavaAdapter" default="true"/>
+    </adapters>
+
+    <default-channels>
+        <channel ref="my-amf"/>
+    </default-channels>
+	
+
+	<destination id="systemService">
+		<properties>
+			<factory>spring</factory>
+			<source>systemService</source>
+		</properties>
+	</destination>
+	<destination id="systemParametersService">
+		<properties>
+			<factory>spring</factory>
+			<source>systemParametersService</source>
+		</properties>
+	</destination>
+	<destination id="birthService">
+		<properties>
+			<factory>spring</factory>
+			<source>birthService</source>
+		</properties>
+	</destination>
+	<destination id="certificateApplyService">
+		<properties>
+			<factory>spring</factory>
+			<source>certificateApplyService</source>
+		</properties>
+	</destination>
+	<destination id="governmentService">
+		<properties>
+			<factory>spring</factory>
+			<source>governmentService</source>
+		</properties>
+	</destination>
+	<destination id="certificateRegistService">
+		<properties>
+			<factory>spring</factory>
+			<source>certificateRegistService</source>
+		</properties>
+	</destination>
+	<destination id="certificateOutRegistService">
+		<properties>
+			<factory>spring</factory>
+			<source>certificateOutRegistService</source>
+		</properties>
+	</destination>
+	<destination id="abandonCertificateService">
+		<properties>
+			<factory>spring</factory>
+			<source>abandonCertificateService</source>
+		</properties>
+	</destination>
+	<destination id="medicalService">
+		<properties>
+			<factory>spring</factory>
+			<source>medicalService</source>
+		</properties>
+	</destination>
+	<destination id="certificateRemainService">
+		<properties>
+			<factory>spring</factory>
+			<source>certificateRemainService</source>
+		</properties>
+	</destination>
+	<destination id="reissueBirthCertificateDJBService">
+		<properties>
+			<factory>spring</factory>
+			<source>reissueBirthCertificateDJBService</source>
+		</properties>
+	</destination>
+		<destination id="DJBService">
+		<properties>
+			<factory>spring</factory>
+			<source>DJBService</source>
+		</properties>
+	</destination>
+	<destination  id="deliveryService">
+		<properties>
+			<factory>spring</factory>
+			<source>deliveryService</source>
+		</properties>
+	</destination>
+	<destination  id="uploadBirthCertificateService">
+		<properties>
+			<factory>spring</factory>
+			<source>uploadBirthCertificateService</source>
+		</properties>
+	</destination>
+	<destination  id="uploadCertificateApplyService">
+		<properties>
+			<factory>spring</factory>
+			<source>uploadCertificateApplyService</source>
+		</properties>
+	</destination>
+	<destination  id="uploadCertificateRegistService">
+		<properties>
+			<factory>spring</factory>
+			<source>uploadCertificateRegistService</source>
+		</properties>
+	</destination>
+	<destination  id="uploadCertificateAbandonService">
+		<properties>
+			<factory>spring</factory>
+			<source>uploadCertificateAbandonService</source>
+		</properties>
+	</destination>
+
+	<destination  id="signerService">
+		<properties>
+			<factory>spring</factory>
+			<source>signerService</source>
+		</properties>
+	</destination>
+
+	<destination  id="certificateConditionService">
+		<properties>
+			<factory>spring</factory>
+			<source>certificateConditionService</source>
+		</properties>
+	</destination>
+	<destination id="jsywhService">
+		<properties>
+			<factory>spring</factory>
+			<source>jsywhService</source>
+		</properties>
+	</destination>
+	<destination id="childDeathReportService">
+		<properties>
+			<factory>spring</factory>
+			<source>childDeathReportService</source>
+		</properties>
+	</destination>
+	<destination id="ycfswService">
+		<properties>
+			<factory>spring</factory>
+			<source>ycfswService</source>
+		</properties>
+	</destination>
+	<destination id="csqxrService">
+		<properties>
+			<factory>spring</factory>
+			<source>csqxrService</source>
+		</properties>
+	</destination>
+	<destination id="uploadService">
+		<properties>
+			<factory>spring</factory>
+			<source>uploadService</source>
+		</properties>
+	</destination>
+	<destination id="D607Service">
+		<properties>
+			<factory>spring</factory>
+			<source>D607Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="d306Service">
+		<properties>
+			<factory>spring</factory>
+			<source>d306Service</source>
+		</properties>
+	</destination>
+	<destination id="d307Service">
+		<properties>
+			<factory>spring</factory>
+			<source>d307Service</source>
+		</properties>
+	</destination>
+	<destination id="e301Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e301Service</source>
+		</properties>
+	</destination>
+	<destination id="childrenService">
+
+		<properties>
+			<factory>spring</factory>
+			<source>childrenService</source>
+		</properties>
+	</destination>
+	<destination id="e302Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e302Service</source>
+		</properties>
+	</destination>
+	<destination id="prenatalEduService">
+		<properties>
+			<factory>spring</factory>
+			<source>prenatalEduService</source>
+		</properties>
+	</destination>
+	<destination id="f301Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f301Service</source>
+		</properties>
+	</destination>
+	<destination id="perinatalHealthService">
+		<properties>
+			<factory>spring</factory>
+			<source>perinatalHealthService</source>
+		</properties>
+	</destination>
+	<destination id="maternalCheckService">
+		<properties>
+			<factory>spring</factory>
+			<source>maternalCheckService</source>
+		</properties>
+	</destination>
+	<destination id="f304Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f304Service</source>
+		</properties>
+	</destination>
+	<destination id="pregnancyDurService">
+		<properties>
+			<factory>spring</factory>
+			<source>pregnancyDurService</source>
+		</properties>
+	</destination>
+	<destination id="e304Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e304Service</source>
+		</properties>
+	</destination>
+	<destination id="f307Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f307Service</source>
+		</properties>
+	</destination>
+	<destination id="f308Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f308Service</source>
+		</properties>
+	</destination>
+	<destination id="f309Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f309Service</source>
+		</properties>
+	</destination>
+	<destination id="f310Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f310Service</source>
+		</properties>
+	</destination>
+	<destination id="e305Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e305Service</source>
+		</properties>
+	</destination>
+	<destination id="f401Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f401Service</source>
+		</properties>
+	</destination>
+
+				<destination id="fA401Service">
+		<properties>
+			<factory>spring</factory>
+			<source>fA401Service</source>
+		</properties>
+	</destination>
+	<destination id="f501Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f501Service</source>
+		</properties>
+	</destination>
+	<destination id="e501Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e501Service</source>
+		</properties>
+	</destination>
+	<destination id="e502Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e502Service</source>
+		</properties>
+	</destination>
+	<destination id="e503Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e503Service</source>
+		</properties>
+	</destination>
+		<destination id="e601Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e601Service</source>
+		</properties>
+	</destination>
+	<destination id="f502Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f502Service</source>
+		</properties>
+	</destination>
+		<destination id="f601Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f601Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="f602Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f602Service</source>
+		</properties>
+	</destination>
+	
+	
+	
+	<destination id="l301Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l301Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l302Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l302Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l303Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l303Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l304Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l304Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l305Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l305Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l401Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l401Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l402Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l402Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l403Service">
+		<properties>
+			<factory>spring</factory>
+			<source>l403Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="pictureService">
+	<properties>
+			<factory>spring</factory>
+			<source>pictureService</source>
+		</properties>
+	</destination>
+	
+	<destination id="e504Service">
+	<properties>
+			<factory>spring</factory>
+			<source>e504Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="e505Service">
+	<properties>
+			<factory>spring</factory>
+			<source>e505Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="e506Service">
+	<properties>
+			<factory>spring</factory>
+			<source>e506Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="e701Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e701Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="e702Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e702Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="e703Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e703Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="e704Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e704Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="e705Service">
+		<properties>
+			<factory>spring</factory>
+			<source>e705Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="f503Service">
+	<properties>
+			<factory>spring</factory>
+			<source>f503Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="f504Service">
+	<properties>
+			<factory>spring</factory>
+			<source>f504Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="f603Service">
+	<properties>
+			<factory>spring</factory>
+			<source>f603Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="f604Service">
+	<properties>
+			<factory>spring</factory>
+			<source>f604Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="l306Service">
+	<properties>
+			<factory>spring</factory>
+			<source>l306Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="statisticalDataService">
+	<properties>
+			<factory>spring</factory>
+			<source>statisticalDataService</source>
+		</properties>
+	</destination>
+	
+	
+	<destination id="sw301Service">
+	<properties>
+			<factory>spring</factory>
+			<source>sw301Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="sw302Service">
+	<properties>
+			<factory>spring</factory>
+			<source>sw302Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="sw303Service">
+	<properties>
+			<factory>spring</factory>
+			<source>sw303Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="sw304Service">
+	<properties>
+			<factory>spring</factory>
+			<source>sw304Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="f605Service">
+	<properties>
+			<factory>spring</factory>
+			<source>f605Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="f606Service">
+		<properties>
+			<factory>spring</factory>
+			<source>f606Service</source>
+		</properties>
+	</destination>
+	
+	<destination id="rwsService">
+		<properties>
+			<factory>spring</factory>
+			<source>rwsService</source>
+		</properties>
+	</destination>
+	
+</service>

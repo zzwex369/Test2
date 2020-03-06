@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)"
+		  xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		
+		<s:RemoteObject id="reissueBirthCertificateDJBService" destination="reissueBirthCertificateDJBService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryBirthCertificateDJB" result="queryBirthCertificateDJBHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemParametersService" destination="systemParametersService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryById" result="queryByIdHandler(event)" />
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D305;
+			import com.xyw.module.csyxzm.model.D305Request;
+			import com.xyw.module.csyxzm.model.D305Response;
+			import com.xyw.module.csyxzm.model.VD305;
+			import com.xyw.sys.custom.component.SecurityControler;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			import spark.formatters.DateTimeFormatter;
+			
+			public var systemUser:SystemUser = null;
+			public var d305Request:D305Request;
+			public var vD305:VD305= null;
+			public var d305:D305 = null;
+			
+			//========================启动权限控制============//
+			private function security():void{
+				SecurityControler.start(null,'visible');
+				SecurityControler.addAllPerms(this.parentApplication.permissionList);
+			}
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				//security();
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				
+				this.systemUser = this.parentApplication.systemUser;
+				//检查读卡权限
+				if(this.systemUser.duka == "1"){
+					this.duka1.enabled = true;
+					this.duka2.enabled = true;
+				}
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vD305 = DataGrid(event.target).selectedItem as VD305;
+			}
+			
+			
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():void
+			{
+				d305 = new D305();
+				d305Request = new D305Request();
+				try
+				{	
+					var type:String = this.d305_36.getLastSelectedInstitution();
+					var d305_36_:String = this.d305_36.getLastSelectedInstitutionCode();
+					
+					if(this.systemUser.institutionType == "1")
+					{
+						d305.d30536 = this.systemUser.institutionCode;
+					}else{
+						if(type == "8")
+						{
+							d305.d30536 = d305_36_;
+						}else if(type == "6")
+						{
+							d305.d30536 = d305_36_.substring(0,6);
+						}else if(type == "4")
+						{
+							d305.d30536 = d305_36_.substring(0,4);
+						}else if(type == "2")
+						{
+							d305.d30536 = d305_36_.substring(0,2);
+						}
+					}
+					
+					d305.d30505 = this.d305_05.getAreaCode();
+					d305Request.d30537Start  = this.timeStart.selectedDate;
+					d305Request.d30537End = this.timeEnd.selectedDate;
+					d305.d30502 = StringUtil.trim(this.d305_02.text);
+					d305.d30533 = StringUtil.trim(this.d305_33.text);
+					d305.d30516 = StringUtil.trim(this.d305_16.text);
+					d305.d30518 = StringUtil.trim(this.d305_18.text);
+					d305.d30522 = StringUtil.trim(this.d305_22.text);
+					d305.d30524 = StringUtil.trim(this.d305_24.text);
+					d305Request.d305 = this.d305;
+				} 
+				catch(error:Error) 
+				{
+					
+				}
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				d305Request = new D305Request();
+				this.initQueryParam();
+				
+				d305Request.parameterPageindex = 1;
+				d305Request.parameterPagesize = 20;
+				d305Request.flag ="补发";
+				this.reissueBirthCertificateDJBService.queryBirthCertificateDJB(d305Request);
+			}
+			
+			private function queryBirthCertificateDJBHandler(event:ResultEvent):void
+			{
+				var d305Response:D305Response = event.result as D305Response;
+				var rowCount:Number = d305Response.rowCount;
+				if(d305Response.errorMessage == null)
+				{
+					var listVD305:ArrayCollection = d305Response.vd305s;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVD305;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+				} else {
+					Alert.show(d305Response.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				d305Request = new D305Request();
+				this.initQueryParam();
+				d305Request.parameterPageindex = currentPageIndex;
+				d305Request.parameterPagesize = pageSize;
+				d305Request.flag ="补发";
+				this.reissueBirthCertificateDJBService.queryBirthCertificateDJB(d305Request);
+			}
+			
+			public function refresh():void
+			{
+				d305Request = new D305Request();
+				this.initQueryParam();
+				d305Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				d305Request.parameterPagesize = 20;
+				d305Request.flag ="补发";
+				this.reissueBirthCertificateDJBService.queryBirthCertificateDJB(d305Request);
+			}
+			
+			private function queryByIdHandler(event:ResultEvent):void
+			{
+				var flag:String = event.result as String;
+				var urlRequest:URLRequest = null;
+				//var selectD30110:String = vD301.d30110;
+				if(flag == "1") {
+//					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print/printBirthInfo_new.jsp?d30110=" + selectD30110 + "&userCode=" + this.systemUser.userCode);
+				} else if(flag == "0") {
+//					urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print/printBirthInfo.jsp?d30110=" + selectD30110);
+				}
+				navigateToURL(urlRequest,"_blank");
+			}
+			
+			private function printCertificateDJB(event:MouseEvent):void
+			{
+				
+				if(this.vD305 == null)
+				{
+					Alert.show("请选择要操作的行!","系统提示");
+					return;
+				}
+				var urlRequest:URLRequest = null;
+				urlRequest = new URLRequest(this.parentApplication.contextRoot + "/CsyxzmBfDJBServlet?d30534=" + this.vD305.d30534 + "&flagF=0&d30502=" + encodeURIComponent(this.vD305.d30502));
+				navigateToURL(urlRequest,"_blank");
+			}
+			
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.d305_16.text = array[0];//姓名
+							this.d305_18.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			//读卡(父亲)
+			protected function readCard_father(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="男"){
+							this.d305_22.text = array[0];//姓名
+							this.d305_24.text = array[5];//身份证号
+						}else{
+							Alert.show("请读父亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="综合查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<component:AreaComboBox id="d305_05" width="100%" paddingBottom="0" paddingTop="5" horizontalAlign="left"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="补发机构"/>
+						<component:InstitutionComboBox id="d305_36"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="补发时间"/><mx:DateField yearNavigationEnabled="true" id="timeStart" width="120" dayNames='["日","一","二","三","四","五","六"]'
+															monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+															formatString="YYYY-MM-DD"/>
+						<s:Label text="至"/><mx:DateField yearNavigationEnabled="true" id="timeEnd" width="120" dayNames='["日","一","二","三","四","五","六"]'
+														 monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														 formatString="YYYY-MM-DD"/>
+						<s:Button label="查询" click="query(event)"/>
+						<s:Button label="打印" click="printCertificateDJB(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="精确查询" width="100%">
+				<s:VGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="母亲姓名"/><s:TextInput id="d305_16"/>
+						<s:Label text="母亲身份证号"/><s:TextInput id="d305_18" width="140"/>
+						<s:Button label="读卡" id="duka1" enabled="false" width="60" click="readCard_mother(event)"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="父亲姓名"/><s:TextInput id="d305_22"/>
+						<s:Label text="父亲身份证号"/><s:TextInput id="d305_24" width="140"/>
+						<s:Button label="读卡" id="duka2" enabled="false" width="60" click="readCard_father(event)"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="婴儿姓名"/><s:TextInput id="d305_02"/>
+						<s:Label text="原出生证号"/><s:TextInput id="d305_33"/>
+						<s:Button label="查询" click="query(event)"/>
+						<s:Button label="打印" click="printCertificateDJB(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+		<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="100%" height="330" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+			<s:columns>
+				<s:ArrayList>
+					<s:GridColumn dataField="d30501" headerText="主键" visible="false"/>
+					<s:GridColumn headerText="序号" width="40" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+					<s:GridColumn dataField="d30502" headerText="姓名" width="60"/>
+					<s:GridColumn dataField="d30503_Zh" headerText="性别" width="40"/>
+					<s:GridColumn dataField="d30504" headerText="出生日期" width="80"/>
+					<s:GridColumn dataField="d30534" headerText="出生证号" width="90"/>
+					<s:GridColumn dataField="d30533" headerText="原出生证号" width="90"/>
+					<s:GridColumn dataField="d30522" headerText="父亲姓名" width="80"/>
+					<s:GridColumn dataField="d30524" headerText="父亲证件证号" width="150"/>
+					<s:GridColumn dataField="d30516" headerText="母亲姓名" width="80"/>
+					<s:GridColumn dataField="d30518" headerText="母亲证件证号" width="150"/>
+					<s:GridColumn dataField="d30528" headerText="领证人" width="60"/>
+					<s:GridColumn dataField="d30531" headerText="领证人证件号" width="150"/>
+					<s:GridColumn dataField="d30535" headerText="原签发时间" width="80"/>
+					<s:GridColumn dataField="d30511_Zh" headerText="助产机构" width="140"/>
+					<s:GridColumn dataField="d30536_Zh" headerText="补发机构" width="140"/>
+					<s:GridColumn dataField="d30532_Zh" headerText="补发原因" width="80"/>
+				</s:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+		<component:PagerBar id="pagerBar" enabled="false"/>
+	</s:VGroup>
+</s:Module>

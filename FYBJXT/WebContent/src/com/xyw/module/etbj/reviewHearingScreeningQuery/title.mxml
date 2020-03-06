@@ -1,0 +1,612 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   xmlns:skin="com.xyw.sys.custom.skin.*"
+			   width="1300" backgroundColor="white" chromeColor="#5CACEE" fontFamily="微软雅黑" close="removeWindow()"
+			   cornerRadius="5" creationComplete="moduleComplete()" horizontalCenter="0"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="信息修改"
+			   verticalCenter="0">
+	<fx:Declarations>
+	<s:RemoteObject id="e502Service" destination="e502Service"
+					endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+					showBusyCursor="true">
+		<s:method name="renewE502" result="renewE502Handler(event)"/>
+	</s:RemoteObject>
+	<s:RemoteObject id="systemService" destination="systemService"
+					endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+					showBusyCursor="true">
+		<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+	</s:RemoteObject>
+</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.model.E303;
+			import com.xyw.module.etbj.model.E501;
+			import com.xyw.module.etbj.model.E502;
+			import com.xyw.module.etbj.model.VE303;
+			import com.xyw.module.etbj.model.VE501;
+			import com.xyw.module.etbj.model.VE502;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			private var hour:String;
+			private var minute:String;
+			private var e502:E502 =new E502();
+			public var ve502:VE502;
+			public var systemUser:SystemUser = null;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var d60101:Number;
+			private var e50101:Number;
+			private var e50201:Number;
+			//性别
+			private var sexData:ArrayCollection = new ArrayCollection([{label:"请选择",data:0},{label:"男",data:1},{label:"女",data:2},{label:"未知",data:3},{label:"未说明",data:4}]);
+			//分娩方式
+			private var deliveryWay:ArrayCollection = new ArrayCollection([{label:"请选择",data:0},{label:"平产",data:1},{label:"剖宫产",data:2},{label:"臀产",data:3},{label:"其他",data:4}]);
+			//检查方法
+			private var inspectionMethod:ArrayCollection = new ArrayCollection([{label:"请选择",data:0},{label:"耳声发射(OAE)",data:1},{label:"自动听性脑干反应(AABR)",data:2}]);
+			//初筛
+			private var inspectionResult:ArrayCollection = new ArrayCollection([{label:"请选择",data:0},{label:"通过",data:1},{label:"未通过",data:2},{label:"未筛",data:3}]);
+			
+			private function moduleComplete():void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				//var now:Date =new Date();
+				putVE502();
+				initializeComboBox();
+			}
+			/****************年龄事件********************/
+			private function _addEventListener():void
+			{
+				E502_06.addEventListener(FlexEvent.CHANGING,setE502_07);
+				E502_09.addEventListener(FlexEvent.CHANGING,setE502_10);
+			}
+			/*****************母亲年龄*******************/
+			private function setE502_07(event:Event):void{
+				var cardId:String  = E502_06.text;
+				if(cardId.length >= 16){
+					var year:Number = Number(E502_06.text.substr(6,4));
+					var month:Number = Number(E502_06.text.substr(10,2));
+					var day:Number = Number(E502_06.text.substr(12,2));
+					var date:Date = new Date();
+					var nowDay:Number = date.date;
+					var nowMonth:Number = date.month + 1;
+					var nowYear:Number = date.fullYear;
+					var age:Number;
+					if(nowMonth < month){
+						age = nowYear - year - 1;
+					}else if(nowMonth == month){
+						if(day > nowDay){
+							age = nowYear - year -1;
+						}else{
+							age = nowYear - year;
+						}
+					}else if(nowMonth > month){
+						age = nowYear - year;
+					}
+					E502_07.text = age + "";
+				}
+			}
+			/*******************父亲年龄*****************/
+			private function setE502_10(event:Event):void
+			{
+				var cardId:String =E502_09.text;
+				if(cardId != ""){
+					if(cardId.length >= 16){
+						var year:Number = Number(this.E502_09.text.substr(6,4));
+						var month:Number = Number(this.E502_09.text.substr(10,2));
+						var day:Number = Number(this.E502_09.text.substr(12,2));
+						var date:Date = new Date();
+						var nowMonth:Number = date.month + 1;
+						var age:Number = date.fullYear - year;
+						if(month > nowMonth || month == nowMonth && day > date.date){
+							age=age - 1;;
+						}
+						E502_10.text=age+"";
+					}
+				}
+			}
+			/*********************读卡***************/
+			private function _readCard(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						 if(readCard2==event.target)
+						{						
+							if("男"==sex)
+							{
+								Alert.show("请读母亲的身份证信息","系统提示");
+								return ;
+							}else
+							{
+								E502_05.text=array[0];
+								E502_06.text=array[5];
+							}
+						}else if(readCard3==event.target)
+						{
+							if("女"==sex)
+							{
+								Alert.show("请读父亲的身份证信息","系统提示");
+								return ;
+							}else
+							{
+								E502_08.text=array[0];
+								E502_09.text=array[5];
+							}
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			/******************下拉框填充数据******************/
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t where t.D101_01 = " + this.systemUser.institutionCode + " or t.D101_11 = " + this.systemUser.institutionCode;
+				comboBoxDataRequest.flag = "D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z502_04 t";
+				comboBoxDataRequest.flag = "Z502_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					this.E502_31.dataProvider = comboBoxDataList;
+					this.E502_21.dataProvider = comboBoxDataList;
+					this.E502_31.selectedIndex = index;	
+					this.E502_21.selectedIndex=index;
+				}else if(flag=="Z502_04")
+				{
+					E502_27.dataProvider=comboBoxDataList;
+					E502_27.selectedIndex=0;
+				}
+			}
+			/****************选择对应的信息********************/
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			/*******************得到需要修改的信息*****************/
+			private function putVE502():void
+			{	
+				try
+				{
+					if(ve502!=null){
+						e50201=ve502.e50201;
+						e50101=ve502.e50202;
+						d60101=ve502.e50203;
+						E502_05.text=ve502.e50205;
+						E502_06.text=ve502.e50206;
+						E502_07.text=String(ve502.e50207);
+						E502_25.text=ve502.e50225;
+						E502_08.text=ve502.e50208;
+						E502_09.text=ve502.e50209;
+						E502_10.text=String(ve502.e50210);
+						E502_11.text=ve502.e50211;
+						E502_12.text=ve502.e50212;
+						E502_13.text=ve502.e50213;
+						E502_15.text=ve502.e50215.substring(0,10);
+						hour = ve502.e50215.substring(11,13);
+						minute= ve502.e50215.substring(14,16);
+						E502_14.selectedIndex=int(ve502.e50214);
+						E502_19.text=ve502.e50219;
+						E502_16.text=ve502.e50216;
+						E502_17.text=String(ve502.e50217);
+						E502_20.text=String(ve502.e50220);
+						E502_18.selectedIndex=int(ve502.e50218);
+						E502_04.text=ve502.e50204;
+						E502_26.text=String(ve502.e50226);
+						E502_27.selectedIndex=int(ve502.e50227);
+						E502_22.selectedIndex=int(ve502.e50222);
+						E502_23.selectedIndex=int(ve502.e50223);
+						E502_24.selectedIndex=int(ve502.e50224);
+						E502_28.text=ve502.e50228;
+						E502_29.text=ve502.e50229;
+						E502_30.text=ve502.e50230Str;
+						E502_32.text=ve502.e50232;
+						E502_33.text=ve502.e50233;
+						E502_34.text=ve502.e50234Str;
+						save.enabled=true;
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("加载数据异常","系统提示");	
+				}
+			}
+			/*****************保存信息*******************/
+			private function saveE502():void
+			{	
+				if(E502_05.text==""){
+					Alert.show("请输入母亲姓名","系统提示");
+					return ;
+				}
+				if(E502_07.text==""){
+					Alert.show("请输入母亲年龄","系统提示");
+					return ;
+				}
+				if(E502_06.text==""){
+					Alert.show("请输入母亲身份证号","系统提示");
+					return ;
+				}
+				if(E502_25.text==""){
+					Alert.show("请输入产妇情况","系统提示");
+					return ;
+				}
+				if(E502_08.text==""){
+					Alert.show("请输入父亲姓名","系统提示");
+					return ;
+				}
+				if(E502_10.text==""){
+					Alert.show("请输入父亲年龄","系统提示");
+					return ;
+				}
+				if(E502_09.text==""){
+					Alert.show("请输入父亲身份证号","系统提示");
+					return ;
+				}
+				if(E502_11.text==""){
+					Alert.show("请输入家庭住址","系统提示");
+					return ;
+				}
+				if(E502_12.text==""){
+					Alert.show("请输入联系电话","系统提示");
+					return ;
+				}
+				if(E502_13.text==""){
+					Alert.show("请输入新生儿姓名","系统提示");
+					return ;
+				}
+				if(E502_15.text==""){
+					Alert.show("请输入出生日期","系统提示");
+					return ;
+				}
+				if(E502_14.selectedIndex==0){
+					Alert.show("请选择新生儿性别","系统提示");
+					return ;
+				}
+				if(E502_19.text==""){
+					Alert.show("请输入婴儿出生医院","系统提示");
+					return ;
+				}
+				if(E502_16.text==""){
+					Alert.show("请输入出生孕周","系统提示");
+					return ;
+				}
+				if(E502_17.text==""){
+					Alert.show("请输入出生体重","系统提示");
+					return ;
+				}
+				if(E502_20.text==""){
+					Alert.show("请输入住院/门诊号","系统提示");
+					return ;
+				}
+				if(E502_21.selectedIndex==0){
+					Alert.show("请选择初筛机构","系统提示");
+					return ;
+				}
+				if(E502_18.selectedIndex==0){
+					Alert.show("请选择分娩方式","系统提示");
+					return ;
+				}
+				if(E502_04.text==""){
+					Alert.show("请输入预约编号","系统提示");
+					return ;
+				}
+				if(E502_26.text==""){
+					Alert.show("请输入阿氏评分分数","系统提示");
+					return ;
+				}
+				if(E502_27.selectedIndex==0){
+					Alert.show("请选择高危因素","系统提示");
+					return ;
+				}
+				if(E502_22.selectedIndex==0){
+					Alert.show("请选择检查方法","系统提示");
+					return ;
+				}
+				if(E502_23.selectedIndex==0){
+					Alert.show("请选择右耳是否通过","系统提示");
+					return ;
+				}
+				if(E502_24.selectedIndex==0){
+					Alert.show("请选择左耳是否通过","系统提示");
+					return ;
+				}
+				if(E502_28.text==""){
+					Alert.show("请输入其他事项","系统提示");
+					return ;
+				}
+				if(E502_29.text==""){
+					Alert.show("请输入延迟筛查原因","系统提示");
+					return ;
+				}
+				if(E502_30.text==""){
+					Alert.show("请选择预约筛查日期","系统提示");
+					return ;
+				}
+				if(E502_31.selectedIndex==0){
+					Alert.show("请选择预约筛查机构","系统提示");
+					return ;
+				}
+				if(E502_32.text==""){
+					Alert.show("请输入告知人","系统提示");
+					return ;
+				}
+				if(E502_33.text==""){
+					Alert.show("请输入录入人员","系统提示");
+					return ;
+				}
+				
+				if(E502_34.text==""){
+					Alert.show("请选择录入时间","系统提示");
+					return ;
+				}
+				if(reportTime.text==""){
+					Alert.show("请选择报告时间","系统提示");
+					return ;
+				}
+				_saveE502();
+			}
+			private function _saveE502():void
+			{
+				e502=new E502();
+				e502.e50202=e50101;
+				e502.e50203=d60101;
+				e502.e50204=StringUtil.trim(E502_04.text);
+				e502.e50205=StringUtil.trim(E502_05.text);
+				e502.e50206=StringUtil.trim(E502_06.text);
+				e502.e50207=Number(StringUtil.trim(E502_07.text));
+				e502.e50208=StringUtil.trim(E502_08.text);
+				e502.e50209=StringUtil.trim(E502_09.text);
+				e502.e50210=Number(StringUtil.trim(E502_10.text));
+				e502.e50211=StringUtil.trim(E502_11.text);
+				e502.e50212=StringUtil.trim(E502_12.text);
+				e502.e50213=StringUtil.trim(E502_13.text);
+				e502.e50214=E502_14.selectedItem.data;
+				e502.e50215=DateFormatter.parseDateString(E502_15.text+" "+hour+":"+minute);;
+				e502.e50216=StringUtil.trim(E502_16.text);
+				e502.e50217=Number(StringUtil.trim(E502_17.text));
+				e502.e50218=E502_18.selectedItem.data;
+				e502.e50219=StringUtil.trim(E502_19.text);
+				e502.e50220=StringUtil.trim(E502_20.text);
+				e502.e50221=E502_21.selectedItem.data;
+				e502.e50222=E502_22.selectedItem.data;
+				e502.e50223=E502_23.selectedItem.data;
+				e502.e50224=E502_24.selectedItem.data;
+				e502.e50225=StringUtil.trim(E502_25.text);
+				e502.e50226=Number(StringUtil.trim(E502_26.text));
+				e502.e50227=E502_27.selectedItem.data;
+				e502.e50228=StringUtil.trim(E502_28.text);
+				e502.e50229=StringUtil.trim(E502_29.text);
+				e502.e50230=DateField.stringToDate(this.E502_30.text, "YYYY-MM-DD");
+				e502.e50231=E502_31.selectedItem.data;
+				e502.e50232=StringUtil.trim(E502_32.text);
+				e502.e50233=StringUtil.trim(E502_33.text);
+				e502.e50234=DateField.stringToDate(this.E502_34.text, "YYYY-MM-DD");
+				e502.e50201=e50201;
+				save.enabled=false;
+				e502Service.renewE502(e502);
+			}
+			/*****************更新返回的信息*******************/
+			private function renewE502Handler(event:ResultEvent):void
+			{
+				var e502Response:Object=event.result;
+				if(!e502Response.state){
+					Alert.show(e502Response.errorMessage,"系统提示");
+					return ;
+				}
+				Alert.show(e502Response.promptMessage,"系统提示");
+			}
+			private function removeWindow():void
+			{ 
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup paddingBottom="20" paddingLeft="23" paddingRight="10" paddingTop="10">		
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="1252" label="基本信息">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label text="母亲姓名"/><s:TextInput id="E502_05"/>
+							<s:Label text="母亲身份证号"/><s:TextInput id="E502_06"/>
+							<s:Label text="母亲年龄" width="80"/><s:TextInput id="E502_07" maxChars="2" restrict="0-9"/>
+							<s:Button id="readCard2" label="读卡" buttonMode="true" chromeColor="#ECDFDF"
+									  color="#E32525" enabled="false" click="_readCard(event)"/>
+							<s:Label width="80" paddingLeft="12" text="产妇情况"/>
+							<s:TextInput id="E502_25" width="401"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label text="父亲姓名"/><s:TextInput id="E502_08"/>
+							<s:Label text="父亲身份证号"/><s:TextInput id="E502_09"/>
+							<s:Label text="父亲年龄" width="80"/><s:TextInput id="E502_10"/>
+							<s:Button id="readCard3" label="读卡" buttonMode="true" chromeColor="#ECDFDF"
+									  color="#E32525" enabled="false" click="_readCard(event)"/>
+							<s:Label width="80" paddingLeft="12" text="家庭住址"/>
+							<s:TextInput id="E502_11" width="401"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label text="联系电话"/><s:TextInput id="E502_12"/>
+							<s:Label width="74" text="新生儿姓名"/><s:TextInput id="E502_13"/>
+							<s:Label width="83" text="出生日期"/>
+							<mx:DateField id="E502_15" width="130" buttonMode="true"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							<s:Label text="新生儿性别"/><s:DropDownList id="E502_14" width="129" buttonMode="true"
+																   dataProvider="{sexData}"
+																   selectedIndex="0"/>
+							<s:Label  text="分娩方式" paddingLeft="10"/><s:DropDownList id="E502_18" width="129"
+																					buttonMode="true"
+																					dataProvider="{deliveryWay}"
+																					selectedIndex="0"/>
+							
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label text="出生孕周"/><s:TextInput id="E502_16"/>
+							<s:Label width="74" text="出生体重"/>
+							<s:BorderContainer y="3" width="127" height="24">
+								<s:TextInput id="E502_17" width="90" borderVisible="false"/><s:Label x="101"
+																									 y="0"
+																									 height="23"
+																									 text="g"
+																									 textAlign="center"
+																									 verticalAlign="middle"/>
+							</s:BorderContainer>
+							<s:Label width="84" paddingLeft="2" text="住院/门诊号"/><s:TextInput id="E502_20"/>
+							<s:Label width="67" paddingLeft="12" text="初筛机构"/><s:DropDownList id="E502_21"
+																							  width="129"
+																							  buttonMode="true"/>
+							<s:Label  text="预约编号" paddingLeft="10"/><s:TextInput id="E502_04"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label text="婴儿出生医院"/><s:TextInput id="E502_19" width="312"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1252" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="1252" label="高危因素及检查">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" width="1252">
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label width="70" paddingLeft="2" text="阿氏评分"/>
+							<s:BorderContainer y="3" width="127" height="24">
+								<s:TextInput id="E502_26" width="90" borderVisible="false" maxChars="2"
+											 restrict="0-9"/>
+								<s:Label x="101" y="0" height="23" text="分" textAlign="center"
+										 verticalAlign="middle"/>
+							</s:BorderContainer>
+							<s:Label paddingLeft="12" text="高危因素"/><s:DropDownList id="E502_27" width="128"
+																				   buttonMode="true"/>
+							<s:Label width="97" paddingLeft="10" text="检查方法  "/><s:DropDownList id="E502_22"
+																								width="127"
+																								buttonMode="true"
+																								dataProvider="{inspectionMethod}"
+																								selectedIndex="0"/>
+							<s:Label text="右耳"/><s:DropDownList id="E502_23" width="128" buttonMode="true"
+																dataProvider="{inspectionResult}"
+																selectedIndex="0"/>
+							<s:Label text="左耳"/><s:DropDownList id="E502_24" width="128" buttonMode="true"
+																dataProvider="{inspectionResult}"
+																selectedIndex="0"/>
+						</s:HGroup>
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label width="70" paddingLeft="20" text="其他"/><s:TextInput id="E502_28"
+																						 width="329"/>
+							<s:Label width="98" paddingLeft="10" text="延迟筛查原因"/>
+							<s:TextInput id="E502_29" width="459"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1252">
+				<s:NavigatorContent width="1252" label="预约及录入">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" width="1252">
+						<s:HGroup width="100%" height="100%" verticalAlign="middle">
+							<s:Label text="预约筛查日期"/>
+							<mx:DateField id="E502_30" width="130" buttonMode="true"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							<s:Label width="98" paddingLeft="10" text="预约筛查机构"/><s:DropDownList id="E502_31"
+																								buttonMode="true"/>
+							
+							<s:Label paddingLeft="10" text="告知人"/><s:TextInput id="E502_32"/>
+							<s:Label paddingLeft="10" text="录入人员"/><s:TextInput id="E502_33"/>
+							<s:Label paddingLeft="10" text="录入时间"/>
+							<mx:DateField id="E502_34" width="130" buttonMode="true"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+							<s:Label paddingLeft="10" text="报告时间"/>
+							<mx:DateField id="reportTime" width="130" buttonMode="true"
+										  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+										  formatString="YYYY-MM-DD"
+										  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+										  yearNavigationEnabled="true"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup width="1252" height="30" contentBackgroundColor="#FF0000"
+					  paddingBottom="20" paddingLeft="10" paddingTop="20" verticalAlign="middle" horizontalAlign="right" paddingRight="100">
+				<s:Button label="保存" buttonMode="true" click="saveE502()" id="save"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:TitleWindow>
+
+

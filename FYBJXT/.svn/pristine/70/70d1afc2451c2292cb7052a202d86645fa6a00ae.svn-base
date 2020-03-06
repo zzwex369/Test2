@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  initialize="initializeHandler(event)"
+		  creationComplete="creationCompleteHandler()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="updateDataChange", type="flash.events.Event")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.msss.la.model.L306;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.event.CustomDataEvent;
+			
+			import mx.controls.Alert;
+			import mx.controls.DateField;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.rpc.events.ResultEvent;
+			[Bindable]
+			public var type:Number;//检查类型
+			[Bindable]
+			public var gradeVal:String;
+			private var l306:L306;//修改时候用到
+			private var institutionCode:String;
+			private var loadDataArr:Array;//得到对应的值
+			private var indexChangedEvent:IndexChangedEvent;
+			private var gradeId:Array;
+			private var la306Id:Array;
+			private var xqId:Array;
+			private var la30602:Array;//0是 1否
+			//0 ydj 1 cs 2 xx
+			[Bindable]
+			private var l306_02Arr:Array=
+				[
+					["上传图片数量不符合要求"],
+					["图片不具有代表性","图片质量、体标不合格","图片质量不合格"],
+					["图片无法反映检查情况","测试不标准","检查体位错误"],
+					["图片不能反映病变位置或大小","图片放大比例不合适"],
+					["图片不能反映病变性质或级别","增益、深度等调节不合适","报告评估不正确"],
+					["初步诊断不正确","报告类别错误","报告类别错误"],
+					["阴道镜检查后处理不正确","报告描述不规范","检查后建议不正确"],
+					["不具备阴道镜检查指征"],
+					["报告审核者无资质"]
+				];
+			
+			private function initializeHandler(event:FlexEvent):void
+			{
+				gradeId=[grade_1,grade_2,grade_3];
+				la306Id=[la306_010,la306_011,la306_013];
+				la30602=["","","","","","","","",""];
+			}
+			
+			private function creationCompleteHandler():void
+			{
+				if(type==-1)
+				{
+					callLater(creationCompleteHandler);
+					return ;
+				}
+				xqId=new Array();
+				for(var i:int=0;i<zkGrid.numElements;i++)
+				{
+					var row:Object=zkGrid.getElementAt(i);
+					if(!row.visible)
+						continue;
+					for(var j:int=0;j<row.numElements;j++)
+					{
+						var gridItem:GridItem=row.getElementAt(j);
+						if(gridItem.id)
+							xqId.push(gridItem);
+					}
+				}
+				
+			}
+			
+			/**
+			 *加载质控信息 返回数组 质控单位  整改单位
+			 */
+			public function loadZk(l306:L306,institutionCode:String,fieldSuffix:Number):Array
+			{
+				this.l306=l306;
+				var index:Number;
+				this.institutionCode=institutionCode;
+				loadDataArr=new Array();
+				pushData(fieldSuffix,9);
+				
+				return loadDataArr;
+			}
+			
+			/**
+			 * gradeArr 0新的RadioButton  1旧的RadioButton
+			 */
+			private function pushData(fieldSuffix:Number,length:Number):void
+			{
+				
+				var field:String="l306"+(fieldSuffix+3);
+				var isRegister:Boolean=l306[field]==this.institutionCode;
+				if(isRegister)
+				{
+					loadDataArr.push(fieldSuffix);//暂不使用 站位
+					for(var j:Number=fieldSuffix;j<fieldSuffix+length;j++)
+					{
+						field="l306"+j;
+						this.loadDataArr.push(l306[field]);
+					}
+					doLoadZk();
+				}
+			}
+			
+			
+			/**
+			 *加载质控结果 详情 信息
+			 */
+			private function doLoadZk():void
+			{
+				var la30602:Array=loadDataArr[2].toString().split(",");
+				getOrSetRadioButton(xqId,la30602,false);
+				//	CompMethod.setRadioButtonSelect(gradeId,loadDataArr[0]); 已绑定不在重复复制
+				CompMethod.setRadioButtonSelect(la306Id,loadDataArr[1]);
+				
+			}
+			
+			/**
+			 * 
+			 * 0结果
+			 * 1详情
+			 * 2人
+			 * 3位
+			 * 4时间
+			 * 5级别
+			 */
+			public function verification(zkBasicArr:Object):Array
+			{
+				var grade:String=CompMethod.getRadioButtonValue(this.gradeId);
+				if(!grade)
+				{
+					Alert.show("请选择质控级别","系统提示");
+					return null;
+				}
+				
+				var la30601:String=CompMethod.getRadioButtonValue(la306Id);
+				var resultLa30602:Array=verificationLa30602(la30601);
+				if(!resultLa30602)
+					return null;
+				
+				var resultDataArr:Array=[la30601,la30602.join(","),zkBasicArr[0],zkBasicArr[1],zkBasicArr[2],grade];
+				return resultDataArr;
+			}
+			
+			/**
+			 *
+			 */
+			private function verificationLa30602(la30601:String):Array
+			{
+				la30602=getOrSetRadioButton(xqId,la30602);
+				var j:Number=0;
+				var k:Number=0;
+				for(var i in la30602)
+				{
+					if(la30602[i]=="0")
+						++k;
+					else if(la30602[i]=="1")
+						++j;
+				}
+				if(k>0&&la30601=="1")
+				{
+					Alert.show("质控结果至少有一项为是，不能选择通过，请从新选择！","系统提示");
+					return null;
+				}else if(j==xqId.length&&la30601=="0")
+				{
+					Alert.show("质控结果所有选项都为否，不能选择未通过，请从新选择！","系统提示");
+					return null;
+				}
+				return la30602;
+			}
+			
+			
+			/**
+			 * 切换质控结果
+			 */
+			private function changeHandler(event:Event):void
+			{
+				var radioButton:RadioButton=RadioButton(event.target);
+				if(!indexChangedEvent)
+					indexChangedEvent =new IndexChangedEvent (IndexChangedEvent.CHANGE,true);
+				indexChangedEvent.newIndex = Number(radioButton.value);
+				this.dispatchEvent(indexChangedEvent);
+				
+			}
+			
+			/**
+			 * 得到或者设置 值
+			 */
+			private function getOrSetRadioButton(idArr:Array,dataArr:Array,getStatus:Boolean=true):Array
+			{
+				var value:Number;
+				var label:String;
+				for(var i:int=0;i<idArr.length;i++)
+				{	
+					for(var j:int=0;j<idArr[i].numElements;j++)
+					{
+						var radioButton:Object=idArr[i].getElementAt(j);
+						if(radioButton is RadioButton)
+						{
+							if(getStatus)//set
+							{
+								if(radioButton.selected)
+								{
+									value=Number(radioButton.value);
+									label=radioButton.label;
+									dataArr[value]=label=="是"?"0":"1";
+									break;
+								}
+							}else//get
+							{
+								value=Number(radioButton.value);
+								if(!dataArr[value])
+									break;
+								label=dataArr[value]=="0"?"是":"否";
+								radioButton.selected=radioButton.label==label?true:false;
+							}
+						}
+					}
+				}
+				return getStatus?dataArr:null;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<mx:Grid>
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle" enabled="false">
+			<mx:GridItem id="grade_1" styleName="myGrid" >
+				<s:RadioButton label="县级质控" buttonMode="true" groupName="grade" value="0" 
+							   selected="{gradeVal=='3'}"/>
+			</mx:GridItem>
+			<mx:GridItem id="grade_2" styleName="myGrid">
+				<s:RadioButton label="市级质控" buttonMode="true" groupName="grade" value="1"
+							   selected="{gradeVal=='4'}"/>
+			</mx:GridItem>
+			<mx:GridItem id="grade_3" styleName="myGrid">
+				<s:RadioButton label="省级质控" buttonMode="true" groupName="grade" value="2"
+							   selected="{gradeVal=='5'}"/>
+			</mx:GridItem>
+			
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" height="100%" paddingBottom="5" paddingLeft="5"
+					verticalAlign="middle">
+			<mx:GridItem id="la306_011" styleName="myGrid">
+				<s:RadioButton label="通过" buttonMode="true" change="changeHandler(event)"
+							   groupName="la306_01" selected="true" value="1"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_010" styleName="myGrid">
+				<s:RadioButton label="未通过" buttonMode="true" change="changeHandler(event)"
+							   groupName="la306_01" value="0"/>
+			</mx:GridItem>
+			
+			<mx:GridItem id="la306_013" styleName="myGrid">
+				<s:RadioButton label="待审核" buttonMode="true" change="changeHandler(event)"
+							   groupName="la306_01" value="3"/>
+			</mx:GridItem>
+		</mx:GridRow>
+	</mx:Grid>
+	
+	<mx:Grid id="zkGrid">
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_021L" text="{l306_02Arr[0][0]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_021" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_021" value="0"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_021" selected="true"
+							   value="0"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_022L" text="{l306_02Arr[1][type]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_022" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_022" value="1"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_022" selected="true"
+							   value="1"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_023L" text="{l306_02Arr[2][type]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_023" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_023" value="2"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_023" selected="true"
+							   value="2"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow visible="{type!=2}" includeInLayout="{type!=2}" width="100%"  paddingBottom="5"
+					paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_024L" text="{l306_02Arr[3][type]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_024" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_024" value="3"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_024" selected="true"
+							   value="3"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid"> 
+				<s:Label id="la306_025L" text="{l306_02Arr[4][type]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_025" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_025" value="4"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_025" selected="true"
+							   value="4"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_026L" text="{l306_02Arr[5][type]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_026" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_026" value="5"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_026" selected="true"
+							   value="5"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_027L" text="{l306_02Arr[6][type]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_027" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_027" value="6"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_027" selected="true"
+							   value="6"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow visible="{type==0}" includeInLayout="{type==0}" width="100%" paddingBottom="5"
+					paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_028L" text="{l306_02Arr[7][type]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_028" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_028" value="7"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_028" selected="true"
+							   value="7"/>
+			</mx:GridItem>
+		</mx:GridRow>
+		
+		<mx:GridRow width="100%" paddingBottom="5" paddingLeft="5" verticalAlign="middle">
+			<mx:GridItem styleName="myGrid">
+				<s:Label id="la306_029L" text="{l306_02Arr[8][0]}"/>
+			</mx:GridItem>
+			<mx:GridItem id="la306_029" styleName="myGrid">
+				<s:RadioButton label="是" buttonMode="true" groupName="la306_029" value="8"/>
+				
+				<s:RadioButton label="否" buttonMode="true" groupName="la306_029" selected="true"
+							   value="8"/>
+			</mx:GridItem>
+		</mx:GridRow>
+	</mx:Grid>
+	
+</s:VGroup>

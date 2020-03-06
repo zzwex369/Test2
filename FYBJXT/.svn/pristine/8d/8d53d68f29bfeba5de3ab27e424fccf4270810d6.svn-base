@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009"
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%" creationComplete="moduleCreationCompleteHandler(event)">
+	<fx:Declarations>
+		<s:RemoteObject id="e502Service" destination="e502Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="queryE502" result="queryE502Handler(event)"/>
+			<s:method name="deleteE502" result="deleteE502Handler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+		s|DataGrid
+		{
+			borderAlpha:"0.3";
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDataGridSkin");
+			alternatingRowColors:"[#FFFFFF,#EEEEEE]";
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.etbj.model.E502;
+			import com.xyw.module.etbj.model.E502Request;
+			import com.xyw.module.etbj.model.VE502;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.ProgressBar;
+			import mx.controls.Tree;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var ve502:VE502 = null;
+			public var e502:E502 = null;
+			public var e502Request:E502Request=null;
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				var dateStr:String = DateField.dateToString(new Date(),"YYYY-MM-01");
+				this.timeStart.selectedDate = DateFormatter.parseDateString(dateStr);
+				this.timeEnd.selectedDate = new Date();
+				
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE,onSelected);
+			}
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.ve502= DataGrid(event.target).selectedItem as VE502;
+			}
+			
+			/*----------获取查询条件数据---------*/
+			private function initQueryParam():Boolean
+			{	
+				e502=new E502();
+				e502Request = new E502Request();
+				try{	
+					var type:String = this.E502_31.getLastSelectedInstitution();
+					var e50231:String = this.E502_31.getLastSelectedInstitutionCode();
+					if(this.systemUser.institutionType == "1")
+						e502.e50231 = this.systemUser.institutionCode;
+					else
+						e502.e50231 = (type == "10")?e50231:e50231.substring(0,Number(type));
+					
+					if(timeStart.text!="")
+					{
+						e502Request.timeStr= this.timeStart.selectedDate;						
+					}
+					if(timeEnd.text!="")
+					{
+						e502Request.timeEnd = this.timeEnd.selectedDate;					
+					}
+					var index:int=tab.selectedIndex;
+					e502Request.flag="false";
+					//0为false
+					if(Boolean(index)){
+					if(E502_05.text==""&&E502_06.text==""
+						&&E502_08.text==""&&E502_09.text==""&&E502_12.text==""
+						&&E502_13.text=="")
+					{
+						Alert.show("请输入查询条件","系统提示");
+						return false;
+					}else
+					{						
+						e502.e50205 = StringUtil.trim(this.E502_05.text);
+						e502.e50206 = StringUtil.trim(this.E502_06.text);					
+						e502.e50208 = StringUtil.trim(this.E502_08.text);					
+						e502.e50209= StringUtil.trim(this.E502_09.text); 
+						e502.e50212 = StringUtil.trim(this.E502_12.text);					
+						e502.e50213= StringUtil.trim(this.E502_13.text); 
+						e502Request.flag="true";
+					}
+				}
+					e502Request.e502=e502;
+				}catch(error:Error) {		
+					Alert.show("查询条件异常");
+					return false;
+				}
+				return true;
+			}
+			
+			//读卡
+			protected function readCard(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(duka1==event.target){
+							if(sex=="女"){
+								this.E502_05.text = array[0];//姓名
+								this.E502_06.text = array[5];//身份证号
+							}else{
+								Alert.show("请读母亲信息！","系统提示");
+							}
+						}else{
+							if(sex=="男"){
+								this.E502_05.text = array[0];//姓名
+								this.E502_06.text = array[5];//身份证号
+							}else{
+								Alert.show("请读父亲信息！","系统提示");
+							}
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			
+			public function queryE502(event:MouseEvent):void
+			{
+				//var e303Request:E303Request = new E303Request();
+				var b:Boolean=this.initQueryParam();
+				if(!b){
+					return ;
+				}
+				e502Request.parameterPageindex=1;
+				e502Request.parameterPagesize=20;
+				this.e502Service.queryE502(e502Request);
+			}
+			private function queryE502Handler(event:ResultEvent):void{
+				var e502Response:Object = event.result;
+				var e502s:ArrayCollection =e502Response.ve502;
+				var rowCount:Number = e502Response.rowCount;
+				this.certificateDataGrid.dataProvider=e502s;
+				this.pagerBar.pageSize = 20;
+				this.pagerBar.dataGrid = this.certificateDataGrid;  
+				this.pagerBar.rowCount = rowCount;
+				this.pagerBar.resultData = e502s;
+				this.pagerBar.dataBind();
+				this.pagerBar.pagerFunction = pagerFunction;
+				if(rowCount > 0) {
+					this.pagerBar.enabled = true;
+				}	
+			}
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				var _e502Request:E502Request = new E502Request();
+				_e502Request.parameterPageindex=currentPageIndex;
+				_e502Request.parameterPagesize=pageSize;
+				this.e502Service.queryE502(_e502Request);		
+			}
+			public function refresh():void
+			{
+				e502Request = new E502Request();
+				this.initQueryParam();
+				e502Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				e502Request.parameterPagesize = 20;
+				this.e502Service.queryE502(e502Request);
+			}
+			
+			private function updateE502(event:MouseEvent):void
+			{	   
+				if(this.ve502 == null){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				var tree4:Tree=this.parentApplication.tree4 as Tree;
+				var progressBar4:ProgressBar=this.parentApplication.progressBar4 as ProgressBar;
+				var contentLabel:String="新生儿复筛及延迟听力修改信息表";
+				var contentPath:String="com/xyw/module/etbj/reviewHearingScreening/index.swf";
+				for(var i:uint = 0; i < this.parentApplication.superTabNavigator4.numChildren; i++) {
+					var vbox:Object =this.parentApplication.superTabNavigator4.getChildAt(i);
+					var vboxLabel:String = vbox.label;
+					if(vboxLabel == contentLabel) {
+						this.parentApplication.superTabNavigator4.selectedIndex = i;
+						progressBar4.visible = false;
+						break;
+						//return;
+					} 
+				}
+				if(vboxLabel != contentLabel){
+					this.parentApplication.contentLabel=contentLabel;
+					this.parentApplication.loadModule(contentPath);
+				}
+				this.parentApplication.obj=ve502;
+			}
+			public function deleteE502(event:MouseEvent):void
+			{
+				if(this.ve502 == null){  
+					Alert.show("请选择要操作的行");
+					return;
+				}
+				if(delete1==event.target||delete2==event.target){
+					Alert.show("是否删除这条记录","系统提示",3,this,_closeHandler);
+				}
+			}
+			public function deleteE502Handler(event:ResultEvent):void
+			{
+				var e502Response:Object = event.result;
+				if(e502Response.errorMessage == null){
+					if(e502Response.promptMessage != null){
+						Alert.show(e502Response.promptMessage, "系统提示");
+					}
+					refresh();
+				} else {
+					Alert.show(e502Response.errorMessage, "系统提示");
+				}
+			} 
+			private function _closeHandler(event:CloseEvent):void
+			{
+				if(event.detail==Alert.YES){
+					e502Request.e50201 =this.ve502.e50201;
+					this.e502Service.deleteE502(e502Request);
+				}
+			}
+			private function _updateE502(event:MouseEvent):void
+			{	   
+				if(this.ve502 == null){  
+					Alert.show("请选择要操作的行");
+					return;
+				}else{
+					var window:title = new title();
+					window.ve502 = this.ve502;
+					CompMethod.popUpTitleWindow(window,this,true);
+				}
+			}
+		]]>
+	</fx:Script>
+	<mx:TabNavigator id="tab" width="100%" height="122" chromeColor="#ffffff" creationPolicy="all">
+		<s:NavigatorContent width="100%" label="综合查询" buttonMode="true">
+			<s:VGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="预约筛查机构"/>
+					<component:InstitutionComboBox id="E502_31"  buttonMode="true"  width="730" villageVisible="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="5" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label width="76" text="登记时间"/><mx:DateField id="timeStart" width="120"
+														  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+														  formatString="YYYY-MM-DD"
+														  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+														  yearNavigationEnabled="true" buttonMode="true"/>
+					<s:Label text="至"/><mx:DateField id="timeEnd" width="120"
+													 dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+													 formatString="YYYY-MM-DD"
+													 monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+													 yearNavigationEnabled="true" buttonMode="true"/>
+					<s:Button label="查询" click="queryE502(event)" buttonMode="true"/>
+					<!--<s:Button label="修改" click="updateE502(event)" buttonMode="true"/>-->
+					<s:Button label="修改" click="_updateE502(event)" buttonMode="true"/>
+					<s:Button label="删除" click="deleteE502(event)" buttonMode="true" id="delete1"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" label="精确查询" buttonMode="true">
+			<s:VGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="母亲姓名" width="70"/><s:TextInput id="E502_05"/>
+					<s:Label text="母亲身份证号"/><s:TextInput id="E502_06" width="200"/>
+					<s:Button id="duka1" width="60" label="读卡" click="readCard(event)"
+							  enabled="{this.systemUser.duka == '1'}" buttonMode="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="父亲姓名" width="70"/><s:TextInput id="E502_08"/>
+					<s:Label text="父亲身份证号"/><s:TextInput id="E502_09" width="200"/>
+					<s:Button id="duka2" width="60" label="读卡" click="readCard(event)"
+							  enabled="{this.systemUser.duka == '1'}" buttonMode="true"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10"
+						  verticalAlign="middle">
+					<s:Label text="新生儿姓名" width="70"/><s:TextInput id="E502_13"/>
+					<s:Label text="联系方式" width="78"/><s:TextInput id="E502_12"  width="200"/>
+					<s:Button label="查询" click="queryE502(event)" buttonMode="true"/>
+					<s:Button label="修改" click="_updateE502(event)" buttonMode="true"/>
+					<s:Button label="删除" click="deleteE502(event)" buttonMode="true" id="delete2"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+	<s:Scroller y="126" width="100%" height="680" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10">
+			<s:DataGrid id="certificateDataGrid" width="100%" height="340"
+						alternatingRowColors="[#FFFFFF,#EEEEEE]" editable="true" rowHeight="22">
+				<s:columns>     
+					<s:ArrayList>
+						<s:GridColumn visible="false" dataField="e30301" headerText="主键"/>
+						<s:GridColumn width="40" editable="false" headerText="序号"
+									  itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+						<s:GridColumn width="80" dataField="e50205" headerText="母亲姓名"/>
+						<s:GridColumn width="140" dataField="e50206" headerText="母亲身份证号"/>
+						<s:GridColumn width="80" dataField="e50208" headerText="父亲姓名"/>
+						<s:GridColumn width="140" dataField="e50209" headerText="父亲身份证号"/>
+						<s:GridColumn width="100" dataField="e50213" headerText="新生儿姓名"/>
+						<s:GridColumn width="140" dataField="e50215Str" headerText="出生日期"/>
+						<s:GridColumn width="80" dataField="e50221Zh" headerText="初筛机构"/>
+						<s:GridColumn width="140" dataField="e50231Zh" headerText="预约筛查机构"/>
+						<s:GridColumn width="100" dataField="e50230Str" headerText="预约筛查日期"/>
+						<s:GridColumn width="100" dataField="e50232" headerText="告知人"/>
+						<s:GridColumn width="100" dataField="e50233" headerText="录入人员"/>
+						<s:GridColumn width="100" dataField="e50234Str" headerText="录入时间"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid> 
+			<component:PagerBar id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+		</s:VGroup>	
+	</s:Scroller>
+</s:Module>

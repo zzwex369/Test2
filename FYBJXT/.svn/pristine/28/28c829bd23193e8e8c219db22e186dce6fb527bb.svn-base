@@ -1,0 +1,1688 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="1200" height="100%" backgroundColor="white" chromeColor="#5CACEE"
+			   close="removeWindow()" cornerRadius="5" creationComplete="moduleComplete()"
+			   fontFamily="微软雅黑" horizontalCenter="0"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow" title="信息修改" verticalCenter="0">
+	<s:layout>
+		<s:TileLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<s:RemoteObject id="e503Service" destination="e503Service"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="renewE503" result="renewE503Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+			paddingTop:5;
+		}
+		s|Label
+		{
+			verticalAlign:middle;
+			
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.assist.index;
+			import com.xyw.module.etbj.model.E503;
+			import com.xyw.module.etbj.model.VE503;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import flashx.textLayout.elements.BreakElement;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.List;
+			import mx.formatters.DateFormatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			public var ve503:VE503;
+			[Bindable]
+			private var systemUser:SystemUser;
+			private var cardId:String;
+			private var hour:String;
+			private var minute:String;
+			private var e503:E503;
+			private var e50302:Number;
+			private var e50303:Number=0;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var i:uint=20;
+			private function moduleComplete():void
+			{	
+				systemUser=this.parentApplication.systemUser;
+				initializeComboBox();
+			}
+			/******************下拉框填充数据******************/
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t where t.D101_01 = " + this.systemUser.institutionCode + " or t.D101_11 = " + this.systemUser.institutionCode;
+				comboBoxDataRequest.flag = "D101";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_01 ";
+				comboBoxDataRequest.flag = "S301_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_04 ";
+				comboBoxDataRequest.flag = "S301_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_07 ";
+				comboBoxDataRequest.flag = "S301_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_02 ";
+				comboBoxDataRequest.flag = "S601_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_03 ";
+				comboBoxDataRequest.flag = "S601_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_04 ";
+				comboBoxDataRequest.flag = "S601_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_08 ";
+				comboBoxDataRequest.flag = "S601_08";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S601_16 ";
+				comboBoxDataRequest.flag = "S601_16";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z501_01 ";
+				comboBoxDataRequest.flag = "Z501_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z501_03 ";
+				comboBoxDataRequest.flag = "Z501_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z501_04 t";
+				comboBoxDataRequest.flag = "Z501_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z501_05 ";
+				comboBoxDataRequest.flag = "Z501_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_01 ";
+				comboBoxDataRequest.flag = "Z503_01";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_02 ";
+				comboBoxDataRequest.flag = "Z503_02";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_03 ";
+				comboBoxDataRequest.flag = "Z503_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_04 ";
+				comboBoxDataRequest.flag = "Z503_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_05 ";
+				comboBoxDataRequest.flag = "Z503_05";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_06";
+				comboBoxDataRequest.flag = "Z503_06";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_07";
+				comboBoxDataRequest.flag = "Z503_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z503_08";
+				comboBoxDataRequest.flag = "Z503_08";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+					var index:int = this.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					E503_22.dataProvider = comboBoxDataList;
+					E503_88.dataProvider = comboBoxDataList;
+					this.E503_88.selectedIndex=index;	
+					E503_22.selectedIndex=index;
+					i--;
+				}
+				else if(flag == "S301_01")
+				{
+					this.E503_06.dataProvider = comboBoxDataList;
+					E503_06.selectedIndex=0;
+					i--;
+				}
+				else if(flag == "S301_04")
+				{
+					this.E503_07.dataProvider = comboBoxDataList;
+					this.E503_07.selectedIndex=1;
+				}
+				else if(flag == "S301_07")
+				{
+					this.E503_79.dataProvider = comboBoxDataList;
+					this.E503_79.selectedIndex=0;
+					i--;
+				}
+				else if(flag == "S601_02")
+				{
+					this.E503_16.dataProvider = comboBoxDataList;
+					this.E503_20.dataProvider = comboBoxDataList;
+					this.E503_16.selectedIndex = 0;	
+					this.E503_20.selectedIndex=0;
+					i--;
+				}
+				else if(flag == "S601_03")
+				{
+					this.E503_32.dataProvider = comboBoxDataList;
+					this.E503_34.dataProvider = comboBoxDataList;
+					this.E503_37.dataProvider = comboBoxDataList;
+					this.E503_41.dataProvider = comboBoxDataList;
+					this.E503_43.dataProvider = comboBoxDataList;
+					this.E503_46.dataProvider = comboBoxDataList;
+					this.E503_49.dataProvider = comboBoxDataList;
+					this.E503_50.dataProvider = comboBoxDataList;
+					this.E503_52.dataProvider = comboBoxDataList;
+					this.E503_53.dataProvider = comboBoxDataList;
+					this.E503_55.dataProvider = comboBoxDataList;
+					this.E503_59.dataProvider = comboBoxDataList;
+					this.E503_67.dataProvider = comboBoxDataList;
+					this.E503_69.dataProvider = comboBoxDataList;
+					this.E503_72.dataProvider = comboBoxDataList;
+					this.E503_78.dataProvider = comboBoxDataList;
+					this.E503_32.selectedIndex = 1;	
+					this.E503_34.selectedIndex=1;
+					this.E503_37.selectedIndex = 1;	
+					this.E503_41.selectedIndex=1;
+					this.E503_43.selectedIndex = 1;	
+					this.E503_46.selectedIndex=1;
+					this.E503_49.selectedIndex = 1;	
+					this.E503_50.selectedIndex=1;
+					this.E503_52.selectedIndex = 1;	
+					this.E503_53.selectedIndex=1;
+					this.E503_55.selectedIndex = 1;	
+					this.E503_59.selectedIndex=1;
+					this.E503_67.selectedIndex = 1;	
+					this.E503_69.selectedIndex=1;
+					this.E503_72.selectedIndex = 1;	
+					this.E503_78.selectedIndex=1;
+					i--;
+				}
+				else if(flag == "S601_04")
+				{
+					this.E503_81.dataProvider = comboBoxDataList;
+					this.E503_82.dataProvider = comboBoxDataList;
+					this.E503_81.selectedIndex = 2;	
+					this.E503_82.selectedIndex=0;
+					i--;
+				}
+				else if(flag == "S601_08")
+				{
+					this.E503_31.dataProvider = comboBoxDataList;
+					this.E503_31.selectedIndex = 0;	
+					i--;
+				}
+				else if(flag == "S601_16")
+				{
+					this.E503_39.dataProvider = comboBoxDataList;
+					this.E503_39.selectedIndex = 1;	
+					i--;
+				}
+				else if(flag == "Z501_01")
+				{
+					this.E503_30.dataProvider = comboBoxDataList;
+					this.E503_30.selectedIndex = 0;	
+					i--;
+				}
+				else if(flag == "Z501_03")
+				{
+					this.E503_23.dataProvider = comboBoxDataList;
+					this.E503_23.selectedIndex = 0;
+					i--;
+				}
+				else if(flag == "Z501_04")
+				{
+					this.E503_24.dataProvider = comboBoxDataList;
+					this.E503_24.selectedIndex = 0;	
+					i--;
+				}
+				else if(flag == "Z501_05")
+				{
+					this.E503_25.dataProvider = comboBoxDataList;
+					this.E503_26.dataProvider = comboBoxDataList;
+					this.E503_25.selectedIndex = 0;	
+					this.E503_26.selectedIndex=0;
+					i--;
+				}
+				else if(flag == "Z503_01")
+				{
+					this.E503_40.dataProvider = comboBoxDataList;
+					this.E503_40.selectedIndex = 1;	
+					i--;
+				}
+				else if(flag == "Z503_02")
+				{
+					this.E503_57.dataProvider = comboBoxDataList;
+					this.E503_57.selectedIndex = 1;	
+					i--;
+				}
+				else if(flag == "Z503_03")
+				{
+					this.E503_62.dataProvider = comboBoxDataList;
+					this.E503_62.selectedIndex=0;
+					i--;
+				}
+				else if(flag == "Z503_04")
+				{
+					this.E503_63.dataProvider = comboBoxDataList;
+					this.E503_63.selectedIndex = 1;	
+					i--;
+				}
+				else if(flag == "Z503_05")
+				{
+					this.E503_65.dataProvider = comboBoxDataList;
+					this.E503_65.selectedIndex=1;
+					i--;
+				}
+				else if(flag == "Z503_06")
+				{
+					this.E503_74.dataProvider = comboBoxDataList;
+					this.E503_77.dataProvider = comboBoxDataList;
+					this.E503_74.selectedIndex = 1;	
+					this.E503_77.selectedIndex=1;
+					i--;
+				} 
+				else if(flag == "Z503_07")
+				{
+					this.E503_76.dataProvider = comboBoxDataList;
+					this.E503_76.selectedIndex=1;
+					i--;
+				} 
+				else if(flag == "Z503_08")
+				{
+					this.E503_75.dataProvider = comboBoxDataList;
+					this.E503_75.selectedIndex = 1;	
+					i--;
+				}
+				if(i==0)
+				{
+					putVE503();
+				}
+			}
+			/****************选择对应的信息********************/
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				
+					var len:uint = arrayCollection.length;
+					var i:uint = 0;
+					var index:int = 0;
+					while(i < len) {
+						var comboBoxDataP:Object = arrayCollection.getItemAt(i);
+						if(comboBoxDataP.data == defaultValue) {
+							index = arrayCollection.getItemIndex(comboBoxDataP);
+							break;
+						}
+						i++;
+					}
+				
+				return index;
+			}
+			/*****************年龄算法*******************/
+			private function getAge(cardId:String):String
+			{
+				if(cardId != ""){
+					if(cardId.length >= 16){
+						var year:Number = Number(cardId.substr(6,4));
+						var month:Number = Number(cardId.substr(10,2));
+						var day:Number = Number(cardId.substr(12,2));
+						var date:Date = new Date();
+						var nowMonth:Number = date.month + 1;
+						var age:Number = date.fullYear - year;
+						if(month > nowMonth || month == nowMonth && day > date.date){
+							age=age - 1;
+						}
+						return ""+age;
+					}
+				}
+				return "";
+			}
+			/*********************读卡***************/
+			private function _readCard(event:MouseEvent):void
+			{
+				try
+				{
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						cardId=array[5];
+						if(readCard2==event.target)
+						{						
+							if("男"==sex)
+							{
+								Alert.show("请读母亲的身份证信息","系统提示");
+								return ;
+							}else
+							{
+								E503_17.text=array[0];
+								E503_18.text=cardId;
+								E503_19.text=getAge(cardId);
+							}
+						}else if(readCard3==event.target)
+						{
+							if("女"==sex)
+							{
+								Alert.show("请读父亲的身份证信息","系统提示");
+								return ;
+							}else
+							{
+								E503_13.text=array[0];
+								E503_14.text=cardId;
+								E503_15.text=getAge(cardId);
+							}
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			/****************第一页验证********************/
+			private function validate1():int
+			{
+				if(E503_04.text=="")
+				{
+					Alert.show("请输入编号","系统提示");
+					return 0;
+				}
+				if(E503_05.text=="")
+				{
+					Alert.show("请输入儿童姓名","系统提示");
+					return 0;
+				}
+				if(E503_06.selectedIndex==0)
+				{
+					Alert.show("请选择儿童（新生儿）性别","系统提示");
+					return 0;
+				}
+				if(E503_07.selectedIndex==0)
+				{
+					Alert.show("请选择儿童（新生儿）民族","系统提示");
+					return 0;
+				}
+				if(E503_08.text=="")
+				{
+					Alert.show("请选择儿童（新生儿）出生日期","系统提示");
+					return 0;
+				}
+				if(E503_09_01.text==""&&E503_09_02.text==""&&E503_09_03.text==""&&E503_09_04.text=="")
+				{
+					Alert.show("请选择儿童（新生儿）年龄","系统提示");
+					return 0;
+				}
+				if(E503_10.text=="")
+				{
+					Alert.show("请输入家庭地址","系统提示");
+					return 0;
+				}
+				if(E503_11.text=="")
+				{
+					Alert.show("请输入邮编","系统提示");
+					return 0;
+				}
+				if(E503_12.text=="")
+				{
+					Alert.show("请输入联系电话","系统提示");
+					return 0;
+				}
+				if(E503_13.text=="")
+				{
+					Alert.show("请输入父亲姓名","系统提示");
+					return 0;
+				}
+				if(E503_14.text=="")
+				{
+					Alert.show("请输入父亲身份证号","系统提示");
+					return 0;
+				}
+				if(E503_15.text=="")
+				{
+					Alert.show("请输入年龄","系统提示");
+					return 0;
+				}
+				if(E503_16.selectedIndex==0)
+				{
+					Alert.show("请选择职业 ","系统提示");
+					return 0;
+				}
+				if(E503_17.text=="")
+				{
+					Alert.show("请输入母亲姓名","系统提示");
+					return 0;
+				}
+				if(E503_18.text=="")
+				{
+					Alert.show("请输入母亲身份证号","系统提示");
+					return 0;
+				}
+				if(E503_19.text=="")
+				{
+					Alert.show("请输入年龄","系统提示");
+					return 0;
+				}
+				if(E503_20.selectedIndex==0)
+				{
+					Alert.show("请选择职业 ","系统提示");
+					return 0;
+				}
+				if(E503_21.text=="")
+				{
+					Alert.show("请输入筛查时间","系统提示");
+					return 0;
+				}
+				if(E503_22.selectedIndex==0)
+				{
+					Alert.show("请选择筛查医院","系统提示");
+					return 0;
+				}
+				if(E503_23.selectedIndex==0)
+				{
+					Alert.show("请选择筛查方式 ","系统提示");
+					return 0;
+				}
+				if(E503_24.selectedIndex==0)
+				{
+					Alert.show("请选择筛查结果","系统提示");
+					return 0;
+				}
+				if(E503_25.selectedIndex==0)
+				{
+					Alert.show("请选择左耳","系统提示");
+					return 0;
+				}
+				if(E503_26.selectedIndex==0)
+				{
+					Alert.show("请选择右耳","系统提示");
+					return 0;
+				}
+				if(E503_27.text=="")
+				{
+					Alert.show("请输入孕次","系统提示");
+					return 0;
+				}
+				if(E503_28.text=="")
+				{
+					Alert.show("请输入产次","系统提示");
+					return 0;
+				}
+				if(E503_29.text=="")
+				{
+					Alert.show("请输入出生体重","系统提示");
+					return 0;
+				}
+				if(E503_30.selectedIndex==0)
+				{
+					Alert.show("请选择胎数 ","系统提示");
+					return 0;
+				}
+				if(E503_31.selectedIndex==0)
+				{
+					Alert.show("请选择分娩方式","系统提示");
+					return 0;
+				}
+				if(E503_32.selectedIndex==0)
+				{
+					Alert.show("请选择出生缺陷","系统提示");
+					return 0;
+					if(E503_32.selectedIndex==2&&E503_33.text=="")
+					{
+						Alert.show("请输入出生缺陷","系统提示");
+						return 0;
+					}
+				}
+				if(E503_34.selectedIndex==0)
+				{
+					Alert.show("请选择胎儿窘迫","系统提示");
+					return 0;
+				}
+				if(E503_35.text=="")
+				{
+					Alert.show("请输入Apgar评分1分钟","系统提示");
+					return 0;
+				}
+				if(E503_36.text=="")
+				{
+					Alert.show("请输入Apgar评分5分钟","系统提示");
+					return 0;
+				}
+				if(E503_37.selectedIndex==0)
+				{
+					Alert.show("请选择产伤","系统提示");
+					return 0;
+				}
+				if(E503_37.selectedIndex==2&&E503_38.text=="")
+				{
+					Alert.show("请输入产伤部位","系统提示");
+					return 0;
+				}
+				if(E503_39.selectedIndex==0)
+				{
+					Alert.show("请选择羊水 ","系统提示");
+					return 0;
+				}
+				if(E503_40.selectedIndex==0)
+				{
+					Alert.show("请选择异常分娩 ","系统提示");
+					return 0;
+				}
+				if(E503_41.selectedIndex==0)
+				{
+					Alert.show("请选择头颅、五官畸形","系统提示");
+					return 0;
+				}
+				if(E503_41.selectedIndex==2&&E503_42.text=="")
+				{
+					Alert.show("请输入头颅、五官畸形","系统提示");
+					return 0;
+				}
+				if(E503_43.selectedIndex==0)
+				{
+					Alert.show("请选择出生后感染","系统提示");
+					return 0;
+				}
+				if(E503_43.selectedIndex==2)
+				{
+					if(E503_44.text=="")
+					{
+						Alert.show("请输入出生后感染病因","系统提示");
+						return 0;
+					}
+					if(E503_45.text=="")
+					{
+						Alert.show("请输入出生后感染病程","系统提示");
+						return 0;
+					}
+				}
+				if(E503_46.selectedIndex==0)
+				{
+					Alert.show("请选择出生后患病 ","系统提示");
+					return 0;
+				}
+				if(E503_46.selectedIndex==2)
+				{
+					if(E503_47.text=="")
+					{
+						Alert.show("请输入出生后患病病因","系统提示");
+						return 0;
+					}
+					if(E503_48.text=="")
+					{
+						Alert.show("请输入出生后患病病程","系统提示");
+						return 0;
+					}
+				}
+				if(E503_49.selectedIndex==0)
+				{
+					Alert.show("请选择头部外伤","系统提示");
+					return 0;
+				}
+				if(E503_50.selectedIndex==0)
+				{
+					Alert.show("请选择耳毒性药物应用史","系统提示");
+					return 0;
+				}
+				if(E503_50.selectedIndex==2&&E503_51.text=="")
+				{
+					Alert.show("请输入药名","系统提示");
+					return 0;
+				}
+				if(E503_52.selectedIndex==0)
+				{
+					Alert.show("请选择中耳炎史","系统提示");
+					return 0;
+				}
+				if(E503_53.selectedIndex==0)
+				{
+					Alert.show("请选择NICU抢救史","系统提示");
+					return 0;
+				}
+				if(E503_53.selectedIndex==2&&E503_54.text=="")
+				{
+					Alert.show("请输入NICU抢救史原因","系统提示");
+					return 0;
+				}
+				if(E503_55.selectedIndex==0)
+				{
+					Alert.show("请选择呼吸机使用","系统提示");
+					return 0;
+				}
+				if(E503_55.selectedIndex==2&&E503_56.text=="")
+				{
+					Alert.show("请输入持续时间","系统提示");
+					return 0;
+				}
+				if(E503_57.selectedIndex==0)
+				{
+					Alert.show("请选择对外界声音反应","系统提示");
+					return 0;
+				}
+				return 1;
+			}
+			/****************第二页验证********************/
+			private function validate2():int
+			{	
+				if(validate1()==0)
+				{
+					Alert.show("请填写第一页","系统提示");
+					return 0;
+				}
+				if(E503_58.text=="")
+				{
+					Alert.show("请输入母亲妊娠年龄 ","系统提示");
+					return 1;
+				}
+				if(E503_59.selectedIndex==0)
+				{
+					Alert.show("请选择流产史","系统提示");
+					return 1;
+				}
+				if(E503_59.selectedIndex==2){
+					if(E503_60.text=="")
+					{
+						Alert.show("请选择流产时间","系统提示");
+						return 1;
+					}
+					if(E503_61.text=="")
+					{
+						Alert.show("请输入流产原因","系统提示");
+						return 1;
+					}
+					if(E503_62.selectedIndex==0)
+					{
+						Alert.show("请选择流产方式","系统提示");
+						return 1;
+					}
+				}
+				if(E503_63.selectedIndex==0)
+				{
+					Alert.show("请选择妊娠期病毒感染史","系统提示");
+					return 1;
+				}
+				if(E503_63.selectedIndex!=0&&E503_63.selectedIndex!=1&&E503_64.text=="")
+				{
+					Alert.show("请输入感染病毒时孕周","系统提示");
+					return 1;
+				}
+				if(E503_65.selectedIndex==0)
+				{
+					Alert.show("请选择妊娠期外生殖器感染","系统提示");
+					return 1;
+				}
+				if(E503_65.selectedIndex!=0&&E503_65.selectedIndex!=1&&E503_66.text=="")
+				{
+					Alert.show("请输入外生殖器感染孕周","系统提示");
+					return 1;
+				}
+				if(E503_67.selectedIndex==0)
+				{
+					Alert.show("请选择妊娠放射性物质接触史","系统提示");
+					return 1;
+				}
+				if(E503_67.selectedIndex==2&&E503_68.text=="")
+				{
+					Alert.show("请输入妊娠放射性物质接触孕周","系统提示");
+					return 1;
+				}
+				if(E503_69.selectedIndex==0)
+				{
+					Alert.show("请选择妊娠期药物应用史","系统提示");
+					return 1;
+				}
+				if(E503_69.selectedIndex==2){
+					if(E503_70.text=="")
+					{
+						Alert.show("请输入药物名称","系统提示");
+						return 1;
+					}
+					if(E503_71.text=="")
+					{
+						Alert.show("请输入用药孕周","系统提示");
+						return 1;
+					}
+				}
+				if(E503_72.selectedIndex==0)
+				{
+					Alert.show("请选择妊妊娠期有害物质接触史","系统提示");
+					return 1;
+				}
+				if(E503_72.selectedIndex==2&&E503_73.text=="")
+				{
+					Alert.show("请输入妊妊娠期有害物质接触孕周","系统提示");
+					return 1;
+				}
+				if(E503_74.selectedIndex==0)
+				{
+					Alert.show("请选择妊娠期不良生活习惯","系统提示");
+					return 1;
+				}
+				if(E503_75.selectedIndex==0)
+				{
+					Alert.show("请选择妊娠期疾病史","系统提示");
+					return 1;
+				}
+				if(E503_76.selectedIndex==0)
+				{
+					Alert.show("请选择异常妊娠","系统提示");
+					return 1;
+				}
+				
+				if(E503_77.selectedIndex==0)
+				{
+					Alert.show("请选择家庭不良生活习惯","系统提示");
+					return 1;
+				}
+				if(E503_78.selectedIndex==0)
+				{
+					Alert.show("请选择家族有无耳聋患者","系统提示");
+					return 1;
+				}
+				if(E503_78.selectedIndex==2)
+				{
+					if(E503_79.selectedIndex==0)
+					{
+						Alert.show("请选择耳聋患者与儿童关系 ","系统提示");
+						return 1;
+					}
+					if(E503_80.text=="")
+					{
+						Alert.show("请输入耳聋情况","系统提示");
+						return 1;
+					}
+				}
+				if(E503_81.selectedIndex==0)
+				{
+					Alert.show("请选择是否近亲结婚","系统提示");
+					return 1;
+				}
+				if(E503_81.selectedIndex==1&&E503_82.selectedIndex==0)
+				{
+					Alert.show("请选择血缘关系","系统提示");
+					return 1;
+				}
+				return 2;
+			}
+			/****************第三页验证********************/
+			private function saveE503():void
+			{	
+				if(validate1()==0)
+				{
+					Alert.show("请填写第一页","系统提示");
+					return;
+				}
+				if(validate2()==1)
+				{
+					Alert.show("请填写第二页","系统提示")
+					return;
+				}
+				if(E503_83.text=="")
+				{
+					Alert.show("请输入耳鼻喉检查","系统提示");
+					return;
+				}
+				if(E503_84.text=="")
+				{
+					Alert.show("请输入听力学检查结果","系统提示");
+					return;
+				}
+				if(E503_85.text=="")
+				{
+					Alert.show("请输入诊断结果","系统提示");
+					return;
+				}
+				if(E503_86.text=="")
+				{
+					Alert.show("请输入诊断医师","系统提示");
+					return;
+				}
+				if(E503_87.text=="")
+				{
+					Alert.show("请选择诊断时间","系统提示");
+					return;
+				}
+				if(E503_88.selectedIndex==0)
+				{
+					Alert.show("请选择诊断医院","系统提示");
+					return;
+				}
+				if(E503_89.text=="")
+				{
+					Alert.show("请输入录入人员","系统提示");
+					return;
+				}
+				if(E503_90.text=="")
+				{
+					Alert.show("请选择录入时间","系统提示");
+					return;
+				}
+				_saveE503();
+			}
+			/****************保存********************/
+			private function _saveE503():void
+			{
+				e503=new E503();
+				try
+				{	
+					e503.e50301=ve503.e50301;
+					e503.e50302=e50302;
+					e503.e50303=e50303;
+					e503.e50304=StringUtil.trim(E503_04.text);
+					e503.e50305=StringUtil.trim(E503_05.text);
+					e503.e50306=E503_06.selectedItem.data;
+					e503.e50307=E503_07.selectedItem.data;
+					e503.e50308=DateFormatter.parseDateString(E503_08.text+" "+hour+":"+minute);
+					e503.e50309=StringUtil.trim(E503_09_01.text)+","+StringUtil.trim(E503_09_02.text)+","+
+						StringUtil.trim(E503_09_03.text)+","+StringUtil.trim(E503_09_04.text);
+					e503.e50310=StringUtil.trim(E503_10.text);
+					e503.e50311=StringUtil.trim(E503_11.text);
+					e503.e50312=StringUtil.trim(E503_12.text);
+					e503.e50313=StringUtil.trim(E503_13.text);
+					e503.e50314=StringUtil.trim(E503_14.text);
+					e503.e50315=Number(StringUtil.trim(E503_15.text));
+					e503.e50316=E503_16.selectedItem.data;
+					e503.e50317=StringUtil.trim(E503_17.text);
+					e503.e50318=StringUtil.trim(E503_18.text);
+					e503.e50319=Number(StringUtil.trim(E503_19.text));
+					e503.e50320=E503_20.selectedItem.data;
+					e503.e50321=DateField.stringToDate(this.E503_21.text, "YYYY-MM-DD");
+					e503.e50322=E503_22.selectedItem.data;
+					e503.e50323=E503_23.selectedItem.data;
+					e503.e50324=E503_24.selectedItem.data;
+					e503.e50325=E503_25.selectedItem.data;
+					e503.e50326=E503_26.selectedItem.data;
+					e503.e50327=Number(StringUtil.trim(E503_27.text));
+					e503.e50328=Number(StringUtil.trim(E503_28.text));
+					e503.e50329=Number(StringUtil.trim(E503_29.text));
+					e503.e50330=E503_30.selectedItem.data;
+					e503.e50331=E503_31.selectedItem.data;
+					e503.e50332=E503_32.selectedItem.data;
+					e503.e50333=StringUtil.trim(E503_33.text);
+					e503.e50334=E503_34.selectedItem.data;
+					e503.e50335=Number(StringUtil.trim(E503_35.text));
+					e503.e50336=Number(StringUtil.trim(E503_36.text));
+					e503.e50337=E503_37.selectedItem.data;
+					e503.e50338=StringUtil.trim(E503_38.text);
+					e503.e50339=E503_39.selectedItem.data;
+					e503.e50340=E503_40.selectedItem.data;
+					e503.e50341=E503_41.selectedItem.data;
+					e503.e50342=StringUtil.trim(E503_42.text);
+					e503.e50343=E503_43.selectedItem.data;
+					e503.e50344=StringUtil.trim(E503_44.text);
+					e503.e50345=StringUtil.trim(E503_45.text);
+					e503.e50346=E503_46.selectedItem.data;
+					e503.e50347=StringUtil.trim(E503_47.text);
+					e503.e50348=StringUtil.trim(E503_48.text);
+					e503.e50349=E503_49.selectedItem.data;
+					e503.e50350=E503_50.selectedItem.data;
+					e503.e50351=StringUtil.trim(E503_51.text);
+					e503.e50352=E503_52.selectedItem.data;
+					e503.e50353=E503_53.selectedItem.data;
+					e503.e50354=StringUtil.trim(E503_54.text);
+					e503.e50355=E503_55.selectedItem.data;
+					e503.e50356=StringUtil.trim(E503_56.text);
+					e503.e50357=E503_57.selectedItem.data;
+					e503.e50358=Number(StringUtil.trim(E503_58.text));
+					e503.e50359=E503_59.selectedItem.data;
+					if(E503_60.text=="")
+					{
+						e503.e50360=DateField.stringToDate("1970-01-01", "YYYY-MM-DD");
+					}else{
+						e503.e50360=DateField.stringToDate(this.E503_60.text, "YYYY-MM-DD");
+					}
+					e503.e50361=StringUtil.trim(E503_61.text);
+					e503.e50362=E503_62.selectedItem.data;
+					e503.e50363=E503_63.selectedItem.data;
+					e503.e50364=StringUtil.trim(E503_64.text);
+					e503.e50365=E503_65.selectedItem.data;
+					e503.e50366=StringUtil.trim(E503_66.text);
+					e503.e50367=E503_67.selectedItem.data;
+					e503.e50368=StringUtil.trim(E503_68.text);
+					e503.e50369=E503_69.selectedItem.data;
+					e503.e50370=StringUtil.trim(E503_70.text);
+					e503.e50371=StringUtil.trim(E503_71.text);
+					e503.e50372=E503_72.selectedItem.data;
+					e503.e50373=StringUtil.trim(E503_73.text);
+					e503.e50374=E503_74.selectedItem.data;
+					e503.e50375=E503_75.selectedItem.data;
+					e503.e50376=E503_76.selectedItem.data;
+					e503.e50377=E503_77.selectedItem.data;
+					e503.e50378=E503_78.selectedItem.data;
+					e503.e50379=E503_79.selectedItem.data;
+					e503.e50380=StringUtil.trim(E503_80.text);
+					e503.e50381=E503_81.selectedItem.data;
+					e503.e50382=E503_82.selectedItem.data;
+					e503.e50383=StringUtil.trim(E503_83.text);
+					e503.e50384=StringUtil.trim(E503_84.text);
+					e503.e50385=StringUtil.trim(E503_85.text);
+					e503.e50386=StringUtil.trim(E503_86.text);
+					e503.e50387=DateField.stringToDate(this.E503_87.text, "YYYY-MM-DD");
+					e503.e50388=E503_22.selectedItem.data;
+					e503.e50389=StringUtil.trim(E503_89.text);
+					e503.e50390=DateField.stringToDate(this.E503_90.text, "YYYY-MM-DD");
+					e503Service.renewE503(e503);
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("保存失败","系统提示");
+					trace("index._saveE503()"+error);	
+				}
+			}
+			/****************返回保存的信息********************/
+			private function saveE503Handler(event:ResultEvent):void
+			{
+				var e503Response:Object=event.result;
+				if(!e503Response.state){
+					Alert.show(e503Response.errorMessage,"系统提示");
+					return ;
+				}
+				Alert.show(e503Response.promptMessage,"系统提示");	
+			}
+			/****************下一页判断********************/
+			private function _validate(event:MouseEvent):void
+			{
+				if(_validate1==event.target)
+					content.selectedIndex=validate1();
+				if(_validate2==event.target)
+					content.selectedIndex=validate2();
+				if(_validate3==event.target)
+					saveE503();
+				
+			}
+			/*******************得到需要修改的信息*****************/
+			public function putVE503():void
+			{	
+					if(ve503!=null){
+						
+						e50302=ve503.e50302;
+						e50303=ve503.e50303;
+						E503_04.text=ve503.e50304;
+						E503_05.text=ve503.e50305;
+						E503_08.text=ve503.e50308Str;
+						var age:Array=ve503.e50309.split(",");
+						E503_09_01.text=age[0];
+						E503_09_02.text=age[1];
+						E503_09_03.text=age[2];
+						E503_09_04.text=age[3];
+						E503_10.text=ve503.e50310;
+						E503_11.text=ve503.e50311;
+						E503_12.text=ve503.e50312;
+						E503_13.text=ve503.e50313;
+						E503_14.text=ve503.e50314;
+						E503_15.text=String(ve503.e50315);
+						E503_17.text=ve503.e50317;
+						E503_18.text=ve503.e50318;
+						E503_19.text=String(ve503.e50319);
+						E503_21.text=ve503.e50321Str;	
+						E503_27.text=String(ve503.e50327);
+						E503_28.text=String(ve503.e50328);
+						E503_29.text=String(ve503.e50329);
+						E503_33.text=ve503.e50333;
+						E503_35.text=String(ve503.e50335);
+						E503_36.text=String(ve503.e50336);
+						E503_38.text=ve503.e50338;
+						E503_42.text=ve503.e50342;
+						E503_44.text=ve503.e50344;
+						E503_45.text=ve503.e50345;
+						E503_47.text=ve503.e50347;
+						E503_48.text=ve503.e50348;
+						E503_51.text=ve503.e50351;
+						E503_54.text=ve503.e50354;
+						E503_56.text=ve503.e50356;
+						E503_58.text=String(ve503.e50358);
+						E503_60.text=ve503.e50360Str;
+						E503_61.text=ve503.e50361;
+						E503_64.text=ve503.e50364;
+						E503_66.text=ve503.e50366;
+						E503_68.text=ve503.e50368;	
+						E503_70.text=ve503.e50370;
+						E503_71.text=ve503.e50371;
+						E503_73.text=ve503.e50373;
+						E503_80.text=ve503.e50380;
+						E503_83.text=ve503.e50383;
+						E503_84.text=ve503.e50384;
+						E503_85.text=ve503.e50385;
+						E503_86.text=ve503.e50386;
+						E503_87.text=ve503.e50387Str;		
+						E503_89.text=ve503.e50389;
+						E503_90.text=ve503.e50390Str;
+						var e50306Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_06.dataProvider),ve503.e50306);
+						var e50307Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_07.dataProvider),ve503.e50307);
+						var e50316Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_16.dataProvider),ve503.e50316);
+						var e50320Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_20.dataProvider),ve503.e50320);
+						var e50322Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_22.dataProvider),ve503.e50322);
+						var e50323Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_23.dataProvider),ve503.e50323);
+						var e50324Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_24.dataProvider),ve503.e50324);
+						var e50325Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_25.dataProvider),ve503.e50325);
+						var e50326Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_26.dataProvider),ve503.e50326);
+						var e50330Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_30.dataProvider),ve503.e50330);
+						var e50331Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_31.dataProvider),ve503.e50331);
+						var e50332Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_32.dataProvider),ve503.e50332);
+						var e50334Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_34.dataProvider),ve503.e50334);
+						var e50337Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_37.dataProvider),ve503.e50337);
+						var e50339Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_39.dataProvider),ve503.e50339);
+						var e50340Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_40.dataProvider),ve503.e50340);
+						var e50341Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_41.dataProvider),ve503.e50341);
+						var e50343Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_43.dataProvider),ve503.e50343);
+						var e50346Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_46.dataProvider),ve503.e50346);
+						var e50349Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_49.dataProvider),ve503.e50349);
+						var e50350Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_50.dataProvider),ve503.e50350);
+						var e50352Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_52.dataProvider),ve503.e50352);
+						var e50353Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_53.dataProvider),ve503.e50353);
+						var e50355Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_55.dataProvider),ve503.e50355);
+						var e50357Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_57.dataProvider),ve503.e50357);
+						var e50359Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_59.dataProvider),ve503.e50359);
+						var e50362Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_62.dataProvider),ve503.e50362);
+						var e50363Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_63.dataProvider),ve503.e50363);
+						var e50365Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_65.dataProvider),ve503.e50365);
+						var e50367Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_67.dataProvider),ve503.e50367);
+						var e50369Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_69.dataProvider),ve503.e50369);
+						var e50372Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_72.dataProvider),ve503.e50372);
+						var e50374Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_74.dataProvider),ve503.e50374);
+						var e50375Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_75.dataProvider),ve503.e50375);
+						var e50376Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_76.dataProvider),ve503.e50376);
+						var e50377Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_77.dataProvider),ve503.e50377);
+						var e50378Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_78.dataProvider),ve503.e50378);
+						var e50379Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_79.dataProvider),ve503.e50379);
+						var e50381Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_81.dataProvider),ve503.e50381);
+						var e50382Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_82.dataProvider),ve503.e50382);
+						var e50388Index:int = this.getDropDownListSelectedIndex(ArrayCollection(E503_88.dataProvider),ve503.e50388);
+						
+						E503_06.selectedIndex=e50306Index;
+						E503_07.selectedIndex=e50307Index;
+						E503_74.selectedIndex=e50374Index;
+						E503_75.selectedIndex=e50375Index;
+						E503_76.selectedIndex=e50376Index;
+						E503_77.selectedIndex=e50377Index;
+						E503_78.selectedIndex=e50378Index;
+						E503_79.selectedIndex=e50379Index;
+						E503_81.selectedIndex=e50381Index;
+						E503_82.selectedIndex=e50382Index;
+						E503_16.selectedIndex=e50316Index;
+						E503_20.selectedIndex=e50320Index;
+						E503_22.selectedIndex=e50322Index;
+						E503_23.selectedIndex=e50323Index;
+						E503_24.selectedIndex=e50324Index;
+						E503_25.selectedIndex=e50325Index;
+						E503_26.selectedIndex=e50326Index;
+						E503_30.selectedIndex=e50330Index;
+						E503_31.selectedIndex=e50331Index;
+						E503_32.selectedIndex=e50332Index;
+						E503_34.selectedIndex=e50334Index;
+						E503_39.selectedIndex=e50339Index
+						E503_40.selectedIndex=e50340Index;
+						E503_41.selectedIndex=e50341Index;
+						E503_37.selectedIndex=e50337Index;
+						E503_43.selectedIndex=e50343Index;
+						E503_46.selectedIndex=e50346Index
+						E503_49.selectedIndex=e50349Index;
+						E503_50.selectedIndex=e50350Index;
+						E503_52.selectedIndex=e50352Index;
+						E503_53.selectedIndex=e50353Index;
+						E503_55.selectedIndex=e50355Index;
+						E503_57.selectedIndex=e50357Index;
+						E503_59.selectedIndex=e50359Index;
+						E503_62.selectedIndex=e50362Index;
+						E503_63.selectedIndex=e50363Index;
+						E503_65.selectedIndex=e50365Index;
+						E503_67.selectedIndex=e50367Index;
+						E503_69.selectedIndex=e50369Index;
+						E503_72.selectedIndex=e50372Index;
+						E503_88.selectedIndex=e50388Index;
+					}
+					
+			}
+			
+			
+			/*****************更新返回的信息*******************/
+			private function renewE503Handler(event:ResultEvent):void
+			{
+				var e503Response:Object=event.result;
+				if(!e503Response.state){
+					Alert.show(e503Response.errorMessage,"系统提示");
+					return ;
+				}
+				Alert.show(e503Response.promptMessage,"系统提示");
+			}
+			private function removeWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto">
+		<s:VGroup width="1200" paddingBottom="20" paddingLeft="25" paddingRight="10" paddingTop="10">
+	<mx:TabNavigator id="content" chromeColor="#ffffff" creationPolicy="all" width="1160" paddingLeft="4" paddingBottom="10">
+		<s:NavigatorContent label="儿童（新生儿信息）" width="1150">
+			<s:VGroup width="1150">
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1150">
+					<s:NavigatorContent label="一般情况">
+						<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label text="儿童（新生儿）姓名"/><s:TextInput id="E503_05" restrict="^0-9"/>
+								<s:Label text="性别"/><s:DropDownList id="E503_06" width="130"
+																	buttonMode="true"/>
+								<s:Label text="民族"/><s:DropDownList id="E503_07" width="130"
+																	buttonMode="true"/>
+								<s:Label text="出生日期"/>
+								<mx:DateField id="E503_08" width="130" buttonMode="true"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  yearNavigationEnabled="true"/>
+								<s:Label paddingLeft="2" text="年龄"/>
+								<s:HGroup  verticalAlign="middle" width="240" horizontalAlign="right">
+								<s:BorderContainer width="239">
+									<s:TextInput id="E503_09_01" width="40" height="32"
+												 borderVisible="false" paddingTop="4"/>
+									<s:Label x="42" y="4" height="28" text="岁" textAlign="center"
+											 verticalAlign="middle"/>
+									<s:TextInput id="E503_09_02" x="56" width="40" height="32"
+												 borderVisible="false" paddingTop="4"/>
+									<s:Label x="98" y="4" height="28" text="月" textAlign="center"
+											 verticalAlign="middle"/>
+									<s:TextInput id="E503_09_03" x="113" y="0" width="40" height="32"
+												 borderVisible="false" paddingTop="4"/>
+									<s:Label x="152" y="4" width="18" height="28" text="天"
+											 textAlign="center" verticalAlign="middle"/>
+									<s:TextInput id="E503_09_04" x="170" y="0" width="40" height="32"
+												 borderVisible="false" paddingTop="4"/>
+									<s:Label x="210" y="4" height="28" text="小时" textAlign="center"
+											 verticalAlign="middle"/>
+								</s:BorderContainer>
+									</s:HGroup>
+							</s:HGroup>
+							<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem>
+								<s:Label text="母亲姓名" paddingTop="4"/><s:TextInput id="E503_17" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label text="身份证号" paddingTop="4"/><s:TextInput id="E503_18" width="140" 
+																   enabled="false" restrict="0-9"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label text="年龄"  paddingTop="4"/><s:TextInput id="E503_19" maxChars="2"
+																 enabled="false" restrict="0-9"/>
+								<s:Button id="readCard2" label="读卡" buttonMode="true" click="_readCard(event)"
+										  chromeColor="#ECDFDF" color="#E32525" enabled="{systemUser.duka=='1'}"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label paddingLeft="12" text="职业"  paddingTop="4"/>
+								<s:DropDownList id="E503_20" width="130" buttonMode="true"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="right">
+								<s:Label text="联系电话"  paddingTop="4"/>
+									<s:TextInput id="E503_12" width="162"/>	
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+								<s:Label text="父亲姓名"  paddingTop="4"/><s:TextInput id="E503_13" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label text="身份证号"  paddingTop="4"/><s:TextInput id="E503_14"  width="140"
+																   enabled="false" restrict="0-9"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label text="年龄"  paddingTop="4"/><s:TextInput id="E503_15" enabled="false"/>
+								<s:Button id="readCard3" label="读卡" buttonMode="true" click="_readCard(event)"
+										  chromeColor="#ECDFDF" color="#E32525"  enabled="{systemUser.duka=='1'}"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label paddingLeft="12" text="职业"  paddingTop="4"/>
+								<s:DropDownList id="E503_16" width="130" buttonMode="true"/>
+								</mx:GridItem>
+								<mx:GridItem horizontalAlign="right">
+								<s:Label  text="邮编" width="50"  paddingTop="4"/><s:TextInput id="E503_11" width="162"/>
+								</mx:GridItem>
+								</mx:GridRow>
+								<mx:GridRow>
+									<mx:GridItem>
+								<s:Label text="出生体重"  paddingTop="4"/>
+								<s:BorderContainer y="3" width="127" height="24">
+									<s:TextInput id="E503_29" width="90" borderVisible="false"/><s:Label x="101"
+																										 y="0"
+																										 height="23"
+																										 text="kg"
+																										 textAlign="center"
+																										 verticalAlign="middle"/>
+								</s:BorderContainer>
+								</mx:GridItem>
+								<mx:GridItem colSpan="2">
+								<s:Label text="家庭住址"  paddingTop="4"/><s:TextInput id="E503_10" width="390"/>
+								</mx:GridItem>
+								<mx:GridItem colSpan="2">
+								<s:Label  text="编号" paddingLeft="12" paddingTop="4"/><s:TextInput id="E503_04" width="129"/>
+								</mx:GridItem>
+								</mx:GridRow>
+								</mx:Grid>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1150">
+					<s:NavigatorContent label="筛查情况" width="1150">
+						<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" width="1150">
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label text="筛查医院"/><s:DropDownList id="E503_22" width="130"
+																	  buttonMode="true"/>
+								<s:Label text="筛查时间"/>
+								<mx:DateField id="E503_21" width="130" buttonMode="true"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  yearNavigationEnabled="true"/>
+								<s:Label text="筛查方法"/><s:DropDownList id="E503_23" width="130"
+																	  buttonMode="true"/>
+								<s:Label text="筛查结果"/><s:DropDownList id="E503_24" width="130"
+																	  buttonMode="true"/>
+								<s:Label text="左耳"/><s:DropDownList id="E503_25" width="130"
+																	buttonMode="true"/>
+								<s:Label text="右耳"/><s:DropDownList id="E503_26" width="130"
+																	buttonMode="true"/>
+								
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				
+				
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1150">
+					<s:NavigatorContent  label="儿童情况" width="1150">
+						<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" width="1150">
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label width="53" text="产次"/><s:TextInput id="E503_28"/>
+								<s:Label width="55" text="胎次"/><s:TextInput id="E503_27"/>
+								<s:Label text="胎数"/><s:DropDownList id="E503_30" width="130"
+																	buttonMode="true"/>
+								<s:Label text="分娩方式"/><s:DropDownList id="E503_31" width="130"
+																	  buttonMode="true"/>
+								<s:Label width="54" text="胎儿窘迫"/><s:DropDownList id="E503_34"
+																				 width="130"
+																				 buttonMode="true"/>
+								<s:Label text="羊水"/><s:DropDownList id="E503_39" width="130"
+																	buttonMode="true"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label text="出生缺陷"/><s:DropDownList id="E503_32" width="130"
+																	  buttonMode="true"/>
+								<s:Label width="55" text="缺陷详述"/><s:TextInput id="E503_33"/>
+								<s:Label text="产伤"/><s:DropDownList id="E503_37" width="130"
+																	buttonMode="true"/>
+								<s:Label text="产伤部位"/><s:TextInput id="E503_38"/>	
+								<s:Label text="Apgar评分"/>
+								<s:BorderContainer width="288">
+									<s:Label x="0" width="49" height="28" text="(1分钟)"
+											 textAlign="center" verticalAlign="middle"/>
+									<s:TextInput id="E503_35" x="49" y="0" width="69" height="28"
+												 borderVisible="false"/>
+									<s:Label x="120" height="28" text="分" textAlign="center"
+											 verticalAlign="middle"/>
+									<s:Label x="135" height="28" text="(5分钟)" textAlign="center"
+											 verticalAlign="middle"/>
+									<s:TextInput id="E503_36" x="180" y="0" width="69" height="28"
+												 borderVisible="false"/>
+									<s:Label x="270" height="28" text="分" textAlign="center"
+											 verticalAlign="middle"/>
+								</s:BorderContainer>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label text="异常分娩"/><s:DropDownList id="E503_40" width="130"
+																	  buttonMode="true"/>
+								<s:Label text="头部外伤史"/><s:DropDownList id="E503_49" width="130"
+																	   buttonMode="true"/>
+								<s:Label text="头颅、五官畸形"/><s:DropDownList id="E503_41" width="130"
+																		 buttonMode="true"/>
+								<s:Label text="畸形部位"/><s:TextInput id="E503_42" width="413"/>	
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label width="105" text="出生后感染"/><s:DropDownList id="E503_43"
+																				   width="130"
+																				   buttonMode="true"/>
+								<s:Label width="53" text="病因"/><s:TextInput id="E503_44" width="293"/>
+								<s:Label width="51" text="病程"/><s:TextInput id="E503_45" width="442"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								
+								<s:Label width="105" text="出生后患病"/><s:DropDownList id="E503_46"
+																				   width="130"
+																				   buttonMode="true"/>
+								<s:Label width="53" text="病因"/><s:TextInput id="E503_47" width="293"/>
+								<s:Label width="51" text="病程"/><s:TextInput id="E503_48" width="442"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label width="105" text="耳毒性药物应用史"/><s:DropDownList id="E503_50"
+																					  width="130"
+																					  buttonMode="true"/>
+								<s:Label width="53" text="药名"/><s:TextInput id="E503_51" width="293"/>
+								<s:Label width="51" text="剂量"/><s:TextInput width="293"/>
+								<s:Label text="疗程"/><s:TextInput width="112"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label width="105" text="NICU抢救"/><s:DropDownList id="E503_53"
+																					width="130"
+																					buttonMode="true"/>
+								<s:Label width="53" text="持续时间 "/><s:TextInput width="293"/>
+								<s:Label width="51" text="原因"/><s:TextInput id="E503_54" width="442"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label width="105" text="呼吸机使用"/><s:DropDownList id="E503_55"
+																				   width="130"
+																				   buttonMode="true"/>
+								<s:Label width="53" text="持续时间 "/><s:TextInput id="E503_56"
+																			   width="293"/>
+								<s:Label text="外界声音和其他感官刺激的反应"/><s:DropDownList id="E503_57"
+																				width="130"
+																				buttonMode="true"/>	
+								<s:Label text="中耳炎史"/><s:DropDownList id="E503_52" width="134"
+																	  buttonMode="true"/>
+							</s:HGroup>
+							<s:HGroup width="100%" height="30" contentBackgroundColor="#FF0000"
+									  horizontalAlign="right" paddingBottom="10" paddingRight="40"
+									  paddingTop="10" verticalAlign="middle">
+								<s:Button id="_validate1" label="下一页" buttonMode="true"
+										  click="_validate(event)"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:NavigatorContent>
+		
+		
+		
+		<s:NavigatorContent  label="母亲妊娠期信息" width="1150">
+			<s:VGroup width="1150">
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1150">
+					<s:NavigatorContent label="妊娠期信息" width="1150">
+						<mx:Grid paddingBottom="8" paddingLeft="8">
+							<mx:GridRow>
+								<mx:GridItem>
+								<s:Label width="105" text="妊娠年龄" paddingTop="4" verticalAlign="middle"/>
+									<s:BorderContainer y="3" width="131" height="23">
+										<s:TextInput id="E503_58" borderVisible="false" width="95"/>
+										<s:Label x="100" width="22" height="22"  text="岁" verticalAlign="middle"/>
+									</s:BorderContainer>
+								<s:Label width="53" paddingTop="4" text="流产史"/><s:DropDownList id="E503_59" x="337" width="115"
+																	 buttonMode="true"/>	
+								<s:Label text=" 流产时间"  paddingTop="4"/>
+								<mx:DateField id="E503_60" width="117" buttonMode="true"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  yearNavigationEnabled="true"/>
+								<s:Label text="流产方式" paddingTop="4"/><s:DropDownList id="E503_62" width="118"
+																	  buttonMode="true"/>	
+								<s:Label width="55" text="流产原因"  paddingTop="4" /><s:TextInput id="E503_61"
+																				   width="255"/>	
+									</mx:GridItem>
+								</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem >
+								<s:Label width="105" text="病毒感染史"  paddingTop="4"/><s:DropDownList id="E503_63"
+																				   width="130"
+																				   buttonMode="true"/>	
+								<s:Label width="55" text="感染类型"  paddingTop="4"/><s:TextInput width="489"/>
+								<s:Label width="55" text="感染孕周"  paddingTop="4"/><s:TextInput id="E503_64"
+																			  width="255"/>
+							</mx:GridItem>
+						</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem >
+								<s:Label width="105" text="外生殖器感染"  paddingTop="4"/><s:DropDownList id="E503_65"
+																					width="130"
+																					buttonMode="true"/>	
+								<s:Label width="55" text="感染类型"  paddingTop="4"/><s:TextInput width="489"/>
+								<s:Label width="55" text="感染孕周"  paddingTop="4"/><s:TextInput id="E503_66"
+																				width="255"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+								<s:Label width="105" text="药物应用史"  paddingTop="4"/><s:DropDownList id="E503_69"
+																				   width="130"
+																				   buttonMode="true"/>	
+								<s:Label width="55" text="药物名称"  paddingTop="4"/><s:TextInput id="E503_70"
+																			  width="489"/>
+								<s:Label width="55" text="用药时间" paddingLeft="1"  paddingTop="4"/><s:TextInput id="E503_71"
+																			  width="255"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem >
+								<s:Label width="105" text="放射性物质接触史 "  paddingTop="4"/><s:DropDownList id="E503_67"
+																					   width="130"
+																					   buttonMode="true"/>	
+								<s:Label width="55" text="接触孕周"  paddingTop="4"/><s:TextInput id="E503_68"
+																			  width="257"/>
+								<s:Label width="95" text="有害物质接触史"  paddingTop="4"/><s:DropDownList id="E503_72"
+																					width="123"
+																					buttonMode="true"/>	
+								<s:Label width="53" text="接触时间"  paddingTop="4"/><s:TextInput id="E503_73"
+																			  width="255"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem>
+								<s:Label width="105" text="疾病史"  paddingTop="4"/><s:DropDownList id="E503_75"
+																				 width="130"
+																				 buttonMode="true"/>	
+								<s:Label width="55" text="其他"   paddingTop="4"/><s:TextInput width="257"/>
+								<s:Label width="95" text="异常妊娠"   paddingTop="4"/><s:DropDownList id="E503_76"
+																				 width="123"
+																				 buttonMode="true"/>	
+								<s:Label width="53" text="其他"  paddingTop="4"/><s:TextInput width="255"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							<mx:GridRow>
+								<mx:GridItem horizontalAlign="left" >
+								<s:Label width="105" text="不良生活习惯史"  paddingTop="4"/>
+								<s:DropDownList id="E503_74" width="130" buttonMode="true"/>	
+								<s:Label width="55" text="其他 "  paddingTop="4"/><s:TextInput width="257"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							</mx:Grid>
+									
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1150">
+					<s:NavigatorContent  label="家庭史" width="1150">
+						<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" width="1150">
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label width="119" text="家庭的不良生活习惯"/><s:DropDownList id="E503_77"
+																					   width="130"
+																					   buttonMode="true"/>	
+								<s:Label width="53" text="其他 "/><s:TextInput width="380"/>
+								<s:Label width="105" text="父母是否近亲结婚"/>
+								<s:DropDownList id="E503_81" width="130" buttonMode="true"/>	
+								<s:Label text="血缘关系"/><s:DropDownList id="E503_82" width="113"
+																	  buttonMode="true"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label width="119" text="家族中有无耳聋患者"/>
+								<s:DropDownList id="E503_78" width="130" buttonMode="true"/>	
+								<s:Label width="53" text="耳聋情况"/><s:TextInput id="E503_80"
+																			  width="380"/>
+								<s:Label width="105" text="儿童的亲属关系"/><s:DropDownList id="E503_79"
+																					 width="130"
+																					 buttonMode="true"/>
+							</s:HGroup>
+							<s:HGroup width="100%" height="30" contentBackgroundColor="#FF0000"
+									  horizontalAlign="right" paddingBottom="10" paddingRight="40"
+									  paddingTop="10" verticalAlign="middle">
+								<s:Button id="_validate2" label="下一页" buttonMode="true"
+										  click="_validate(event)"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent  label="检查信息" width="1150">
+			<s:VGroup>
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1150">
+					<s:NavigatorContent label="检查信息" width="1150">
+						<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">	
+								<s:Label width="100" text="耳鼻喉科检查"/><s:TextInput id="E503_83"
+																				 width="1020"
+																				 height="30"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">	
+								<s:Label width="100" text="听力学检查结果"/><s:TextInput id="E503_84"
+																				  width="1020"
+																				  height="30"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">	
+								<s:Label width="100" text="诊断结果"/><s:TextInput id="E503_85"
+																			   width="1020"
+																			   height="30"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+				<mx:TabNavigator chromeColor="#ffffff" creationPolicy="all" width="1150">
+					<s:NavigatorContent width="1180" label="诊断签名">
+						<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" width="1150">
+							<s:HGroup width="100%" paddingBottom="5" paddingRight="10"
+									  verticalAlign="middle">
+								<s:Label text="诊断医师签名"/><s:TextInput id="E503_86" width="153"/>
+								<s:Label text="诊断日期"/>
+								<mx:DateField id="E503_87" width="130" buttonMode="true"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  yearNavigationEnabled="true"/>
+								<s:Label text="诊断医院"/><s:DropDownList id="E503_88" width="130"
+																	  buttonMode="true"/>
+								<s:Label text="   录入人员"/><s:TextInput id="E503_89"/>
+								<s:Label text="   录入时间"/>
+								<mx:DateField id="E503_90" width="130" buttonMode="true" enabled="false"
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  yearNavigationEnabled="true"/>
+							</s:HGroup>
+							<s:HGroup width="100%" height="30" contentBackgroundColor="#FF0000"
+									  horizontalAlign="right" paddingBottom="10" paddingRight="40"
+									  paddingTop="10" verticalAlign="middle">
+								<s:Button id="_validate3" label="保存" buttonMode="true"
+										  click="_validate(event)"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:NavigatorContent>
+				</mx:TabNavigator>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+			</s:VGroup>
+		</s:Scroller>
+</s:TitleWindow>

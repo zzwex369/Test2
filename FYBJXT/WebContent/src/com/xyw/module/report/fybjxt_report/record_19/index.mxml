@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark"
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			verticalAlign:middle;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		s|Label
+		{
+			fontSize:13;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import com.xyw.sys.model.SystemUser;
+			public var systemUser:SystemUser = null;
+			protected function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				
+			}
+			private function query():void
+			{
+				var a:String=null;
+				var date_satrt:String=null;	
+				var date_end:String=null;
+				var date_status:String="0";
+				var address_status:String=null;
+				var address:String=null;	
+				date_satrt = this.date_satrt.text;
+				date_end = this.date_end.text;
+				var institution:String = this.institution.getLastSelectedInstitutionCode();
+				var institutionType:String = this.institution.getLastSelectedInstitution();	
+				if(institutionType == "6")
+				{	
+					institution = institution.substring(0,6);
+				}else if(institutionType == "4")
+				{
+					institution = institution.substring(0,4);
+				}else if(institutionType == "2")
+				{
+					institution = institution.substring(0,2);
+				}	
+				if(this.account.selected){
+					address_status="0";//选择户口地址
+					address = this.accountid.getAreaCode();
+				}
+				else if(this.home.selected){
+					address_status="1";//选择现地址
+					address = this.accountid.getAreaCode();
+				}else if(this.wxz.selected){
+					address_status='2';
+				}
+				
+				date_status=(this.deliveryTime.selected)==true?"0":"1";//0 建卡日期  1录入日期
+				var url:String = null;
+				url = this.parentApplication.contextRoot + "/report_new/jsp/Report_19.jsp?" +
+					"institution="+institution+"&address_status="+address_status+"&address="+address+"&date_status="+date_status+"&date_satrt="+date_satrt+"&date_end="+date_end+"&a="+a;
+				navigateToURL(new URLRequest(url), null);
+			}
+			//测试路径
+			private function printCertificate2():void
+			{
+				var urlRequest:URLRequest = null;
+				urlRequest = new URLRequest(this.parentApplication.contextRoot + "/print_new/PrintDirect/Report.htm") ;
+				navigateToURL(urlRequest,"_blank");
+				
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+			<s:NavigatorContent  label="两癌综合查询" width="100%">
+				<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">		
+						<s:Label text="筛查单位"  />
+						<component:InstitutionComboBox id="institution"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="查询地址" />
+						<s:RadioButton id="wxz" groupName="fm2" label="未选择"  buttonMode="true" selected="true"/>
+						<s:RadioButton id="account" groupName="fm2" label="按户口地址"  buttonMode="true"/>
+						<s:RadioButton id="home" groupName="fm2" label="按现住地址" buttonMode="true"/>
+						<component:AreaComboBoxVillageAuto id="accountid" width="660"  areaCode="{this.parentApplication.systemUser.areaCode}" horizontalAlign="left" table="D201_MS"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingBottom="0" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+						<s:Label text="查询时间"/>
+						<s:RadioButton id="deliveryTime" groupName="fm1" label="建卡日期" selected="true" buttonMode="true"/>
+						<s:RadioButton id="systemTime" groupName="fm1" label="录入日期" width="140" buttonMode="true"/>
+						<s:Label text="查询时间" width="65"/><mx:DateField yearNavigationEnabled="true" id="date_satrt" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																	   monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																	   formatString="YYYY-MM-DD" text="{DateField.dateToString(new Date(),'YYYY-MM-01')}"/>
+						<s:Label text="至" width="22"/><mx:DateField yearNavigationEnabled="true" id="date_end" width="120" dayNames='["日","一","二","三","四","五","六"]'
+																	monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																	formatString="YYYY-MM-DD" text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"/>
+						<s:Button label="查询" id="loadDelivery" click="query()"/>
+					</s:HGroup>
+					
+					
+					
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:TabNavigator>
+	</s:VGroup>
+</s:Module>

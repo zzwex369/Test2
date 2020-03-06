@@ -1,0 +1,2383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  xmlns:component="com.xyw.sys.custom.component.*"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationComplete()"
+		  rollOut="overAndUp(event)"
+		  rollOver="overAndUp(event)">
+	
+	
+	<fx:Declarations>
+		<s:RemoteObject id="maternalCheckService" destination="maternalCheckService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="saveF303" result="saveF303Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="f301Service" destination="f301Service" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryF301"  result="queryF301Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+		
+		<s:Parallel target="{vgroupDataGrid}" id="parallel">
+			<!--<s:Resize widthTo="500" duration="1000"/>-->
+			
+			<!--<mx:Glow id="glowImage" duration="500"
+			alphaFrom="1.0" alphaTo="0.3"
+			blurXFrom="0.0" blurXTo="50.0"
+			blurYFrom="0.0" blurYTo="50.0"
+			color="yellow"/>-->
+			
+			<!--模糊-->
+			<!--<mx:Blur duration="1000" 
+			blurXFrom="10.0" blurXTo="0.0" 
+			blurYFrom="10.0" blurYTo="0.0"/>-->
+			<!--正常-->
+			<!--<mx:Blur duration="1000"
+			blurXFrom="0.0" blurXTo="10.0" 
+			blurYFrom="0.0" blurYTo="10.0"/>-->
+			
+			<s:Resize widthTo="1135"/>
+			
+			
+		</s:Parallel>
+		
+		<mx:DateValidator id="dateValidator"  property="text"
+						  inputFormat="yyyy-mm-dd" 
+						  wrongLengthError="格式错误  正确格式例：2018-01-01"
+						  wrongDayError="天数错误"
+						  wrongMonthError="月份错误"
+						  wrongYearError="年份错误"
+						  invalidCharError="内容无效"
+						  requiredFieldError="内容不能为空"/>
+		
+		
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:left;
+			verticalAlign:middle;
+		}
+		
+		s|TextInput
+		{
+			fontFamily:微软雅黑;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+		}
+		mx|ToolTip{
+			
+			fontSize:15;
+			backgroundColor:#000000;
+			color:#FFFFFF;
+			/* leading:12; */
+		}
+		.errorTip
+		{
+			font-size: 15;
+			border-color: red;/* //控制背景色 */
+			color: #fff;
+			font-weight: bold;
+			paddingBottom:1; 
+			cornerRadius:5;
+		}
+		.must {
+			color:red;
+			fontSize:20px;
+			fontWeight:bold;
+			paddingTop:5px;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.fnbj.model.F301Request;
+			import com.xyw.module.fnbj.model.F303;
+			import com.xyw.module.fnbj.model.F303Request;
+			import com.xyw.module.fnbj.model.VF301;
+			import com.xyw.module.fnbj.model.VF302;
+			import com.xyw.module.fnbj.model.VF303;
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.effects.easing.Back;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.FlexMouseEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			private var f303:F303 =new F303();
+			private var vf301:Object;
+			private var f30255_:Number=0;
+			[Bindable]
+			public var systemUser:SystemUser =null;
+			public var array:Array = new Array();
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var f301Request:F301Request;
+			[Bindable]
+			private var f303_13:String;
+			public var arrayTip:Array=[null,null,null,null];//保存提示信息  objId:Object,objType:String,errorString:String,tip:ToolTip
+			[Bindable]
+			public var jianchaData:ArrayCollection = new ArrayCollection(
+				[	{label:"选择",data:0},
+					{label:"孕12周前",data:1},
+					{label:"孕12周后",data:6}]);
+			
+			protected function _refreshIndex():void
+			{
+				CompMethod._refreshIndex(this,"com/xyw/module/fnbj/fnjcdj/index.swf");
+			}
+			
+			public function moduleCreationComplete():void
+			{
+				this.systemUser =this.parentApplication.systemUser;
+				ToolTipManager.hideDelay = Infinity; //提示持续时间，Infinity表示一直不消失直到鼠标移走
+				ToolTipManager.showDelay = 0; //提示信息到鼠标的距离
+				this.F303_08.enabled =false;
+				this.F303_07.addEventListener(FlexEvent.CHANGING,setF303_08);
+				this.F303_76.addEventListener(Event.CHANGE,setF303_126);
+				this.F303_76.addEventListener(TextEvent.TEXT_INPUT,setF303_126);
+				this.F303_42.addEventListener(Event.CHANGE,setF303_125);
+				this.F303_42.addEventListener(TextEvent.TEXT_INPUT,setF303_125);
+				
+				this.F303_39.addEventListener(FocusEvent.FOCUS_IN,clearData1);
+				this.F303_41.addEventListener(FocusEvent.FOCUS_IN,clearData2);
+				this.F303_42.addEventListener(FocusEvent.FOCUS_IN,clearData3);
+				this.F303_40_1.addEventListener(FocusEvent.FOCUS_IN,clearData4);
+				this.F303_40_2.addEventListener(FocusEvent.FOCUS_IN,clearData5);
+				//this.F303_125.addEventListener(FocusEvent.FOCUS_IN,clearData6);
+				this.F303_43_1.addEventListener(FocusEvent.FOCUS_IN,clearData7);
+				this.F303_43_2.addEventListener(FocusEvent.FOCUS_IN,clearData8);
+				this.F303_52.addEventListener(FocusEvent.FOCUS_IN,clearData9);
+				this.F303_55.addEventListener(FocusEvent.FOCUS_IN,clearData10);
+				this.F303_53.addEventListener(FocusEvent.FOCUS_IN,clearData11);
+				this.F303_76.addEventListener(FocusEvent.FOCUS_IN,clearData12);
+				this.F303_75.addEventListener(FocusEvent.FOCUS_IN,clearData13);
+				this.F303_70.addEventListener(FocusEvent.FOCUS_IN,clearData14);
+				this.F303_71.addEventListener(FocusEvent.FOCUS_IN,clearData15);
+				this.F303_72.addEventListener(FocusEvent.FOCUS_IN,clearData16);
+				this.F303_73.addEventListener(FocusEvent.FOCUS_IN,clearData17);
+				this.initializeComboBox();
+			}
+			private function clearData1(event:Event):void
+			{
+				this.F303_39.text = "";
+			}
+			private function clearData2(event:Event):void
+			{
+				this.F303_41.text = "";
+			}
+			private function clearData3(event:Event):void
+			{
+				this.F303_42.text = "";
+			}
+			private function clearData4(event:Event):void
+			{
+				this.F303_40_1.text = "";
+			}			
+			private function clearData5(event:Event):void
+			{
+				this.F303_40_2.text = "";
+			}
+			//private function clearData6(event:Event):void
+			//{
+			//this.F303_125.value = "";
+			//}
+			private function clearData7(event:Event):void
+			{
+				this.F303_43_1.text = "";
+			}			
+			private function clearData8(event:Event):void
+			{
+				this.F303_43_2.text = "";
+			}
+			private function clearData9(event:Event):void
+			{
+				this.F303_52.text = "";
+			}
+			private function clearData10(event:Event):void
+			{
+				this.F303_55.text = "";
+			}
+			private function clearData11(event:Event):void
+			{
+				this.F303_53.text = "";
+			}
+			private function clearData12(event:Event):void
+			{
+				this.F303_76.text = "";
+			}
+			private function clearData13(event:Event):void
+			{
+				this.F303_75.text = "";
+			}
+			private function clearData14(event:Event):void
+			{
+				this.F303_70.text = "";
+			}
+			private function clearData15(event:Event):void
+			{
+				this.F303_71.text = "";
+			}
+			private function clearData16(event:Event):void
+			{
+				this.F303_72.text = "";
+			}
+			private function clearData17(event:Event):void
+			{
+				this.F303_73.text = "";
+			}
+			
+			protected function setF303_126(event:Event):void
+			{
+				var f30376_:Number =Number(this.F303_76.text);
+				if(f30376_ <=0.1){
+					this.F303_126.selectedIndex= CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_126.dataProvider),"1");
+				}else if(0.1 < f30376_ && f30376_ <=0.2){
+					this.F303_126.selectedIndex= CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_126.dataProvider),"2");
+				}else if(0.2 < f30376_ && f30376_ <=1){
+					this.F303_126.selectedIndex= CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_126.dataProvider),"3");
+				}else if(1 < f30376_ && f30376_ <=2){
+					this.F303_126.selectedIndex= CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_126.dataProvider),"4");
+				}else if(2 < f30376_ && f30376_ <=4){
+					this.F303_126.selectedIndex= CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_126.dataProvider),"5");
+				}else if(f30376_ >4 ){
+					this.F303_126.selectedIndex= CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_126.dataProvider),"6");
+				}
+			}
+			protected function setF303_125(event:Event):void
+			{
+				var f30341_:Number =Number(this.F303_41.text)/100;
+				var f30342_:Number =Number(this.F303_42.text);
+				var f303125_:Number =f30342_/(f30341_*f30341_);
+				//var indexT:Number =f303125_.toString().indexOf(".");
+				//this.F303_125.text =f303125_.toString().substring(indexT,2);
+				this.F303_125.value =f303125_;
+			}
+			private function initializeComboBox():void
+			{
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.flag ="D101";
+				comboBoxDataRequest.sql ="select t.d101_01, t.d101_02 from D101 t where t.d101_01 = '" + this.systemUser.institutionCode + "' or t.d101_11 ='" + this.systemUser.institutionCode +"'";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.flag ="S601_08";
+				comboBoxDataRequest.sql ="select * from S601_08 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.flag ="S601_12";
+				comboBoxDataRequest.sql ="select * from S601_12 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_06";
+				comboBoxDataRequest.sql = "select * from S301_06 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S301_01";
+				comboBoxDataRequest.sql = "select * from S301_01 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				this.comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_04";
+				comboBoxDataRequest.sql = "select * from S601_04 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_02";
+				comboBoxDataRequest.sql = "select * from Z303_02 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "S601_03";
+				comboBoxDataRequest.sql = "select * from S601_03 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_03";
+				comboBoxDataRequest.sql = "select * from Z303_03 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_04";
+				comboBoxDataRequest.sql = "select * from Z303_04 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_05";
+				comboBoxDataRequest.sql = "select * from Z303_05 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_06";
+				comboBoxDataRequest.sql = "select * from Z303_06 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z301_02";
+				comboBoxDataRequest.sql = "select * from Z301_02 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest =new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt =true;
+				comboBoxDataRequest.sql ="select * from S301_03";
+				comboBoxDataRequest.flag ="S301_03";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.flag = "Z303_01";
+				comboBoxDataRequest.sql = "select * from Z303_01 t";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S402_04 t";
+				comboBoxDataRequest.flag = "S402_04";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from Z303_126 t";
+				comboBoxDataRequest.flag = "Z303_126";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.showPrompt = true;
+				comboBoxDataRequest.sql = "select * from S301_07 t";
+				comboBoxDataRequest.flag = "S301_07";
+				this.systemService.getComboBoxData(this.comboBoxDataRequest);
+			}
+			/*-----------------返回数据放到赋值到下拉菜单-----------------*/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =event.result;
+				var flag:String =comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection =comboBoxDataResponse.comboBoxDataList;
+				
+				if(flag =="D101"){
+					var f303_15Index:int =CompMethod.getDropDownListSelectedIndex(comboBoxDataList,this.systemUser.institutionCode);
+					this.F303_15.dataProvider =comboBoxDataList;
+					this.F303_170.dataProvider =comboBoxDataList;
+					this.F303_170.selectedIndex=0;
+					this.F303_15.selectedIndex =f303_15Index;
+					
+				}else if(flag =="S301_03"){
+					this.F303_124.dataProvider = comboBoxDataList;
+					var countryIndex:int = CompMethod.getDropDownListSelectedIndex(comboBoxDataList,"CHN");
+					this.F303_124.selectedIndex = countryIndex;
+				}else if(flag == "S301_06"){
+					var F303_06Index:int =CompMethod.getDropDownListSelectedIndex(comboBoxDataList,"1");
+					this.F303_06.dataProvider = comboBoxDataList;
+					this.F303_06.selectedIndex = F303_06Index;
+				}else if(flag == "S601_03"){
+					this.F303_28.dataProvider = comboBoxDataList;
+					this.F303_28.selectedIndex = 1;
+					
+					this.F303_33.dataProvider = comboBoxDataList;
+					this.F303_33.selectedIndex = 1;
+					
+					this.F303_35.dataProvider = comboBoxDataList;
+					this.F303_35.selectedIndex = 1;
+				}else if(flag == "S601_04"){
+					this.F303_11.dataProvider = comboBoxDataList;
+					this.F303_10.dataProvider = comboBoxDataList;
+					this.F303_11.selectedIndex = 2;
+					this.F303_10.selectedIndex = 2;
+				}else if(flag == "Z301_02"){
+					this.F303_74.dataProvider = comboBoxDataList;
+					this.F303_74.selectedIndex = 0;
+					/* 				}else if(flag == "Z303_01"){
+					this.F303_09.dataProvider = comboBoxDataList;
+					this.F303_09.selectedIndex = 1; */
+				}else if(flag == "Z303_02"){
+					this.F303_26.dataProvider = comboBoxDataList;
+					this.F303_26.selectedIndex = 0;
+				}else if(flag == "Z303_03"){
+					this.F303_44.dataProvider = comboBoxDataList;
+					this.F303_44.selectedIndex = 3;
+					
+					this.F303_45.dataProvider = comboBoxDataList;
+					this.F303_45.selectedIndex = 3;
+					
+					this.F303_46.dataProvider = comboBoxDataList;
+					this.F303_46.selectedIndex = 3;
+					
+					this.F303_47.dataProvider = comboBoxDataList;
+					this.F303_47.selectedIndex = 3;
+					
+					this.F303_48.dataProvider = comboBoxDataList;
+					this.F303_48.selectedIndex = 3;
+					
+					this.F303_49.dataProvider = comboBoxDataList;
+					this.F303_49.selectedIndex = 3;
+					
+					this.F303_50.dataProvider = comboBoxDataList;
+					this.F303_50.selectedIndex = 3;
+					
+					this.F303_51.dataProvider = comboBoxDataList;
+					this.F303_51.selectedIndex = 3;
+					
+					this.F303_58.dataProvider = comboBoxDataList;
+					this.F303_58.selectedIndex = 3;
+					
+					this.F303_60.dataProvider = comboBoxDataList;
+					this.F303_60.selectedIndex = 3;
+					
+					this.F303_62.dataProvider = comboBoxDataList;
+					this.F303_62.selectedIndex = 3;
+					
+					this.F303_64.dataProvider = comboBoxDataList;
+					this.F303_64.selectedIndex = 3;
+					
+					this.F303_66.dataProvider = comboBoxDataList;
+					this.F303_66.selectedIndex = 3;
+					
+					this.F303_68.dataProvider = comboBoxDataList;
+					this.F303_68.selectedIndex = 3;
+					
+					this.F303_77.dataProvider = comboBoxDataList;
+					this.F303_77.selectedIndex = 3;
+					
+					this.F303_79.dataProvider = comboBoxDataList;
+					this.F303_79.selectedIndex = 3;
+					
+					this.F303_81.dataProvider = comboBoxDataList;
+					this.F303_81.selectedIndex = 3;
+					
+					this.F303_83.dataProvider = comboBoxDataList;
+					this.F303_83.selectedIndex = 3;
+					
+					this.F303_85.dataProvider = comboBoxDataList;
+					this.F303_85.selectedIndex = 3;
+					
+					this.F303_87.dataProvider = comboBoxDataList;
+					this.F303_87.selectedIndex = 3;
+					
+					this.F303_89.dataProvider = comboBoxDataList;
+					this.F303_89.selectedIndex = 3;
+					
+					this.F303_91.dataProvider = comboBoxDataList;
+					this.F303_91.selectedIndex = 3;
+					
+					this.F303_93.dataProvider = comboBoxDataList;
+					this.F303_93.selectedIndex = 3;
+					
+					this.F303_95.dataProvider = comboBoxDataList;
+					this.F303_95.selectedIndex = 3;
+					
+					this.F303_97.dataProvider = comboBoxDataList;
+					this.F303_97.selectedIndex = 3;
+					
+					this.F303_99.dataProvider = comboBoxDataList;
+					this.F303_99.selectedIndex = 3;
+					
+					this.F303_101.dataProvider = comboBoxDataList;
+					this.F303_101.selectedIndex = 3;
+					
+					this.F303_103.dataProvider = comboBoxDataList;
+					this.F303_103.selectedIndex = 3;
+					
+					this.F303_105.dataProvider = comboBoxDataList;
+					this.F303_105.selectedIndex = 3;
+					
+					this.F303_107.dataProvider = comboBoxDataList;
+					this.F303_107.selectedIndex = 3;
+					
+					this.F303_109.dataProvider = comboBoxDataList;
+					this.F303_109.selectedIndex = 3;
+				}else if(flag == "Z303_04"){
+					this.F303_54.dataProvider = comboBoxDataList;
+					this.F303_54.selectedIndex = 0;
+				}else if(flag == "Z303_05"){
+					this.F303_56.dataProvider = comboBoxDataList;
+					this.F303_56.selectedIndex = 0;
+				}else if(flag == "Z303_06"){
+					this.F303_57.dataProvider = comboBoxDataList;
+					this.F303_57.selectedIndex = 1;
+				}else if(flag =="S402_04"){
+					this.F303_12.dataProvider =comboBoxDataList;
+					this.F303_12.selectedIndex =0;
+				}else if(flag =="Z303_126"){
+					this.F303_126.dataProvider =comboBoxDataList;
+					this.F303_126.selectedIndex =1;
+				}else if(flag =="S601_08"){
+					this.F303_153.dataProvider =comboBoxDataList;
+					this.F303_153.selectedIndex =0;
+				}else if(flag =="S601_12"){
+					this.F303_131.dataProvider =comboBoxDataList;
+					this.F303_131.selectedIndex =1;
+				}
+				else if(flag =="S301_07"){
+					this.F303_164.dataProvider =comboBoxDataList;
+					this.F303_167.dataProvider =comboBoxDataList;
+					this.F303_164.selectedIndex =0;
+					this.F303_167.selectedIndex =0;
+				}
+			}
+			protected function readCard_B(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.f303_05.text = array[0];//姓名
+							this.f303_07.text = array[5];//身份证号
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			//读卡(母亲)
+			protected function readCard_mother(event:MouseEvent):void
+			{
+				try
+				{
+					//readCard是调用index.js下的函数，读卡涉及index.jsp和index.js两个文件
+					var str:String = ExternalInterface.call("parent.readCard");
+					if(str != null && str.length != 0){
+						
+						var array:Array = str.split(",");
+						var sex:String = array[1];//性别
+						if(sex=="女"){
+							this.F303_05.text = array[0];//姓名
+							this.F303_07.text = array[5];//身份证号
+							this.F303_08.text = array[3];//出生日期
+							//	setF303_08(null);
+							var nation:String = array[2] + "族";//民族
+						}else{
+							Alert.show("请读母亲信息！","系统提示");
+						}
+					}else{
+						Alert.show("读卡失败！");
+					}
+				} 
+				catch(error:Error) 
+				{
+					Alert.show("读卡失败！");
+				}
+			}
+			private function queryfnwcdj():void
+			{
+				f301Request=new F301Request();
+				initQueryParam();
+				f301Request.parameterPageindex = 1;
+				f301Request.parameterPagesize = 2;
+				this.f301Service.queryF301(f301Request);
+			}
+			private function initQueryParam():void
+			{
+				if(this.f303_05.text =="" && this.f303_07.text =="" && this.f301_13.text ==""){
+					Alert.show("请输入孕妇姓名或者身份证号或者手机号码！","系统提示");
+					return;
+				}
+				this.currentState="special";
+				f301Request.f30102 =StringUtil.trim(this.f303_05.text);
+				f301Request.f30105 =StringUtil.trim(this.f303_07.text);
+				f301Request.f30113 =StringUtil.trim(this.f301_13.text);
+			}
+			private function onSelected(event:Event):void{
+				this.vf301 = DataGrid(event.target).selectedItem;
+				
+				if(!this.vf301){
+					Alert.show("请选择要加载的数据！","系统提示");
+					this.vf301 =null;
+				}
+				this.loadF301(this.vf301);
+				this.currentState="";
+			}
+			
+			public function loadF301(vf301:Object):void
+			{
+				this.f303.f30302 =vf301.f30101;//妇女档案主键
+				this.f303.f30303 =0;//围产主键 已不用
+				this.F303_05.text = vf301.f30102;  //产妇姓名 
+				this.F303_07.text = vf301.f30105;  //证件号码     F302_05
+				this.F303_04.text = vf301.f30117; // 孕产妇档案编号(济源) 
+				this.F303_08.text =vf301.f30106Str;//出生日期
+				this.F303_171.text=vf301.f30133;//建卡人
+				this.F303_172.text=vf301.f30131Str;//建卡日期
+				//建册单位
+				F303_170.selectedIndex = CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_170.dataProvider),vf301.f30132);
+				//户籍
+				this.F303_131.selectedIndex =vf301.f30115?CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_131.dataProvider),vf301.f30115):0; 
+				
+				//血型
+				this.F303_74.selectedIndex =vf301.f30116?CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_74.dataProvider),vf301.f30116):0; 
+				
+				//证件类型     F302_04
+				this.F303_06.selectedIndex =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_06.dataProvider),vf301.f30104);
+				
+				//国籍
+				this.F303_124.selectedIndex =CompMethod.getDropDownListSelectedIndex(ArrayCollection(this.F303_124.dataProvider),vf301.f30108);
+				setMontherBirthday(null);
+			}
+			private function setMontherBirthday(event:Event):void
+			{
+				if(this.F303_06.selectedItem.data == 1){
+					var cardId:String = this.F303_07.text;
+					if(cardId.length>=16){
+						cardId=cardId.substring(6,14);
+						this.F303_08.text = cardId.substring(0,4) + "-" + cardId.substring(4,6) + "-" + cardId.substring(6,8);
+					}else{
+						cardId=cardId.substring(6,12);
+						this.F303_08.text = "19" + cardId.substring(0,2) + "-" + cardId.substring(2,4) + "-" + cardId.substring(4,6);
+					}
+				}
+			}
+			
+			public function setF303_08(event:Event):void{
+				if(this.F303_06.selectedItem.data == 1){
+					var cardId:String  = this.F303_07.text;
+					if(cardId.length >= 16){
+						var year:Number = Number(this.F303_07.text.substr(6,4));
+						var month:Number = Number(this.F303_07.text.substr(10,2));
+						var day:Number = Number(this.F303_07.text.substr(12,2));
+						var date:Date = new Date();
+						var nowDay:Number = date.date;
+						var nowMonth:Number = date.month + 1;
+						var nowYear:Number = date.fullYear;
+						
+						this.F303_08.text =year+"-"+month+"-"+day;
+					}
+				}
+			}
+			public function validatePerinata1():void{
+				if(arrayTip[3])
+					return;
+				if(StringUtil.trim(this.F303_05.text) ==""){
+					Alert.show("请输入孕产妇的姓名","系统提示");
+					return ;
+				}
+				if(this.F303_06.selectedItem.data ==0){
+					Alert.show("请选择孕产妇的证件类型","系统提示");
+					return ;
+				}
+				if(StringUtil.trim(this.F303_07.text) ==""){
+					Alert.show("请输入孕产妇的证件号码","系统提示");
+					return ;
+				}
+				if(this.F303_08.text ==""){
+					Alert.show("请输入孕产妇的出生日期","系统提示");
+					return ;
+				}
+				if(this.F303_23.text ==""){
+					Alert.show("请输入孕周","系统提示");
+					return ;
+				}
+				if(this.F303_24.text ==""){
+					Alert.show("请输入孕周天","系统提示");
+					return ;
+				}
+				if(this.F303_124.selectedItem.data ==0){
+					Alert.show("请选择孕产妇的国籍","系统提示");
+					return ;
+				}
+				if(StringUtil.trim(this.F303_04.text) == null){
+					Alert.show("请输入建册编号!","系统提示");
+					return ;
+				} 
+				if(this.F303_14.text == ""){
+					Alert.show("请选择检查日期!","系统提示");
+					return ;
+				}
+				
+				if(this.F303_19.text == ""){
+					Alert.show("请输入登记人员!","系统提示");
+					return ;
+				}  
+				
+				if(this.F303_123.selectedItem.data ==0){
+					Alert.show("请选择检查阶段!","系统提示");
+					return;
+				}
+				if(this.F303_15.selectedItem.data ==0){
+					Alert.show("请选择检查医院!","系统提示");
+					return;
+				}
+				if(this.F303_172.text == ""){
+					Alert.show("请选择建册日期!","系统提示");
+					return ;
+				}
+				this.savePerinata();
+			}
+			
+			private function savePerinata():void
+			{
+				saveF303.enabled=false;
+				getSelected();
+				this.f303.f30304 = StringUtil.trim(this.F303_04.text);
+				this.f303.f30305 = StringUtil.trim(this.F303_05.text);
+				this.f303.f30306 = this.F303_06.selectedItem.data;
+				this.f303.f30307 = StringUtil.trim(this.F303_07.text);
+				this.f303.f30308 = this.F303_08.text;
+				this.f303.f30309 = "1";//this.F303_09.selectedItem.data;
+				this.f303.f30310 = this.F303_10.selectedItem.data;
+				this.f303.f30311 = this.F303_11.selectedItem.data;
+				this.f303.f30312 = this.F303_12.selectedItem.data;
+				this.f303.f30313 = f303_13;
+				this.f303.f30315 = this.F303_15.selectedItem.data;
+				this.f303.f30316 = this.systemUser.areaCode;
+				this.f303.f30317 = StringUtil.trim(this.F303_17.text);
+				this.f303.f30319 = StringUtil.trim(this.F303_19.text);
+				this.f303.f30320 = StringUtil.trim(this.F303_20.text);
+				this.f303.f303130 = StringUtil.trim(this.F303_130.text);
+				this.f303.f303171 = StringUtil.trim(this.F303_171.text);
+				this.f303.f30323 = Number(this.F303_23.text);
+				this.f303.f30324 = Number(this.F303_24.text);
+				
+				this.f303.f30314 =F303_14.text? DateField.stringToDate(F303_14.text,"YYYY-MM-DD"):null;
+				this.f303.f30318 =F303_18.text? DateField.stringToDate(F303_18.text,"YYYY-MM-DD"):null;
+				this.f303.f30321 =F303_21.text? DateField.stringToDate(F303_21.text,"YYYY-MM-DD"):null;
+				this.f303.f30322 =F303_22.text? DateField.stringToDate(F303_22.text,"YYYY-MM-DD"):null;
+				this.f303.f30325 =F303_25.text? DateField.stringToDate(F303_25.text,"YYYY-MM-DD"):null;
+				this.f303.f303150 = F303_150.text? DateField.stringToDate(F303_150.text,"YYYY-MM-DD"):null;
+				this.f303.f303152 = F303_152.text? DateField.stringToDate(F303_152.text,"YYYY-MM-DD"):null;
+				this.f303.f303172 = F303_172.text? DateField.stringToDate(F303_172.text,"YYYY-MM-DD"):null;
+				this.f303.f30326 = this.F303_26.selectedItem.data;
+				this.f303.f30328 = this.F303_28.selectedItem.data;
+				//this.f303.f30327 = this.F303_27.text;
+				this.f303.f303170 = this.F303_170.selectedItem.data;
+				this.f303.f303131 = this.F303_131.selectedItem.data;
+				//this.f303.f30329 = Number(this.F303_29.text);
+				this.f303.f30330 = Number(this.F303_30.text);
+				this.f303.f30331 = StringUtil.trim(this.F303_31.text);
+				this.f303.f30332 = Number(this.F303_32.text);
+				this.f303.f30333 = this.F303_33.selectedItem.data;
+				this.f303.f30334 = Number(this.F303_34.text);
+				this.f303.f30335 = this.F303_35.selectedItem.data;
+				this.f303.f30336 = Number(this.F303_36.text);
+				//this.f303.f30337 = this.F303_37.text;
+				//this.f303.f30338 = this.F303_38.text;
+				this.f303.f30339 = Number(this.F303_39.text);
+				this.f303.f30340 = StringUtil.trim(this.F303_40_1.text)+"/"+StringUtil.trim(this.F303_40_2.text);
+				this.f303.f30341 = Number(this.F303_41.text);
+				this.f303.f30342 = Number(this.F303_42.text);
+				this.f303.f30343 = StringUtil.trim(this.F303_43_1.text)+"/"+StringUtil.trim(this.F303_43_2.text);
+				this.f303.f30344 = this.F303_44.selectedItem.data;
+				this.f303.f30345 = this.F303_45.selectedItem.data;
+				this.f303.f30346 = this.F303_46.selectedItem.data;
+				this.f303.f30347 = this.F303_47.selectedItem.data;
+				this.f303.f30348 = this.F303_48.selectedItem.data;
+				this.f303.f30349 = this.F303_49.selectedItem.data;
+				this.f303.f30350 = this.F303_50.selectedItem.data;
+				this.f303.f30351 = this.F303_51.selectedItem.data;
+				this.f303.f30352 = Number(this.F303_52.text);
+				this.f303.f30353 = Number(this.F303_53.text);
+				this.f303.f30354 = this.F303_54.selectedItem.data;
+				this.f303.f30355 = Number(this.F303_55.text);
+				this.f303.f30356 = this.F303_56.selectedItem.data;
+				this.f303.f30357 = this.F303_57.selectedItem.data;
+				this.f303.f30358 = this.F303_58.selectedItem.data;
+				this.f303.f30359 = StringUtil.trim(this.F303_59.text);
+				this.f303.f30360 = this.F303_60.selectedItem.data;
+				this.f303.f30361 = StringUtil.trim(this.F303_61.text);
+				this.f303.f30362 = this.F303_62.selectedItem.data;
+				this.f303.f30363 = StringUtil.trim(this.F303_63.text);
+				this.f303.f30364 = this.F303_64.selectedItem.data;
+				this.f303.f30365 = StringUtil.trim(this.F303_65.text);
+				this.f303.f30366 = this.F303_66.selectedItem.data;
+				this.f303.f30367 = StringUtil.trim(this.F303_67.text);
+				this.f303.f30368 = this.F303_68.selectedItem.data;
+				this.f303.f30369 = StringUtil.trim(this.F303_69.text);
+				this.f303.f30370 = Number(this.F303_70.text);
+				this.f303.f30371 = Number(this.F303_71.text);
+				this.f303.f30372 = Number(this.F303_72.text);
+				this.f303.f30373 = Number(this.F303_73.text);
+				this.f303.f30374 = this.F303_74.selectedItem.data;
+				this.f303.f30375 = Number(this.F303_75.text);
+				this.f303.f30376 = Number(this.F303_76.text);
+				this.f303.f30377 = this.F303_77.selectedItem.data;
+				this.f303.f30378 = StringUtil.trim(this.F303_78.text);
+				this.f303.f30379 = this.F303_79.selectedItem.data;
+				this.f303.f30380 = StringUtil.trim(this.F303_80.text);
+				this.f303.f30381 = this.F303_81.selectedItem.data;
+				this.f303.f30382 = StringUtil.trim(this.F303_82.text);
+				this.f303.f30383 = this.F303_83.selectedItem.data;
+				this.f303.f30384 = StringUtil.trim(this.F303_84.text);
+				this.f303.f30385 = this.F303_85.selectedItem.data;
+				this.f303.f30386 = StringUtil.trim(this.F303_86.text);
+				this.f303.f30387 = this.F303_87.selectedItem.data;
+				this.f303.f30388 = StringUtil.trim(this.F303_88.text);
+				this.f303.f30389 = this.F303_89.selectedItem.data;
+				this.f303.f30390 = StringUtil.trim(this.F303_90.text);
+				this.f303.f30391 = this.F303_91.selectedItem.data;
+				this.f303.f30392 = StringUtil.trim(this.F303_92.text);
+				this.f303.f30393 = this.F303_93.selectedItem.data;
+				this.f303.f30394 = StringUtil.trim(this.F303_94.text);
+				this.f303.f30395 = this.F303_95.selectedItem.data;
+				this.f303.f30396 = StringUtil.trim(this.F303_96.text);
+				this.f303.f30397 = this.F303_97.selectedItem.data;
+				this.f303.f30398 = StringUtil.trim(this.F303_98.text);
+				this.f303.f30399 = this.F303_99.selectedItem.data;
+				this.f303.f303100 = StringUtil.trim(this.F303_100.text);
+				this.f303.f303101 = this.F303_101.selectedItem.data;
+				this.f303.f303102 = StringUtil.trim(this.F303_102.text);
+				this.f303.f303103 = this.F303_103.selectedItem.data;
+				this.f303.f303104 = StringUtil.trim(this.F303_104.text);
+				this.f303.f303105 = this.F303_105.selectedItem.data;
+				this.f303.f303106 = StringUtil.trim(this.F303_106.text);
+				this.f303.f303107 = this.F303_107.selectedItem.data;
+				this.f303.f303108 = StringUtil.trim(this.F303_108.text);
+				this.f303.f303109 = this.F303_109.selectedItem.data;
+				this.f303.f303110 = StringUtil.trim(this.F303_110.text);
+				this.f303.f303123 = this.F303_123.selectedItem.data;
+				this.f303.f303124 = this.F303_124.selectedItem.data;
+				this.f303.f303125 = (this.F303_125.value).toString();
+				this.f303.f303126 = this.F303_126.selectedItem.data;
+				this.f303.f303132 = Number(StringUtil.trim(F303_132.text));
+				this.f303.f303133 = Number(StringUtil.trim(F303_133.text));
+				this.f303.f303134 = Number(StringUtil.trim(F303_134.text));
+				this.f303.f303137 = Number(this.F303_137.text).toString();
+				this.f303.f303138 = Number(this.F303_138.text).toString();
+				this.f303.f303151 = StringUtil.trim(this.F303_151.text);
+				this.f303.f303139 = Number(StringUtil.trim(F303_139.text));
+				this.f303.f303140 = Number(StringUtil.trim(F303_140.text));
+				this.f303.f303141 = Number(StringUtil.trim(F303_141.text));
+				this.f303.f303142 = Number(StringUtil.trim(F303_142.text));
+				this.f303.f303143 = Number(StringUtil.trim(F303_143.text));
+				this.f303.f303144 = Number(StringUtil.trim(F303_144.text));
+				this.f303.f303145 = Number(StringUtil.trim(F303_145.text));
+				this.f303.f303146 = Number(StringUtil.trim(F303_146.text));
+				this.f303.f303147 = Number(StringUtil.trim(F303_147.text));
+				this.f303.f303148 = Number(StringUtil.trim(F303_148.text));
+				this.f303.f303149 = Number(StringUtil.trim(F303_149.text));
+				
+				this.f303.f303153 = this.F303_153.selectedItem.data;
+				this.f303.f303154 = StringUtil.trim(this.F303_154.text);
+				this.f303.f303155 = StringUtil.trim(this.F303_155.text);
+				
+				this.f303.f303158=F303_158_1.selected?"0":"1";
+				this.f303.f303160=F303_160_1.selected?"0":"1";
+				this.f303.f303162=F303_162_1.selected?"0":"1";
+				this.f303.f303159=F303_159.text;
+				this.f303.f303161=F303_161.text;
+				this.f303.f303163=F303_163.text;
+				this.f303.f303164 = this.F303_164.selectedItem.data;
+				this.f303.f303167 = this.F303_167.selectedItem.data;
+				
+				this.maternalCheckService.saveF303(f303);
+			}
+			
+			
+			private function getSelected():void
+			{
+				var checkBox:Object;
+				var radioButton:Object;
+				for(var i:int=0;i<F303_135.numElements;i++)
+				{
+					radioButton= F303_135.getElementAt(i);
+					if(radioButton.selected)
+						this.f303.f303135=radioButton.value;
+				}
+				
+				
+				for(var k:int=0;k<F303_136.numElements;k++)
+				{
+					radioButton= F303_136.getElementAt(k);
+					if(radioButton.selected)
+						this.f303.f303136=radioButton.value;
+				}
+				
+				//既往病史    Z302_03  1无  2心脏病  3肺结核  4肝脏病  5泌尿生殖系疾病  6糖尿病  7高血压  8精神病  9性病  10癫痫  11甲亢  12先天疾病   99其他
+				this.f303.f303156='';
+				if(F303_156_1.selected)
+					this.f303.f303156 ="1,";
+				else if(F303_156_0.selected){
+					for(var j:int=0;j<F303_156.numElements;j++)
+					{
+						checkBox= F303_156.getElementAt(j);
+						if(checkBox.selected)
+						{	
+							f303.f303156=(f303.f303156==null)?"":f303.f303156;
+							if(j!=F303_156.numElements-1)
+								this.f303.f303156+=j+2+",";								
+							else
+							{
+								this.f303.f303156+="99,";
+								this.f303.f303157 = StringUtil.trim(this.F303_157.text);							
+							}
+						}
+					}
+				}
+				
+				
+				//家族病史  Z302_04  1无   2盲   3聋   4哑  5精神病   6先天性智力低下  7先天性心脏病   8血友病   9糖尿病   99其他
+				this.f303.f303165 ="";
+				if(F303_165_1.selected)
+					this.f303.f303165 ="1,";
+				else if(F303_165_0.selected){
+					for(var j:int=0;j<F303_165.numElements;j++)
+					{
+						f303.f303165=(f303.f303165==null)?"":f303.f303165;
+						checkBox= F303_165.getElementAt(j);
+						if(checkBox.selected)
+						{	
+							if(j!=F303_165.numElements-1)
+								this.f303.f303165+=j+2+",";	
+							else
+							{
+								this.f303.f303165+="99,";
+								this.f303.f303166 = StringUtil.trim(this.F303_166.text);							
+							}
+						}
+					}
+				}
+				//家族病史  Z302_04  1无   2盲   3聋   4哑  5精神病   6先天性智力低下  7先天性心脏病   8血友病   9糖尿病   99其他
+				this.f303.f303168 ="";
+				if(F303_168_1.selected)
+					this.f303.f303168 ="1,";
+				else if(F303_168_0.selected){
+					for(var j:int=0;j<F303_168.numElements;j++)
+					{
+						f303.f303168=(f303.f303168==null)?"":f303.f303168;
+						checkBox= F303_168.getElementAt(j);
+						if(checkBox.selected)
+						{	
+							if(j!=F303_168.numElements-1)
+								this.f303.f303168+=j+2+",";	
+								
+							else
+							{
+								this.f303.f303168+="99,";
+								this.f303.f303169 = StringUtil.trim(this.F303_169.text);							
+							}
+						}
+					}
+				}
+			}
+			public function saveF303Handler(event:ResultEvent):void
+			{
+				var f303Response:Object =event.result;
+				if(!f303Response.state){
+					Alert.show(f303Response.errorMessage,"系统提示");
+					saveF303.enabled=true;
+					return;
+				}
+				Alert.show(f303Response.promptMessage+",点击确定即将刷新页面！","系统提示",1,this,closeHander);
+			}
+			
+			private function closeHander(event:CloseEvent):void
+			{
+				if(event.detail==1)
+					_refreshIndex();
+			}
+			
+			private function setYunZhou(id:Object):void
+			{
+				arrayTip=CompMethod.showTip(F303_14,'1','检查日期不能为空',arrayTip[3]);
+				if(arrayTip[0]==F303_14&&arrayTip[3])
+					return ;
+				if(focusOut(id))
+					return ;
+				var yuejing:Number = DateField.stringToDate(F303_22.text,'YYYY-MM-DD').time; //末次月经
+				var jiance:Number =DateField.stringToDate(F303_14.text,'YYYY-MM-DD').time; //检查日期
+				var tian:int = (jiance - yuejing)/(1000*60*60*24);
+				if(tian>0){
+					tian = tian + 1;
+					this.F303_23.text = Math.floor(tian/7)+"";   //建卡孕周
+					this.F303_24.text = tian%7+"";
+				}
+				var year:Number =Number(F303_22.text.substr(0,4));
+				var month:Number =0;
+				var day:Number =Number(F303_22.text.substr(8,2)) +7;
+				var month1:Number =Number(F303_22.text.substr(5,2));
+				if(month1==1||month1==3||month1==5||month1==7||month1==8||month1==10||month1==12){
+					if(day>31){
+						month1=month1+1;
+						day=day-31
+					}
+				}else if(month1==4||month1==6||month1==9||month1==11){
+					if(day>30){
+						month1=month1+1;
+						day=day-30;
+						if(month1>3){
+							month1=month1-3;
+							year=year+1;
+						} 
+					}
+				}else{
+					if(year%4==0){
+						if(day>29){
+							month1=month1+1;
+							day=day-29;
+						} 
+					}else{
+						if(day>28){
+							month1=month1+1;
+							day=day-28;
+						} 
+					}
+				}
+				if(month1>3){
+					month1=month1-3;
+					year=year+1;
+				}else{
+					month1=month1+9;
+				} 
+				this.F303_25.text =year+"-"+month1+"-"+day; 
+			}
+			
+			//---------------综合查询-------------------------------------------------------
+			private function Zhquery():void{
+				var f301Request:F301Request = new F301Request();
+				if(this.f303_05.text =="" || this.f303_07.text ==""){
+					Alert.show("查询请输入孕产妇姓名和身份证号！","系统提示");
+					return;
+				}
+				var cjAllDetails:CjAllDetails = new CjAllDetails();
+				cjAllDetails._f30305 = this.f303_05.text;
+				cjAllDetails._f30307 = this.f303_07.text;
+				CompMethod.popUpTitleWindow(cjAllDetails,this,true);
+			}
+			private function queryF301Handler(event:ResultEvent):void{
+				var f301Response:Object = event.result;
+				var rowCount:Number = f301Response.rowCount;
+				if(f301Response.state){
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = f301Response.vf301s;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.certificateDataGrid.dataProvider = f301Response.vf301s;
+				}else{
+					Alert.show(f301Response.errorMessage,"系统提示");
+				}
+			}
+			
+			private function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				f301Request=new F301Request();
+				this.initQueryParam();
+				f301Request.parameterPageindex = currentPageIndex;
+				f301Request.parameterPagesize = pageSize;
+				this.f301Service.queryF301(f301Request);
+			}
+			private function refresh():void
+			{
+				f301Request=new F301Request();
+				this.initQueryParam();
+				f301Request.parameterPageindex = this.pagerBar.currentPageIndex;
+				f301Request.parameterPagesize = 2;
+				this.f301Service.queryF301(f301Request);
+			}
+			private function gaowei_clickHandler(event:MouseEvent):void
+			{
+				var gw:gwfxpg = new gwfxpg();
+				CompMethod.popUpTitleWindow(gw,this,true);
+				
+			}
+			/**
+			 *得到所选择的信息 
+			 */
+			public function getColor(allColor:Array):void
+			{
+				for(var i:int=allColor.length-1;i>-1;i--)
+				{
+					if(allColor[i].length)
+					{
+						if(i>1)
+						{
+							F303_10.selectedIndex=1;
+							F303_11.selectedIndex=1;
+							getGWMessage(allColor[i]);
+						}else
+							setGW();
+						F303_12.selectedIndex=++i;
+						F303_13.toolTip=F303_13.text;
+						break;
+					}else
+						setGW(true);
+				}
+			}
+			/**
+			 *恢复初始化
+			 */
+			private function setGW(flag:Boolean=false):void
+			{
+				
+				if(flag)
+					F303_12.selectedIndex=0;
+				F303_13.text="无"
+				F303_10.selectedIndex=0;
+				F303_11.selectedIndex=0;
+				F303_13.toolTip=F303_13.text;
+				
+			}
+			/**
+			 *得到选择的名称
+			 */
+			private function getGWMessage(arrMessage:Array):void
+			{
+				F303_13.text=f303_13="";
+				for(var i:String in arrMessage)
+				{
+					f303_13+=arrMessage[i][0]+"!";
+					F303_13.text+=arrMessage[i][0]+"\n";
+				}
+				
+			}
+			/**
+			 *时间输入验证
+			 */
+			private function focusOut(id:Object):Boolean
+			{
+				var textDate:Date=DateField.stringToDate(id.text,"YYYY-MM-DD");
+				if(id.errorString&&!textDate)
+				{
+					var str:String=id.errorString;
+					id.errorString='';
+					dateValidator.source=null;
+					if((str.lastIndexOf("yyyy-mm-dd"))!=-1)
+						str=str.substring(0,str.lastIndexOf("yyyy-mm-dd"));
+					//保存提示信息  objId:Object,objType:String,errorString:String,tip:ToolTip
+					arrayTip=CompMethod.showTip(id,"3",str,arrayTip[3]);
+					return true;
+				}else
+					return dateValidatorHandler(id,textDate);
+			}
+			
+			/**
+			 *清空提示 格式化日期
+			 */
+			private function dateValidatorHandler(id:Object,textDate:Date):Boolean
+			{
+				dateValidator.source=null;
+				id.errorString='';
+				if(arrayTip[3])
+				{
+					CompMethod.destoryTip(arrayTip[3]);	
+					arrayTip=[null,null,null,null]
+				}					
+				if(textDate)
+					id.text=DateField.dateToString(textDate,"YYYY-MM-DD");
+				return false;
+			}
+			
+			
+			/**
+			 *
+			 */
+			protected function overAndUp(event:MouseEvent):void
+			{
+				if(event.type==MouseEvent.ROLL_OVER)
+				{ 
+					if(!arrayTip[3])
+						arrayTip=CompMethod.showTip(arrayTip[0],arrayTip[1],arrayTip[2],arrayTip[3]);
+					if(!this.hasEventListener(Event.ENTER_FRAME))
+						this.addEventListener(Event.ENTER_FRAME,enterFrameHandler); 
+				}else
+				{
+					this.removeEventListener(Event.ENTER_FRAME,enterFrameHandler);			
+					arrayTip[3]=CompMethod.destoryTip(arrayTip[3]);		
+				}
+				
+			}
+			
+			/***************显示删除提示信息*********************/
+			private function enterFrameHandler(event:Event):void
+			{
+				if(arrayTip[3])	
+					arrayTip=CompMethod.showTip(arrayTip[0],arrayTip[1],arrayTip[2],arrayTip[3]);		 
+			}
+			
+			protected function F303_164_changeHandler(event:IndexChangeEvent):void
+			{
+				if(!F303_164.selectedIndex)
+				{
+					F303_165_0.selected=true;
+					clearSelected(F303_165,F303_166);
+				}	
+			}
+			
+			protected function F303_167_changeHandler(event:IndexChangeEvent):void
+			{
+				if(!F303_167.selectedIndex)
+				{
+					F303_168_0.selected=true;
+					clearSelected(F303_168,F303_169);
+				}
+				
+			}
+			
+			
+			private function clearSelected(id:Object,textId:Object):void
+			{
+				for(var j:int=0;j<id.numElements;j++)
+				{
+					var checkBox:Object= id.getElementAt(j);
+					if(checkBox.selected)
+						checkBox.selected=false;
+					textId.text="无";
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal"/>			
+		<s:State name="special"/>
+	</s:states>
+	<s:Scroller x="-6" y="1" width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" includeIn="normal,special"
+				id="scroller"	mouseWheelChanging="CompMethod.setMouseWheelSpeed(event,this.scroller)">
+		<s:VGroup paddingBottom="20" paddingLeft="10" paddingRight="10" paddingTop="10">
+			<mx:TabNavigator  width="1155" chromeColor="#ffffff" creationPolicy="all" height.normal="64" height.special="173">
+				<s:NavigatorContent width="100%" label="孕妇查询" >			
+					<s:VGroup width="1155" paddingBottom="2" paddingLeft="10" paddingRight="10">	
+						<s:HGroup width="100%" height="100%" verticalAlign="middle" paddingBottom="5">
+							<s:Label text="孕妇档案查询" styleName="mustQuery"/>
+							<s:HGroup id="fmload" verticalAlign="middle">
+								<s:Label text="请输入孕妇姓名" paddingLeft="8"/><s:TextInput id="f303_05"/>
+								<s:Label text="证件号码" /><s:TextInput id="f303_07" width="140"/>
+								<s:Label text="手机号码" /><s:TextInput id="f301_13" width="140" />
+								<s:Button buttonMode="true" click="queryfnwcdj()" label="查询"/>	
+								<s:Button buttonMode="true" label="读卡" id="duka1" enabled="{systemUser.duka=='1'}" width="60" click="readCard_B(event)"/>
+							</s:HGroup>
+							<s:Button buttonMode="true" label="综合查询" chromeColor="#FFFFFF" color="#e4770c"
+									  focusColor="#e4770c" click="Zhquery()"/>
+						</s:HGroup>
+						<s:VGroup  paddingRight="5" width="500" height="100%" includeIn="special" creationCompleteEffect="{parallel}"  itemDestructionPolicy="auto" id="vgroupDataGrid">
+							<s:DataGrid id="certificateDataGrid" alternatingRowColors="[#FFFFFF,#EEEEEE]"  
+										editable="false" rowHeight="22" width="100%" height="72" 
+										selectionChange="onSelected(event)">
+								<s:columns>
+									<s:ArrayList>
+										<s:GridColumn width="40" editable="false" headerText="序号" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer"/>
+										<s:GridColumn width="100" dataField="f30102" headerText="妇女姓名"/>
+										<s:GridColumn width="150" dataField="f30105" headerText="妇女身份证号"/>
+										<s:GridColumn width="80" dataField="f30106Str" headerText="出生日期"/>
+										<s:GridColumn width="50" dataField="f30116Zh" headerText="血型"/>
+										<s:GridColumn width="80" dataField="f30112Zh" headerText="婚姻状况"/>
+										<s:GridColumn width="100" dataField="f30113" headerText="联系方式"/>
+										<s:GridColumn width="150" dataField="f30117" headerText="保健卡号"/>
+										<s:GridColumn width="80" dataField="f30131Str" headerText="建卡日期"/>
+										<s:GridColumn dataField="f30132Zh" headerText="建卡单位"/>
+									</s:ArrayList>
+								</s:columns>
+							</s:DataGrid>					
+							<component:PagerBar pageSize="2" id="pagerBar" enabled="false" isExcel="false" isExcel2="false" isPrinter="false"/>
+						</s:VGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator id="content" width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="本次妊娠情况">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="孕 妇 姓  名"/>	
+								<s:TextInput id="F303_05" width="130" editable="false"/>	
+								<s:Label text="*" styleName="must"/>
+								<s:Label text="*" visible="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件类型" paddingLeft="15"/>
+								<component:CustomDropDownList id="F303_06" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="证件号码" paddingLeft="15"/>
+								<s:TextInput id="F303_07" width="140" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出生日期" paddingLeft="15"/>
+								<mx:DateField id="F303_08" width="130" 
+											  dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											  formatString="YYYY-MM-DD"
+											  monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											  enabled="false" yearNavigationEnabled="true"
+											  />
+								<s:Label text="*" styleName="must"/>
+								<s:Button buttonMode="true" label="读卡" id="duka2" enabled="{systemUser.duka=='1'}" width="50" click="readCard_mother(event)"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="结 婚 年  龄"/>
+								<s:TextInput id="F303_130" width="130" restrict="0-9" maxChars="2"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label text="户        籍" paddingLeft="15"/>
+								<s:DropDownList id="F303_131" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="国        籍" paddingLeft="15"/>
+								<s:DropDownList id="F303_124" width="140" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="血        型" paddingLeft="15"/>
+								<s:DropDownList id="F303_74" width="130"/>
+							</mx:GridItem>
+							
+							
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="基 础 体  重"/>
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_39" width="110" borderVisible="false" text="0" restrict="0-9."/>
+										<s:Label text="kg    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="基础血压" paddingLeft="15"/>
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_40_1" width="35" borderVisible="false" maxChars="3" textAlign="right" text="0" restrict="0-9"/>
+										<s:Label text="/    "/>
+										<s:TextInput id="F303_40_2" width="32" borderVisible="false" maxChars="3" textAlign="right" text="0" restrict="0-9"/>
+										<s:Label text="mmHg    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="早孕反应" paddingLeft="15"/>
+								<s:DropDownList id="F303_28" width="140"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label text="检查日期" paddingLeft="15"/>
+								<mx:DateField yearNavigationEnabled="true" id="F303_14" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]' 
+											  formatString="YYYY-MM-DD" editable="true" 
+											  focusIn="dateValidator.source=F303_14"
+											  focusOut="focusOut(F303_14)" 
+											  text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"
+											  />
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							
+							
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label text="末 次 月  经" />
+								<mx:DateField yearNavigationEnabled="true" id="F303_22" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]' 
+											  formatString="YYYY-MM-DD" editable="true"
+											  focusIn="dateValidator.source=F303_22"
+											  focusOut="setYunZhou(F303_22)" 
+											  change="setYunZhou(F303_22)"
+											  restrict="0-9\-"
+											  />
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label text="预产日期" paddingLeft="15"/>
+								<mx:DateField yearNavigationEnabled="true" id="F303_25" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD" editable="true"
+											  focusIn="dateValidator.source=F303_25"
+											  focusOut="focusOut(F303_25)" 
+											  restrict="0-9\-"
+											  />
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="孕  周  天" paddingLeft="15"/>
+								<s:BorderContainer  height="23" width="140">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_23" width="50" borderVisible="false"
+													 maxChars="2" restrict="0-9" text="40"
+													 textAlign="right"/>
+										<s:Label text="周    "/>
+										<s:TextInput id="F303_24" width="42" borderVisible="false" maxChars="1" textAlign="right" text="0" restrict="0-6"/>
+										<s:Label text="天    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="妊娠确诊" paddingLeft="15"/>
+								<s:DropDownList id="F303_26" 
+												width="130"/>
+							</mx:GridItem>	
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label text="出            血" />
+								<s:DropDownList id="F303_35" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="出血孕周" paddingLeft="15"/>
+								<s:TextInput id="F303_36" width="130" restrict="0-9"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="自觉症状" paddingLeft="15"/>
+								<s:TextInput id="F303_31" width="140"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="发生孕周" paddingLeft="15"/>
+								<s:TextInput id="F303_32" width="130" restrict="0-9"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							
+							<mx:GridItem>
+								<s:Label text="检 查 阶  段" />
+								<s:DropDownList id="F303_123" width="130" dataProvider="{jianchaData}" labelField="label" selectedIndex="0"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							
+							<mx:GridItem>
+								<s:Label text="建册单位" paddingLeft="15"/>
+								<component:CustomDropDownList id="F303_170" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>	
+							<mx:GridItem>
+								<s:Label text="建册医生" paddingLeft="15"/>
+								<s:TextInput id="F303_171" width="140" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="建册日期" paddingLeft="15"/>
+								<mx:DateField  id="F303_172" width="130"
+											   dayNames="[&quot;周日&quot;,&quot;周一&quot;,&quot;周二&quot;,&quot;周三&quot;,&quot;周四&quot;,&quot;周五&quot;,&quot;周六&quot;]"
+											   editable="true" formatString="YYYY-MM-DD"
+											   monthNames="[&quot;一月&quot;,&quot;二月&quot;,&quot;三月&quot;,&quot;四月&quot;,&quot;五月&quot;,&quot;六月&quot;,&quot;七月&quot;,&quot;八月&quot;,&quot;九月&quot;,&quot;十月&quot;,&quot;十一月&quot;,&quot;十二月&quot;]"
+											   restrict="0-9\-"
+											   yearNavigationEnabled="true"
+											   focusIn="dateValidator.source=F303_172"
+											   focusOut="focusOut(F303_172)"
+											   />
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							
+							
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="建 册 编  号"/>	
+								<s:TextInput id="F303_04" width="130" editable="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="月经史" width="100%">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="初 潮  年 龄"/>
+								<s:TextInput id="F303_132" width="130" restrict="0-9"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="经          期" paddingLeft="25"/>
+								<s:BorderContainer width="140" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_133" width="41" borderVisible="false" maxChars="2" textAlign="right" text="4" restrict="0-9"/>
+										<s:Label paddingRight="0" text="周"/>
+										<s:TextInput id="F303_134" width="42" borderVisible="false" maxChars="1" textAlign="right" text="0" restrict="0-6"/>
+										<s:Label paddingRight="0" text="天"/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="痛      经"  paddingLeft="15" paddingRight="5"/>
+								<s:BorderContainer>
+									<s:HGroup paddingLeft="10" paddingRight="10" paddingTop="5" verticalAlign="middle" id="F303_136">
+										<s:RadioButton buttonMode="true"  value="1" groupName="dysmenorrhea" selected="true" label="无"/>
+										<s:RadioButton buttonMode="true"  value="2" groupName="dysmenorrhea" label="轻"/>
+										<s:RadioButton buttonMode="true"  value="3" groupName="dysmenorrhea" label="中"/>
+										<s:RadioButton buttonMode="true"  value="4" groupName="dysmenorrhea" label="重"/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="月  经  量" paddingLeft="15" paddingRight="5"/>
+								<s:BorderContainer>
+									<s:HGroup paddingLeft="10" paddingRight="10" paddingTop="5" verticalAlign="middle" id="F303_135">
+										<s:RadioButton buttonMode="true"  value="1" groupName="menstruation" label="多"/>
+										<s:RadioButton buttonMode="true"  value="2" groupName="menstruation"  selected="true" label="中"/>
+										<s:RadioButton buttonMode="true"  value="3" groupName="menstruation" label="少"/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all" height="240">
+				<s:NavigatorContent width="100%" label="1.体格检查">	
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="身高(cm)"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_41" width="128"/>-->
+								<s:TextInput id="F303_41" text="0" restrict="0-9." width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="体 重(kg)" paddingLeft="15"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_42" width="130"/>-->
+								<s:TextInput id="F303_42" text="0" restrict="0-9." width="130"/>
+								<s:Label text="*" visible="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="体   质  指   数"/>
+								<s:NumericStepper minimum="0" stepSize="0.01" maximum="100000" id="F303_125" width="130"/>
+								<!--<s:TextInput id="F303_125" text="0" restrict="0-9." width="130" maxChars="5"/>-->							
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="血        压" paddingLeft="15"/>
+								<s:BorderContainer width="140" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_43_1" width="40" borderVisible="false" maxChars="3" textAlign="right" text="0" restrict="0-9"/>
+										<s:Label text="/    "/>
+										<s:TextInput id="F303_43_2" width="37" borderVisible="false" maxChars="3" textAlign="right" text="0" restrict="0-9"/>
+										<s:Label text="mmHg    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+								<s:Label text="*" visible="false"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="甲    状     腺" />
+								<s:DropDownList id="F303_44" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="心        脏" />
+								<s:DropDownList id="F303_45" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="肺        部" paddingLeft="15"/>
+								<s:DropDownList id="F303_46" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="肝                脏"/>
+								<s:DropDownList id="F303_47" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="脾        脏" paddingLeft="15"/>
+								<s:DropDownList id="F303_48" width="140"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="四             肢" />
+								<s:DropDownList id="F303_50" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="脊        柱"/>
+								<s:DropDownList id="F303_51" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="乳        房" paddingLeft="15"/>
+								<s:DropDownList id="F303_49" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="腹       围(cm)" />
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_52" width="130"/>-->
+								<s:TextInput id="F303_52" text="0" restrict="0-9." width="130"/>
+								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="胎  方  位" paddingLeft="15"/>
+								<s:DropDownList id="F303_54" width="140"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="胎     心    率" />
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_55" width="110"/>-->
+								<!--<s:TextInput id="F303_55" text="0" restrict="0-9." width="100"/>
+								<s:Label text="次/分    "/>-->
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_55" width="95" borderVisible="false" maxChars="3" text="0" restrict="0-9."/>
+										<s:Label text="次/分    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="胎动孕周"/>
+								<s:TextInput id="F303_30" width="130" restrict="0-9"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="先        露" paddingLeft="15"/>
+								<s:DropDownList id="F303_56" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="衔                接" />
+								<s:DropDownList id="F303_57" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="浮        肿" paddingLeft="15"/>
+								<s:DropDownList id="F303_33" width="140"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="浮  肿  孕 周" />
+								<s:TextInput id="F303_34" width="130" restrict="0-9"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<!--<mx:GridItem>
+							<s:Label text="其        他" paddingLeft="10"/>
+							<s:TextInput id="F303_37" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+							<s:Label text="其他孕周" paddingLeft="10"/>
+							<s:TextInput id="F303_38" width="130"/>
+							</mx:GridItem>-->
+							<mx:GridItem>
+								<s:Label text="宫高(cm)"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.01" maximum="100000" id="F303_53" width="130"/>-->
+								<s:TextInput id="F303_53" text="0" restrict="0-9." width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="尿  蛋  白" paddingLeft="14"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_76" width="130"/>-->
+								<s:TextInput id="F303_76" text="0" restrict="0-9." width="130"/>								
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="尿 蛋 白 指标" paddingLeft="4"/>
+								<s:DropDownList id="F303_126" width="130"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="血红蛋白" paddingLeft="17"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_75" width="110"/>-->
+								<!--<s:TextInput id="F303_75" text="0" restrict="0-9." width="110"/>-->								
+								<s:BorderContainer width="140" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_75" width="110" borderVisible="false" maxChars="3" text="0" restrict="0-9."/>
+										<s:Label text="g/L    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="骨盆外测量" paddingLeft="4"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_70" width="120"/>-->
+								<!--<s:TextInput id="F303_70" text="0" restrict="0-9." width="100"/>-->
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_70" width="105" borderVisible="false" maxChars="3" text="0" restrict="0-9."/>
+										<s:Label text="cm    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<!--<mx:GridItem>
+							<s:Label text="初诊复诊"/>
+							<s:DropDownList id="F303_09" width="130"/>
+							</mx:GridItem>-->
+							<mx:GridItem>
+								<s:Label text="髂嵴间径"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_71" width="110"/>-->
+								<!--<s:TextInput id="F303_71" text="0" restrict="0-9." width="100"/>-->
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_71" width="105" borderVisible="false" maxChars="3" text="0" restrict="0-9."/>
+										<s:Label text="cm    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="骶耻外径" paddingLeft="15"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_72" width="110"/>-->
+								<!--<s:TextInput id="F303_72" text="0" restrict="0-9." width="100"/>-->
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_72" width="105" borderVisible="false" maxChars="3" text="0" restrict="0-9."/>
+										<s:Label text="cm    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="坐骨结节间径"/>
+								<!--<s:NumericStepper minimum="0" stepSize="0.1" maximum="100000" id="F303_73" width="110"/>-->
+								<!--<s:TextInput id="F303_73" text="0" restrict="0-9." width="100"/>-->
+								<s:BorderContainer width="130" height="23">
+									<s:HGroup verticalAlign="middle">
+										<s:TextInput id="F303_73" width="105" borderVisible="false" maxChars="3" text="0" restrict="0-9."/>
+										<s:Label text="cm    "/>
+									</s:HGroup>
+								</s:BorderContainer>
+							</mx:GridItem>
+							<!--<mx:GridItem>
+							<s:Label text="妊娠确诊其他"/>
+							<s:TextInput id="F303_27" width="130"/>
+							</mx:GridItem>-->
+							<mx:GridItem>
+								<s:Label text="检查医生" paddingLeft="17"/>
+								<s:TextInput id="F303_17" width="140"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="处  理  指 导" />
+								<s:TextInput id="F303_20" width="130"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="复诊时间"/>
+								<mx:DateField yearNavigationEnabled="true" id="F303_21" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD" editable="true"
+											  focusIn="dateValidator.source=F303_21"
+											  focusOut="focusOut(F303_21)" 
+											  restrict="0-9\-"
+											  />
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+				<s:NavigatorContent width="100%" label="2.妇科检查">	
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="外    阴    检    查"/>
+								<s:DropDownList id="F303_58" width="130" change="if(F303_58.selectedIndex!=2)F303_59.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 外      阴       异      常" paddingLeft="10" />
+								<s:TextInput id="F303_59" width="190" enabled="{F303_58.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="子 宫  检 查" />
+								<s:DropDownList id="F303_64" width="130" change="if(F303_64.selectedIndex!=2)F303_65.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="子 宫 检 查 异 常" paddingLeft="10"/>
+								<s:TextInput id="F303_65" width="190" enabled="{F303_64.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="阴    道    检    查"/>
+								<s:DropDownList id="F303_60" width="130" change="if(F303_60.selectedIndex!=2)F303_61.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 阴      道       异      常" paddingLeft="10"/>
+								<s:TextInput id="F303_61" width="190" enabled="{F303_60.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="宫 颈  检 查" />
+								<s:DropDownList id="F303_62" width="130" change="if(F303_62.selectedIndex!=2)F303_63.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="宫 颈 检 查 异 常" paddingLeft="10"/>
+								<s:TextInput id="F303_63" width="190" enabled="{F303_62.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="左        附        件"/>
+								<s:DropDownList id="F303_66" width="130" change="if(F303_66.selectedIndex!=2)F303_67.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="左    附    件    异    常" paddingLeft="10"/>
+								<s:TextInput id="F303_67" width="190" enabled="{F303_66.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="右    附    件" />
+								<s:DropDownList id="F303_68" width="130" change="if(F303_68.selectedIndex!=2)F303_69.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 右  附  件  异  常" paddingLeft="10"/>
+								<s:TextInput id="F303_69" width="190" enabled="{F303_68.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="乙 肝 表面 抗 原"/>
+								<s:DropDownList id="F303_89" width="130" change="if(F303_89.selectedIndex!=2)F303_90.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="乙 肝表 面抗 原 异常" paddingLeft="10"/>
+								<s:TextInput id="F303_90" width="190" enabled="{F303_89.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="艾滋病抗体"/>
+								<s:DropDownList id="F303_91" width="130" change="if(F303_91.selectedIndex!=2)F303_92.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 艾滋病抗体异常" paddingLeft="10"/>
+								<s:TextInput id="F303_92" width="190" enabled="{F303_91.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="梅毒螺旋体抗体"/>
+								<s:DropDownList id="F303_93" width="130" change="if(F303_93.selectedIndex!=2)F303_94.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="梅毒螺旋体抗体异常" paddingLeft="10"/>
+								<s:TextInput id="F303_94" width="190" enabled="{F303_93.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+				<s:NavigatorContent width="100%" label="3.实验室检查">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="弓  形  体"/>
+								<s:DropDownList id="F303_105" width="130" change="if(F303_105.selectedIndex!=2)F303_106.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 弓形体异常" paddingLeft="10"/>
+								<s:TextInput id="F303_106" width="190" enabled="{F303_105.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="巨细胞病毒" paddingLeft="10"/>
+								<s:DropDownList id="F303_107" width="130" change="if(F303_107.selectedIndex!=2)F303_108.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 巨细胞病毒异常" paddingLeft="10"/>
+								<s:TextInput id="F303_108" width="190" enabled="{F303_107.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="产前筛查"/>
+								<s:DropDownList id="F303_103" width="130" change="if(F303_103.selectedIndex!=2)F303_104.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="产前筛查异常"/>
+								<s:TextInput id="F303_104" width="190" enabled="{F303_103.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="风  疹 病 毒 " paddingLeft="10"/>
+								<s:DropDownList id="F303_109" width="130" change="if(F303_109.selectedIndex!=2)F303_110.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="风 疹 病 毒 异 常" paddingLeft="10"/>
+								<s:TextInput id="F303_110" width="190" enabled="{F303_109.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text=" B超检查  "/>
+								<s:DropDownList id="F303_95" width="130" change="if(F303_95.selectedIndex!=2)F303_96.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" B超检查异常"/>
+								<s:TextInput id="F303_96" width="190" enabled="{F303_95.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="心    电    图" paddingLeft="10"/>
+								<s:DropDownList id="F303_97" width="130" change="if(F303_97.selectedIndex!=2)F303_98.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 心  电  图  异  常" paddingLeft="10"/>
+								<s:TextInput id="F303_98" width="190" enabled="{F303_97.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="淋  球  菌"/>
+								<s:DropDownList id="F303_99" width="130" change="if(F303_99.selectedIndex!=2)F303_100.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="淋球菌异常" paddingLeft="10"/>
+								<s:TextInput id="F303_100" width="190" enabled="{F303_99.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="甲  胎 蛋 白" paddingLeft="10"/>
+								<s:DropDownList id="F303_101" width="130" change="if(F303_101.selectedIndex!=2)F303_102.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="甲 胎 蛋 白 异 常" paddingLeft="10"/>
+								<s:TextInput id="F303_102" width="190" enabled="{F303_101.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="血  常  规"/>
+								<s:DropDownList id="F303_77" width="130" change="if(F303_77.selectedIndex!=2)F303_78.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="血常规异常" paddingLeft="10"/>
+								<s:TextInput id="F303_78" width="190" enabled="{F303_77.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="尿    常    规" paddingLeft="10"/>
+								<s:DropDownList id="F303_79" width="130" change="if(F303_79.selectedIndex!=2)F303_80.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text=" 尿  常  规  异  常" paddingLeft="10"/>
+								<s:TextInput id="F303_80" width="190" enabled="{F303_79.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="肾  功  能"/>
+								<s:DropDownList id="F303_81" width="130" change="if(F303_81.selectedIndex!=2)F303_82.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="肾功能异常" paddingLeft="10"/>
+								<s:TextInput id="F303_82" width="190" enabled="{F303_81.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="白  带 常 规" paddingLeft="10"/>
+								<s:DropDownList id="F303_83" width="130" change="if(F303_83.selectedIndex!=2)F303_84.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="白 带 常 规 异 常" paddingLeft="10"/>
+								<s:TextInput id="F303_84" width="190" enabled="{F303_83.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="肝  功  能"/>
+								<s:DropDownList id="F303_85" width="130" change="if(F303_85.selectedIndex!=2)F303_86.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="肝功能异常" paddingLeft="10"/>
+								<s:TextInput id="F303_86" width="190" enabled="{F303_85.selectedIndex==2}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="血  糖 检 查" paddingLeft="10"/>
+								<s:DropDownList id="F303_87" width="130" change="if(F303_87.selectedIndex!=2)F303_88.text=''"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="血 糖 检 查 异 常" paddingLeft="10"/>
+								<s:TextInput id="F303_88" width="190" enabled="{F303_87.selectedIndex==2}"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+				<s:NavigatorContent  label="4.孕产史" width="100%">
+					<s:VGroup>
+						<mx:TabNavigator width="1154" chromeColor="#ffffff" creationPolicy="all">
+							<s:NavigatorContent  label="孕产史" >
+								<mx:Grid paddingLeft="8" paddingBottom="10">
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="孕        次"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_137" width="90" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="产        次" paddingLeft="15"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_138" width="90" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="死  胎  数" paddingLeft="15"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_145" width="90" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="死         产       数" />
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_146" width="100" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="出    生    缺    陷" />
+											<s:BorderContainer width="130" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_147" width="110" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="人工流产"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_139" width="90" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="自然流产" paddingLeft="15"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_140" width="90" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="中期引产" paddingLeft="15"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_141" width="90" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>											
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="早    产    次    数" />
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_142" width="100" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="难     产   次    数" />
+											<s:BorderContainer width="130" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_143" width="110" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="手术产数"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_144" width="90" borderVisible="false" text="0" restrict="0-9."/>
+													<s:Label text="次"/>												
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="产前出血"  paddingLeft="15" />
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_148" width="90" borderVisible="false" textAlign="right" restrict="0-9|."/>
+													<s:Label text="(ml)"/>
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="产后出血" paddingLeft="15"/>
+											<s:BorderContainer width="120" height="23">
+												<s:HGroup verticalAlign="middle">
+													<s:TextInput id="F303_149" width="90" borderVisible="false" textAlign="right" restrict="0-9|."/>
+													<s:Label text="(ml)"/>
+												</s:HGroup>
+											</s:BorderContainer>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="前  分  娩  方  式"/>
+											<s:DropDownList id="F303_153" width="120"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="前  分  娩  日  期" />
+											<mx:DateField yearNavigationEnabled="true" id="F303_152" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														  formatString="YYYY-MM-DD" editable="true"
+														  focusOut="focusOut(F303_152)" 
+														  focusIn="dateValidator.source=F303_152"
+														  restrict="0-9\-"
+														  />
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem colSpan="3">
+											<s:Label text="妊娠合并/并发症史"/>
+											<s:TextInput id="F303_154" width="550" text="无"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="前妊娠终止方式"/>
+											<s:TextInput id="F303_151" width="120"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="前妊娠终止日期"/>
+											<mx:DateField yearNavigationEnabled="true" id="F303_150" width="130" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+														  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+														  formatString="YYYY-MM-DD" editable="true"
+														  focusIn="dateValidator.source=F303_150"
+														  focusOut="focusOut(F303_150)" 
+														  restrict="0-9\-"
+														  />
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem colSpan="3">
+											<s:Label text="其 他 异 常孕 产 史"/>
+											<s:TextInput id="F303_155" width="550" text="无"/>
+										</mx:GridItem>
+									</mx:GridRow>
+								</mx:Grid>
+							</s:NavigatorContent>	  
+						</mx:TabNavigator>
+					</s:VGroup>
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent  label="5.家族遗传史" width="100%">
+					<s:VGroup>
+						<mx:TabNavigator width="1154" chromeColor="#ffffff" creationPolicy="all">
+							<s:NavigatorContent  label="家族遗传史">
+								<mx:Grid paddingLeft="8" paddingBottom="10">
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="于本人关系"/>
+											<s:DropDownList id="F303_164" width="130" change="F303_164_changeHandler(event)"/>
+										</mx:GridItem>
+										<mx:GridItem colSpan="3">
+											<s:Label text="家族病史" paddingLeft="10"/>
+											<s:VGroup>
+												<s:HGroup paddingLeft="10" paddingRight="10" verticalAlign="middle" enabled="{F303_164.selectedIndex!=0}">
+													<s:RadioButton buttonMode="true" id="F303_165_1" groupName="operation1"  selected="true" label="无" click="clearSelected(F303_165,F303_166)"/>
+													<s:RadioButton buttonMode="true" id="F303_165_0" groupName="operation1" label="有"/>
+													<s:HGroup enabled="{F303_165_0.selected}" id="F303_165">
+														<s:CheckBox buttonMode="true"   label="盲"/>
+														<s:CheckBox buttonMode="true"   label="聋"/>
+														<s:CheckBox buttonMode="true"   label="哑"/>
+														<s:CheckBox buttonMode="true"   label="精神病"/>
+														<s:CheckBox buttonMode="true"   label="先天性智力低下"/>
+														<s:CheckBox buttonMode="true"   label="先天性心脏病"/>
+														<s:CheckBox buttonMode="true"   label="血友病"/>
+														<s:CheckBox buttonMode="true"   label="糖尿病"/>
+														<s:CheckBox buttonMode="true" id="F303_165_99" label="其他"/>
+													</s:HGroup>
+												</s:HGroup>
+											</s:VGroup>
+											<s:TextInput id="F303_166" width="150" text="无" enabled="{F303_165_99.selected}"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="于丈夫关系"/>
+											<s:DropDownList id="F303_167" width="130" change="F303_167_changeHandler(event)"/>
+										</mx:GridItem>
+										<mx:GridItem colSpan="3">
+											<s:Label text="家族病史" paddingLeft="10"/>
+											<s:VGroup>
+												<s:HGroup paddingLeft="10" paddingRight="10" verticalAlign="middle" enabled="{F303_167.selectedIndex!=0}">
+													<s:RadioButton buttonMode="true" id="F303_168_1" groupName="operation0"  selected="true"  label="无" click="clearSelected(F303_168,F303_169)"/>
+													<s:RadioButton buttonMode="true" id="F303_168_0" groupName="operation0" label="有"/>
+													<s:HGroup enabled="{F303_168_0.selected}" id="F303_168">
+														<s:CheckBox buttonMode="true"  label="盲"/>
+														<s:CheckBox buttonMode="true"  label="聋"/>
+														<s:CheckBox buttonMode="true"  label="哑"/>
+														<s:CheckBox buttonMode="true"  label="精神病"/>
+														<s:CheckBox buttonMode="true"  label="先天性智力低下"/>
+														<s:CheckBox buttonMode="true"  label="先天性心脏病"/>
+														<s:CheckBox buttonMode="true"  label="血友病"/>
+														<s:CheckBox buttonMode="true"  label="糖尿病"/>
+														<s:CheckBox buttonMode="true" id="F303_168_99"  label="其他"/>
+													</s:HGroup>
+												</s:HGroup>
+											</s:VGroup>
+											<s:TextInput id="F303_169" width="150" text="无" enabled="{F303_168_99.selected}"/>
+										</mx:GridItem>
+									</mx:GridRow>
+								</mx:Grid>
+							</s:NavigatorContent>	  
+						</mx:TabNavigator>
+					</s:VGroup>
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent  label="6.其他" width="100%">
+					<s:VGroup>
+						<mx:TabNavigator  width="1154" chromeColor="#ffffff" creationPolicy="all">
+							<s:NavigatorContent  label="其他" >
+								<mx:Grid paddingLeft="8" paddingBottom="10">
+									<mx:GridRow>
+										<mx:GridItem colSpan="4">
+											<s:Label text="既往病史"/>
+											<s:VGroup>
+												<s:HGroup paddingLeft="10" paddingRight="10" verticalAlign="middle">
+													<s:RadioButton buttonMode="true" id="F303_156_1" groupName="operation2" selected="true" label="无" click="clearSelected(F303_156,F303_157);"/>
+													<s:RadioButton buttonMode="true" id="F303_156_0" groupName="operation2" label="有"/>
+													<s:HGroup enabled="{F303_156_0.selected}" id="F303_156">
+														<s:CheckBox buttonMode="true"   label="心脏病"/>
+														<s:CheckBox buttonMode="true"   label="肺结核"/>
+														<s:CheckBox buttonMode="true"   label="肝脏病"/>
+														<s:CheckBox buttonMode="true"   label="泌尿生殖系疾病"/>
+														<s:CheckBox buttonMode="true"   label="糖尿病"/>
+														<s:CheckBox buttonMode="true"   label="高血压"/>
+														<s:CheckBox buttonMode="true"   label="精神病"/>
+														<s:CheckBox buttonMode="true"   label="性病"/>
+														<s:CheckBox buttonMode="true"   label="癫痫"/>
+														<s:CheckBox buttonMode="true"   label="甲亢"/>
+														<s:CheckBox buttonMode="true"   label="先天疾患"/>
+														<s:CheckBox buttonMode="true" id="F303_156_13"  label="其他"/>
+													</s:HGroup>
+												</s:HGroup>
+											</s:VGroup>
+											<s:TextInput enabled="{F303_156_13.selected}" id="F303_157" width="150" text="无"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="手  术  史"/>
+											<s:BorderContainer>
+												<s:HGroup paddingLeft="10" paddingRight="10" paddingTop="5" verticalAlign="middle">
+													<s:RadioButton buttonMode="true" id="F303_158_1" groupName="operation" selected="true" label="无" click="F303_159.text='无'"/>
+													<s:RadioButton buttonMode="true" id="F303_158_2" groupName="operation" label="有"/>
+												</s:HGroup>
+											</s:BorderContainer>
+											<s:TextInput id="F303_159" enabled="{F303_158_2.selected}" width="300" text="无"/>
+										</mx:GridItem>
+										<mx:GridItem>
+											<s:Label text="药物过敏" paddingLeft="15"/>
+											<s:BorderContainer>
+												<s:HGroup paddingLeft="10" paddingRight="10" paddingTop="5" verticalAlign="middle">
+													<s:RadioButton buttonMode="true" id="F303_162_1" groupName="medicine" selected="true" label="无" click="F303_163.text='无'"/>
+													<s:RadioButton buttonMode="true" id="F303_162_2" groupName="medicine" label="有"/>
+												</s:HGroup>
+											</s:BorderContainer>
+											<s:TextInput id="F303_163" enabled="{F303_162_2.selected}" width="300" text="无"/>
+										</mx:GridItem>
+									</mx:GridRow>
+									<mx:GridRow>
+										<mx:GridItem>
+											<s:Label text="现  病  史"/>
+											<s:BorderContainer>
+												<s:HGroup paddingLeft="10" paddingRight="10" paddingTop="5" verticalAlign="middle">
+													<s:RadioButton buttonMode="true" id="F303_160_1" groupName="disease" selected="true" label="无" click="F303_161.text='无'"/>
+													<s:RadioButton buttonMode="true" id="F303_160_2" groupName="disease" label="有"/>
+												</s:HGroup>
+											</s:BorderContainer>
+											<s:TextInput id="F303_161" enabled="{F303_160_2.selected}" width="300" text="无"/>
+										</mx:GridItem>
+									</mx:GridRow>
+								</mx:Grid>
+							</s:NavigatorContent>
+						</mx:TabNavigator>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent  label="风险评估" width="100%">
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Button buttonMode="true" label="高危评估" id="gaowei" click="gaowei_clickHandler(event)"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="是否高危"  paddingLeft="10"/>
+								<component:CustomDropDownList id="F303_10" width="130" 
+															  enabled="false" color="#E61717"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label paddingLeft="15" text="是否纳入高危管理"/>
+								<s:DropDownList id="F303_11" width="130" enabled="{F303_10.selectedIndex==1}"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="高危级别" paddingLeft="15"/>
+								<component:CustomDropDownList id="F303_12" width="130" 
+															  enabled="false" color="#E61717"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="高危原因" paddingLeft="15"/>
+								<s:TextInput id="F303_13"  width="311"  editable="false" text="无"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<mx:TabNavigator width="1155" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent width="100%" label="信息">	
+					<mx:Grid paddingLeft="8" paddingBottom="10">
+						<mx:GridRow>
+							<mx:GridItem>
+								<s:Label text="登记人员"/>
+								<s:TextInput id="F303_19" width="130" focusIn="arrayTip=CompMethod.showTip(F303_123,'2','请选择检查阶段',arrayTip[3]);"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="检查医院" paddingLeft="20"/>
+								<component:CustomDropDownList id="F303_15" width="130" enabled="false"/>
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+							<mx:GridItem>
+								<s:Label text="登记时间" paddingLeft="10"/>
+								<mx:DateField yearNavigationEnabled="true" id="F303_18" width="140" dayNames='["周日","周一","周二","周三","周四","周五","周六"]'
+											  monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+											  formatString="YYYY-MM-DD" editable="true" 
+											  focusIn="dateValidator.source=F303_18;arrayTip=CompMethod.showTip(F303_19,'1','登记人员不能为空',arrayTip[3]);"
+											  focusOut="focusOut(F303_18)" restrict="0-9\-"
+											  text="{DateField.dateToString(new Date(),'YYYY-MM-DD')}"
+											  />
+								<s:Label text="*" styleName="must"/>
+							</mx:GridItem>
+						</mx:GridRow>
+					</mx:Grid>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<s:HGroup verticalAlign="middle" horizontalAlign="right" paddingBottom="5" paddingTop="5" width="80%">
+				<s:Button buttonMode="true" label="保存" id="saveF303" click="validatePerinata1()"  enabled="{F303_05.text}"
+						  mouseOver="arrayTip=CompMethod.showTip(F303_18,'1','登记时间不能为空',arrayTip[3]);"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

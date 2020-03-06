@@ -1,0 +1,652 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Module xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%"
+		  creationComplete="moduleCreationCompleteHandler(event)" xmlns:component="com.xyw.sys.custom.component.*">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)" fault="faultHandler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="abandonCertificateService" destination="abandonCertificateService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="abandonCertificate" result="abandonCertificateHandler(event)" fault="faultHandler(event)"/>
+			<s:method name="validateStockCertiticate" result="validateStockCertiticateHandler(event)"/>
+			<s:method name="validateD301" result="validateD301Handler(event)"/>
+		</s:RemoteObject>
+		<s:RemoteObject id="birthService" destination="birthService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="queryBirthCertificate" result="queryBirthCertificateHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|GridItem
+		{
+			horizontalAlign:right;
+			verticalAlign:middle;
+		}
+		s|DropDownList
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomDropDownListSkin");
+			selectionColor:#DDDDDD;
+			rollOverColor:#EEEEEE;	
+			cornerRadius:3;
+		}
+		s|Button
+		{
+			skinClass:ClassReference("com.xyw.sys.custom.skin.CustomButtonSkin");
+			cornerRadius:5;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.csyxzm.model.D301;
+			import com.xyw.module.csyxzm.model.D401;
+			import com.xyw.module.csyxzm.model.D401Request;
+			import com.xyw.module.csyxzm.model.D401Response;
+			import com.xyw.module.csyxzm.model.QueryBirthRequest;
+			import com.xyw.module.csyxzm.model.VD301;
+			import com.xyw.sys.constant.SystemConstant;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SessionException;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.formatters.DateFormatter;
+			import mx.messaging.AbstractConsumer;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.StringUtil;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public var systemUser:SystemUser = null;
+			public var vd301:VD301 = null;
+			
+			[Bindable]
+			public var myDP:ArrayCollection = new ArrayCollection([{label:"请选择",data:0},{label:"打印错误",data:1},{label:"家长遗失",data:3},{label:"其他原因",data:5},{label:"医院遗失",data:10},{label:"损毁",data:9}]);
+			
+			private function moduleCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				this.initilizeComboBox();
+				this.d401_02.enabled = false;
+				this.d401_03.enabled = false;
+				this.d401_04.enabled = false;
+				this.d401_05A.enabled = false;
+				this.certificateDataGrid.addEventListener(GridSelectionEvent.SELECTION_CHANGE, onSelected);
+			}   
+			
+			private function onSelected(event:GridSelectionEvent):void
+			{
+				this.vd301 = DataGrid(event.target).selectedItem as VD301;
+				
+				this.d401_02.text = this.vd301.d30102;
+				
+				var d401_03DataProvider:ArrayCollection =  ArrayCollection(this.d401_03.dataProvider);
+				var d401_03Index:int = this.getDropDownListSelectedIndex(d401_03DataProvider, this.vd301.d30103);
+				this.d401_03.selectedIndex = d401_03Index;
+				this.d401_04.text = this.vd301.d30104;
+				this.d401_05A.text = this.vd301.d30110;
+			}
+			
+			private function initilizeComboBox():void
+			{
+				var comboBoxDataRequest_d101:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest_d101.flag = "D101";
+				comboBoxDataRequest_d101.sql = "select t.D101_01, t.D101_02 from D101 t";
+				comboBoxDataRequest_d101.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest_d101);
+				
+				var comboBoxDataRequest_S401_01_01:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest_S401_01_01.flag = "S401_01_01";
+				comboBoxDataRequest_S401_01_01.sql = "select t.S_01, t.S_02 from S401_01 t where t.S_01 in ('1','3','4','5', '9','10') order by t.S_01";
+				comboBoxDataRequest_S401_01_01.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest_S401_01_01);
+				
+				var comboBoxDataRequest_S301_01:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest_S301_01.flag = "S301_01";
+				comboBoxDataRequest_S301_01.sql = "select t.S_01, t.S_02 from S301_01 t";
+				comboBoxDataRequest_S301_01.showPrompt = true;
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest_S301_01);
+			}
+			
+			private function getDropDownListSelectedIndex(arrayCollection:ArrayCollection, defaultValue:String):int
+			{
+				var len:uint = arrayCollection.length;
+				var i:uint = 0;
+				var index:int = 0;
+				while(i < len) {
+					var comboBoxDataP:ComboBoxData = arrayCollection.getItemAt(i) as ComboBoxData;
+					if(comboBoxDataP.data == defaultValue) {
+						index = arrayCollection.getItemIndex(comboBoxDataP);
+						break;
+					}
+					i++;
+				}
+				return index;
+			}
+			
+			private function changeCancel_01():void
+			{
+				if(this.d401_06_01.selectedItem.data == 5)
+				{
+					this.d401_07.enabled = true;
+				}else
+				{
+					this.d401_07.text = "";
+					this.d401_07.enabled = false;
+				}
+			}
+			
+			private function changeCancel_01_A():void
+			{
+				if(this.d401_06_01A.selectedItem.data == 5)
+				{
+					this.d401_07A.enabled = true;
+				}else
+				{
+					this.d401_07A.text = "";
+					this.d401_07A.enabled = false;
+				}
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object = event.result
+				
+				var flag:String = comboBoxDataResponse.flag;
+		
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101") {
+					/*
+					
+					this.d401_10.text = this.systemUser.institution;
+					this.d401_10.enabled = false;
+					
+					this.d401_12.dataProvider = comboBoxDataList;
+					this.d401_12.selectedIndex = 0;*/
+					this.d401_10.text = this.systemUser.institution;
+					this.d401_10.enabled = false;
+					this.d401_10A.text = this.systemUser.institution;
+					this.d401_10A.enabled = false;
+					this.d401_12.text = this.systemUser.institution;
+					this.d401_12.enabled = false;
+					this.d401_12A.text = this.systemUser.institution;
+					this.d401_12A.enabled = false;
+				} else if(flag == "S401_01_01") {
+					this.d401_06_01.dataProvider = comboBoxDataList;
+					this.d401_06_01.selectedIndex = 0;
+//					this.d401_06_01A.dataProvider = comboBoxDataList;
+					this.d401_06_01A.selectedIndex = 0;
+				} else if(flag == "S301_01") {
+					this.d401_03.dataProvider = comboBoxDataList;
+					this.d401_03.selectedIndex = 0;
+				}/*else if(flag == "S401_01_02")
+				{
+					if(comboBoxDataList.length > 1)
+					{
+						this.d401_06_02.visible = true;
+						this.d401_06_02.dataProvider = comboBoxDataList;
+						this.d401_06_02.selectedIndex = 0;
+					}else
+					{
+						this.d401_06_02.visible = false;
+						this.d401_06_02.selectedIndex = 0;
+					}
+				} */
+			}
+			
+			private function abandonValidateCertificate(event:MouseEvent):void
+			{
+				var d401Resquest:D401Request = new D401Request();
+				var d401:D401 = new D401();
+				
+				if(this.tabN.selectedIndex == 0) {
+					if(this.d401_02.text == null || StringUtil.trim(this.d401_02.text) == "") {
+						Alert.show("姓名不能为空", "系统提示");
+						this.d401_02.setFocus();
+						return;
+					}
+					if(this.d401_03.selectedItem.data == "") {
+						Alert.show("性别不能为空", "系统提示");
+						this.d401_03.setFocus();
+						return;
+					}
+					if(this.d401_05A.text == null || StringUtil.trim(this.d401_05A.text) == "") {
+						Alert.show("出生证号不能为空", "系统提示");
+						this.d401_05A.setFocus();
+						return;
+					}
+					if(this.d401_04.text == null || StringUtil.trim(this.d401_04.text) == "") {
+						Alert.show("出生日期不能为空", "系统提示");
+						this.d401_04.setFocus();
+						return;
+					}
+					if(this.d401_06_01A.selectedItem.data == 0)
+					{
+						Alert.show("请选择废证原因","系统提示");
+						return;
+					}
+					if(this.d401_09A.text == null || StringUtil.trim(this.d401_09A.text) == "")
+					{
+						Alert.show("经办人不能为空", "系统提示");
+						this.d401_09A.setFocus();
+						return;
+					}
+					var d401_10A_text:String = this.d401_10A.text
+					if(d401_10A_text == "")
+					{
+						Alert.show("经办单位不能为空", "系统提示");
+						this.d401_10A.setFocus();
+						return;
+					}
+					
+					if(this.d401_11A.text == null || StringUtil.trim(this.d401_11A.text) == "")
+					{
+						Alert.show("审核人不能为空", "系统提示");
+						this.d401_11A.setFocus();
+						return;		
+					}
+					if(this.d401_06_01A.selectedItem.data == 5 && this.d401_07A.text == "")
+					{
+						Alert.show("其它原因不能为空!","系统提示");
+						return;
+					}
+					
+					d401.d40105 = this.d401_05A.text;
+					d401.d40112 = this.systemUser.institutionCode;
+					this.abandonCertificateService.validateStockCertiticate(d401);
+				} else if(this.tabN.selectedIndex == 1){
+					if(this.d401_06_01.selectedItem.data == 0)
+					{
+						Alert.show("请选择废证原因","系统提示");
+						return;
+					}
+					/* if(this.d401_06_02.visible == true && this.d401_06_02.selectedItem.data == 0)
+					{
+					Alert.show("请选择废证原因","系统提示");
+					return;
+					} */
+					if(this.d401_05.text == null || StringUtil.trim(this.d401_05.text) == "")
+					{
+						Alert.show("出生证号不能为空", "系统提示");
+						return;
+					}
+					if(this.d401_09.text == null || StringUtil.trim(this.d401_09.text) == "")
+					{
+						Alert.show("经办人不能为空", "系统提示");
+						this.d401_09.setFocus();
+						return;
+					}
+					var d401_10_text:String = this.d401_10.text
+					if(d401_10_text == "")
+					{
+						Alert.show("经办单位不能为空", "系统提示");
+						this.d401_10.setFocus();
+						return;
+					}
+					
+					if(this.d401_11.text == null || StringUtil.trim(this.d401_11.text) == "")
+					{
+						Alert.show("审核人不能为空", "系统提示");
+						this.d401_11.setFocus();
+						return;		
+					}
+					
+					//var comboBoxData_d401_12:ComboBoxData = this.d401_12.selectedItem as ComboBoxData;
+					/*if(comboBoxData_d401_12.data == "")
+					{
+					Alert.show("审核单位不能为空", "系统提示");
+					this.d401_12.setFocus();
+					return;
+					}*/
+					if(this.d401_12.text == null || StringUtil.trim(this.d401_11.text) == "") {
+						Alert.show("审核单位不能为空", "系统提示");
+						this.d401_12.setFocus();
+						return;
+					}
+					if(this.d401_06_01.selectedItem.data == 5 && this.d401_07.text == "")
+					{
+						Alert.show("其它原因不能为空!","系统提示");
+						return;
+					}
+					var idNumber:String = this.d401_05.text;
+					
+					this.abandonCertificateService.validateD301(idNumber);
+					
+				}
+				
+			}
+			
+			private function validateStockCertiticateHandler(event:ResultEvent):void
+			{
+				var d401Response:Object = event.result;
+				if(d401Response.errorMessage != null)
+				{
+					Alert.show(d401Response.errorMessage,"系统提示");
+					return;
+				}
+				
+				this.abandonCertificate();
+			}
+			
+			private function abandonCertificate():void
+			{
+				var d401Request:D401Request = new D401Request();
+				
+				var d401:D401 = new D401();
+				
+				if(this.tabN.selectedIndex == 0) {
+					d401.d40102 = this.d401_02.text;
+					var comboBoxData_D401_03:ComboBoxData = this.d401_03.selectedItem as ComboBoxData;
+					d401.d40103 = comboBoxData_D401_03.data; 
+					d401.d40104 = DateFormatter.parseDateString(this.vd301.d30104);
+					d401.d40105 = this.d401_05A.text;
+					d401.d40106 = this.d401_06_01A.selectedItem.data;
+					d401.d40107 = this.d401_07A.text;
+					d401.d40108 = new Date();
+					d401.d40109 = this.d401_09A.text;
+					d401.d40110 = this.systemUser.institutionCode;
+					d401.d40111 = this.d401_11A.text;
+					d401.d40112 = this.systemUser.institutionCode;
+					d401.d40113 = this.systemUser.areaCode;
+					d401.d40125 = '0';//0非空白作废登记   1空白证作废登记
+				} else if(this.tabN.selectedIndex == 1) {
+					d401.d40103 = '4';
+					d401.d40105 = this.d401_05.text;
+					d401.d40106 = this.d401_06_01.selectedItem.data;
+					d401.d40107 = this.d401_07.text;
+					d401.d40109 = this.d401_09.text;
+					d401.d40110 = this.systemUser.institutionCode;
+					d401.d40111 = this.d401_11.text;
+					d401.d40112 = this.systemUser.institutionCode;
+					d401.d40113 = this.systemUser.areaCode;
+					d401.d40125 = "1";//0非空白作废登记   1空白证作废登记
+				}
+				
+				d401Request.d401 = d401;
+				
+				this.abandonCertificateService.abandonCertificate(d401Request);
+			}
+			
+			private function abandonCertificateHandler(event:ResultEvent):void
+			{
+				var d401Respone:Object = event.result;
+				if(d401Respone.errorMessage == null) {
+					Alert.show(d401Respone.promptMessage, "系统提示");
+				} else {
+					Alert.show(d401Respone.errorMessage, "系统提示");
+				}
+			}
+			
+			private function validateD301Handler(event:ResultEvent):void
+			{
+				var d401Respone:Object = event.result;
+				if(d401Respone.errorMessage == null) {
+					var d401:D401 = new D401();
+					d401.d40105 = this.d401_05.text;
+					d401.d40112 = this.systemUser.institutionCode;
+					
+					this.abandonCertificateService.validateStockCertiticate(d401);
+				} else {
+					Alert.show(d401Respone.errorMessage, "系统提示");
+					this.tabN.selectedIndex = 0;
+				}
+			}
+			
+			private function faultHandler(event:FaultEvent):void
+			{
+				var sessionException:SessionException = event.fault.rootCause as SessionException;
+				var errorCode:String = "";
+				try {
+					errorCode = sessionException.errorCode;
+					if(errorCode == SystemConstant.LOGIN_USER_INFO_IS_NULL) {
+						Alert.show(sessionException.errorMessage, "系统提示");
+						return;
+					}
+				} catch(error:Error) {
+					Alert.show("系统异常", "系统提示");
+				}
+			}
+			
+			private function query(event:MouseEvent):void
+			{
+				if(this.d301_10.text == null || StringUtil.trim(this.d301_10.text) == "") {
+					Alert.show("请输入正确的出生证号", "系统提示");
+					return;
+				}
+				var queryBirthRequest:QueryBirthRequest = new QueryBirthRequest();
+				queryBirthRequest.d301_02 = this.d301_02.text;
+				queryBirthRequest.d301_10 = this.d301_10.text;
+				var d301_26:String = this.systemUser.institutionCode;
+				var type:String = this.systemUser.institutionType;
+				if(type == '4')
+				{
+					d301_26 = d301_26.substr(0, 6);
+				}else if(type == "3")
+				{
+					d301_26 = d301_26.substr(0, 4);
+				}else if(type == "2")
+				{
+					d301_26 = d301_26.substr(0, 2);
+				}
+				queryBirthRequest.d301_26 = d301_26;
+//				queryBirthRequest.d301_30 = '1';
+//				queryBirthRequest.d301_42 = '0';
+				queryBirthRequest.parameterPageindex = 1;
+				queryBirthRequest.parameterPagesize = 20;
+				
+				this.birthService.queryBirthCertificate(queryBirthRequest);
+			}
+			
+			private function queryBirthCertificateHandler(event:ResultEvent):void
+			{
+				var queryBirthResponse:Object = event.result;
+				var rowCount:Number = queryBirthResponse.rowCount;
+				if(queryBirthResponse.errorMessage == null)
+				{
+					var listVD301:ArrayCollection = queryBirthResponse.listVD301;
+					this.pagerBar.dataGrid = this.certificateDataGrid;
+					this.pagerBar.rowCount = rowCount;
+					this.pagerBar.resultData = listVD301;
+					this.pagerBar.dataBind();
+					this.pagerBar.pagerFunction = pagerFunction;
+					if(rowCount > 0) {
+						this.pagerBar.enabled = true;
+					}
+					this.vd301 = queryBirthResponse.vd301;
+				} else {
+					Alert.show(queryBirthResponse.errorMessage, "系统提示");
+				}
+			}
+			
+			public function pagerFunction(currentPageIndex:int, pageSize:int):void
+			{
+				var queryBirthRequest:QueryBirthRequest = new QueryBirthRequest();
+				queryBirthRequest.d301_02 = this.d301_02.text;
+				queryBirthRequest.d301_10 = this.d301_10.text;
+				queryBirthRequest.parameterPageindex = currentPageIndex;
+				queryBirthRequest.parameterPagesize = pageSize;
+				
+				this.birthService.queryBirthCertificate(queryBirthRequest);
+			}
+		]]>
+	</fx:Script>
+	<s:Scroller x="11" y="4" width="100%" height="100%" horizontalScrollPolicy="auto"
+				verticalScrollPolicy="auto">
+		<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10">
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all">
+				<s:NavigatorContent label="婴儿信息查询" width="100%">
+					<s:VGroup>
+						<s:HGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" verticalAlign="middle">
+							<s:Label text="婴儿姓名"/><s:TextInput id="d301_02"/>
+							<s:Label text="出生证号"/><s:TextInput id="d301_10"/>
+							<s:Button label="查询" click="query(event)"/>
+							<s:Label text="作废前请先查询信息!" color="red" fontSize="20"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			
+			<s:DataGrid id="certificateDataGrid" editable="true" rowHeight="22" width="100%" height="280" alternatingRowColors="[#FFFFFF,#EEEEEE]" skinClass="com.xyw.sys.custom.skin.CustomDataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn dataField="d30101" headerText="主键" visible="false"/>
+						<s:GridColumn headerText="序号" width="60" itemRenderer="com.xyw.sys.custom.itemrenderer.CustomGridColumnItemRenderer" editable="false"/>
+						<s:GridColumn dataField="d30102" headerText="姓名" width="60"/>
+						<s:GridColumn dataField="d30103Zh" headerText="性别" width="60"/>
+						<s:GridColumn dataField="d30104" headerText="出生日期" width="80"/>
+						<s:GridColumn dataField="d30110" headerText="出生证号" width="80"/>
+						<s:GridColumn dataField="d30116" headerText="父亲姓名" width="80"/>
+						<s:GridColumn dataField="d30117" headerText="父亲证件号" width="150"/>
+						<s:GridColumn dataField="d30111" headerText="母亲姓名" width="80"/>
+						<s:GridColumn dataField="d30112" headerText="母亲证件号" width="150"/>
+						<s:GridColumn dataField="d30136" headerText="领证人" width="60"/>
+						<s:GridColumn dataField="d30139" headerText="领证人证件号" width="150" visible="false"/>
+						<s:GridColumn dataField="d30128" headerText="领证时间" width="80"/>
+						<s:GridColumn dataField="d30124Zh" headerText="接生机构" width="140"/>
+						<s:GridColumn dataField="d30126Zh" headerText="签发机构" width="140"/>
+						<s:GridColumn dataField="d30105Zh" headerText="出生地" visible="false"/>
+						<s:GridColumn dataField="d30106" headerText="其他出生地" visible="false"/>
+						<s:GridColumn dataField="d30107" headerText="出生孕周" visible="false"/>
+						<s:GridColumn dataField="d30108" headerText="身长" visible="false"/>
+						<s:GridColumn dataField="d30109" headerText="健康状况" visible="false"/>
+						<s:GridColumn dataField="d30113" headerText="母亲出生日期" visible="false"/>
+						<s:GridColumn dataField="d30114" headerText="母亲国籍" visible="false"/>
+						<s:GridColumn dataField="d30115" headerText="母亲民族" visible="false"/>
+						<s:GridColumn dataField="d30118" headerText="父亲出生日期" visible="false"/>
+						<s:GridColumn dataField="d30119" headerText="父亲国籍" visible="false"/>
+						<s:GridColumn dataField="d30120" headerText="父亲民族" visible="false"/>
+						<s:GridColumn dataField="d30121" headerText="家庭地址" visible="false"/>
+						<s:GridColumn dataField="d30122" headerText="出生地点分类" visible="false"/>
+						<s:GridColumn dataField="d30123" headerText="出生地其他" visible="false"/>
+						<s:GridColumn dataField="d30125" headerText="接生员" visible="false"/>
+						<s:GridColumn dataField="d30127" headerText="签发人" visible="false"/>
+						<s:GridColumn dataField="d30129" headerText="体重" visible="false"/>
+						<s:GridColumn dataField="d30130" headerText="签发机构类型" visible="false"/>
+						<s:GridColumn dataField="d30130Zh" headerText="签发机构类型" visible="false"/>
+						<s:GridColumn dataField="d30131" headerText="所属地区" visible="false"/>
+						<s:GridColumn dataField="d30131Zh" headerText="所属地区" visible="false"/>
+						<s:GridColumn dataField="d30132" headerText="住院病例号" visible="false"/>
+						<s:GridColumn dataField="d30133" headerText="接生人填表日期" visible="false"/>
+						<s:GridColumn dataField="d30134" headerText="母亲有效证件类别" visible="false"/>
+						<s:GridColumn dataField="d30134Zh" headerText="母亲有效证件类别" visible="false"/>
+						<s:GridColumn dataField="d30135" headerText="父亲有效证件类别" visible="false"/>
+						<s:GridColumn dataField="d30135Zh" headerText="父亲有效证件类别" visible="false"/>
+						<s:GridColumn dataField="d30137" headerText="与新生儿关系" visible="false"/>
+						<s:GridColumn dataField="d30137Zh" headerText="与新生儿关系" visible="false"/>
+						<s:GridColumn dataField="d30138" headerText="领证人有效证件类别" visible="false"/>
+						<s:GridColumn dataField="d30138Zh" headerText="领证人有效证件类别" visible="false"/>
+						<s:GridColumn dataField="d30140" headerText="领证人填表日期" visible="false"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			<component:PagerBar id="pagerBar" enabled="false"/>
+			<s:Label text="非空白作废请先查询要作废证明的信息!" color="red" fontSize="20"/>
+			<mx:TabNavigator  width="100%" chromeColor="#ffffff" creationPolicy="all" id="tabN">
+				<s:NavigatorContent  label="出生证作废登记" id="abandon_A"  width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid>
+							<mx:GridRow>
+								<mx:GridItem>
+								<s:Label text="姓名"/><s:TextInput id="d401_02"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label text="性别"/><s:DropDownList id="d401_03" width="128"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="出生证号"/><s:TextInput id="d401_05A"/>
+								</mx:GridItem>
+								<mx:GridItem>
+								<s:Label text="出生日期"/><component:DateTimeField timeStampMode="true" yearNavigationEnabled="true" id="d401_04" width="128" dayNames='["日","一","二","三","四","五","六"]'
+								monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+								formatString="YYYY-MM-DD"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="废证原因"/><s:DropDownList id="d401_06_01A" dataProvider="{myDP}"  change="changeCancel_01_A()"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="其他原因"/><s:TextInput id="d401_07A" enabled="false"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="经办单位"/><s:TextInput id="d401_10A"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="经办人"/><s:TextInput id="d401_09A"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="审核单位"/><!--s:DropDownList id="d401_12"/-->
+									<s:TextInput id="d401_12A"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="审核人"/><s:TextInput id="d401_11A"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>	
+				</s:NavigatorContent>
+				<s:NavigatorContent label="空白出生证作废登记" id="abandon_B" width="100%">
+					<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10">
+						<mx:Grid>
+							<mx:GridRow>
+								<!--<mx:GridItem>
+									<s:Label text="姓名"/><s:TextInput id="d401_02"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="性别"/><s:DropDownList id="d401_03" width="128"/>
+								</mx:GridItem>-->
+								<mx:GridItem>
+									<s:Label text="出生证号"/><s:TextInput id="d401_05"/>
+								</mx:GridItem>
+								<!--<mx:GridItem>
+									<s:Label text="出生日期"/><component:DateTimeField timeStampMode="true" yearNavigationEnabled="true" id="d401_04" width="128" dayNames='["日","一","二","三","四","五","六"]'
+																		monthNames='["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"]'
+																		formatString="YYYY-MM-DD"/>
+								</mx:GridItem>-->
+								<mx:GridItem>
+									<s:Label text="废证原因"/><s:DropDownList id="d401_06_01" change="changeCancel_01()"/>
+								</mx:GridItem>
+								<!--<mx:GridItem horizontalAlign="left" colSpan="2">
+									<s:DropDownList id="d401_06_02" visible="false"/>
+								</mx:GridItem>-->
+								<mx:GridItem>
+									<s:Label text="其他原因"/><s:TextInput id="d401_07" enabled="false"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="经办单位"/><s:TextInput id="d401_10"/>
+								</mx:GridItem>
+							</mx:GridRow>
+							
+							<mx:GridRow>
+								<mx:GridItem>
+									<s:Label text="经办人"/><s:TextInput id="d401_09"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="审核单位"/><!--s:DropDownList id="d401_12"/-->
+									<s:TextInput id="d401_12"/>
+								</mx:GridItem>
+								<mx:GridItem>
+									<s:Label text="审核人"/><s:TextInput id="d401_11"/>
+								</mx:GridItem>
+							</mx:GridRow>
+						</mx:Grid>
+					</s:VGroup>	
+				</s:NavigatorContent>
+			</mx:TabNavigator>
+			<s:HGroup verticalAlign="middle" horizontalAlign="right" paddingBottom="20" paddingTop="10" paddingLeft="10" paddingRight="200" width="100%" height="30">
+				<s:Button label="作废登记" id="abandonCertificateButton" click="abandonValidateCertificate(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Scroller>
+</s:Module>

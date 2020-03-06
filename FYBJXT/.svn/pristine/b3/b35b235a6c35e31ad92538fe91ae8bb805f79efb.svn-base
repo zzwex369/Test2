@@ -1,0 +1,180 @@
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="600" height="330" chromeColor="#429edd"
+			   fontSize="15" title="用户角色分配"
+			   close="removeAddRoleTitleWindow()"
+			   skinClass="com.xyw.sys.custom.skin.CustomTitleWindow"
+			   xmlns:component="com.xyw.sys.custom.component.*"
+			   creationComplete="titlewindowCreationCompleteHandler(event)">
+	
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService" endpoint="{this.parentApplication.contextRoot}/messagebroker/amf" showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+			<s:method name="grantRole" result="grantRoleHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.module.xtwh.model.D804;
+			import com.xyw.module.xtwh.model.D804Request;
+			import com.xyw.module.xtwh.model.D804Response;
+			import com.xyw.module.xtwh.model.D806;
+			import com.xyw.sys.model.ComboBoxData;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.ComboBoxDataResponse;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			[Bindable]
+			public var d801_01:String = "";
+			
+			[Bindable]
+			public var d801_02:String = "";
+			
+			public var systemUser:SystemUser = null;
+			
+			private function titlewindowCreationCompleteHandler(event:FlexEvent):void
+			{
+				this.systemUser = this.parentApplication.systemUser;
+				
+				var comboBoxDataRequest:ComboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.flag = "userRole";
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select a.d806_03, b.d804_02 from D806 a, D804 b where a.d806_02 = '" + this.d801_01 + "' and b.d804_01 = a.d806_03";
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+				comboBoxDataRequest = new ComboBoxDataRequest();
+				comboBoxDataRequest.flag = "D804";
+				comboBoxDataRequest.showPrompt = false;
+				comboBoxDataRequest.sql = "select t.d804_01, t.d804_02 from D804 t where t.d804_03 like '" + this.systemUser.areaCode + "%' order by t.d804_01";
+				
+				this.systemService.getComboBoxData(comboBoxDataRequest);
+				
+			}
+			
+			private function subtract(system:ArrayCollection,user:ArrayCollection):ArrayCollection
+			{
+				for(var i:uint = 0; i < system.length; i++)
+				{
+					var obj:Object = system.getItemAt(i);
+					for(var j:uint = 0; j < user.length; j++)
+					{
+						var objj:Object = user.getItemAt(j);
+						if(obj.data == objj.data && obj.label == objj.label) 
+						{
+							system.removeItemAt(i);	
+						}
+					}
+				}
+				return new ArrayCollection(system.toArray());
+			}
+			
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:ComboBoxDataResponse = event.result as ComboBoxDataResponse;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D804")
+				{
+					this.systemRole.dataProvider = comboBoxDataList;
+					this.systemRole.dataProvider = this.subtract(ArrayCollection(this.systemRole.dataProvider), ArrayCollection(this.userRole.dataProvider));
+				} else if(flag == "userRole") {
+					this.userRole.dataProvider = comboBoxDataList;
+				}
+				
+			}
+			
+			private function toRight(event:MouseEvent):void
+			{
+				
+				var selectedItemss:Vector.<Object> = this.systemRole.selectedItems
+				var selectedIndicess:Vector.<int> = this.systemRole.selectedIndices;
+				for(var i:uint = 0; i < selectedItemss.length; i++) {
+					ArrayCollection(this.userRole.dataProvider).addItem(selectedItemss[i]);
+					ArrayCollection(this.systemRole.dataProvider).removeItemAt(selectedIndicess[i]);
+				}
+				
+			}
+			
+			private function toLeft(event:MouseEvent):void
+			{
+				var selectedItemss:Vector.<Object> = this.userRole.selectedItems;
+				var selectedIndicess:Vector.<int> = this.userRole.selectedIndices;
+				for(var i:uint = 0; i < selectedItemss.length; i++) {
+					ArrayCollection(this.systemRole.dataProvider).addItem(selectedItemss[i]);
+					ArrayCollection(this.userRole.dataProvider).removeItemAt(selectedIndicess[i]);
+				}
+			}
+			
+			private function confirm():void
+			{
+				this.apply();
+				this.removeAddRoleTitleWindow();
+			}
+			
+			private function apply():void
+			{
+				var d806:D806 = new D806();
+				d806.d806_02 = this.d801_01;
+				d806.d806_03s = ArrayCollection(this.userRole.dataProvider);
+				this.systemService.grantRole(d806);
+			}
+			
+			private function grantRoleHandler(event:ResultEvent):void
+			{
+				var flag:Boolean = event.result as Boolean;
+				if(flag) {
+					Alert.show("分配角色成功!", "系统提示");
+				} else {
+					Alert.show("分配角色失败!", "系统提示");
+					return;
+				}
+			}
+			
+			private function removeAddRoleTitleWindow():void
+			{
+				PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="300" paddingBottom="10" paddingLeft="10" paddingTop="10" paddingRight="10" chromeColor="#FFFFFF">
+		<s:VGroup width="100%" height="100%">
+			<s:HGroup width="100%" height="100%">
+				<s:VGroup height="100%" width="45%">
+					<s:Label text="系统已有角色"/>
+					<s:List id="systemRole" width="100%" height="100%"/>
+				</s:VGroup>
+				<s:VGroup height="100%">
+					<s:HGroup height="45%" verticalAlign="bottom">
+						<s:Button label="&gt;&gt;" width="40" click="toRight(event)"/>
+					</s:HGroup>
+					<s:HGroup height="10%">
+						
+					</s:HGroup>
+					<s:HGroup height="45%">
+						<s:Button label="&lt;&lt;" width="40" click="toLeft(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+				<s:VGroup height="100%" width="45%">
+					<s:Label text="{d801_02}账户角色"/>
+					<s:List id="userRole" width="100%" height="100%"/>
+				</s:VGroup>
+			</s:HGroup>
+			
+			<s:HGroup width="100%" horizontalAlign="right">
+				<s:Button label="确定" click="confirm()"/><s:Button label="应用" click="apply()"/><s:Button label="取消" click="removeAddRoleTitleWindow()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+</s:TitleWindow>

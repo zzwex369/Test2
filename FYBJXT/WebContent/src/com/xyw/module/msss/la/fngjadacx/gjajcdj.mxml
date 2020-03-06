@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TabNavigator xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:component="com.xyw.sys.custom.component.*"
+		 width="100%"  creationComplete="init()">
+	<fx:Declarations>
+		<s:RemoteObject id="systemService" destination="systemService"
+						endpoint="{this.parentApplication.contextRoot}/messagebroker/amf"
+						showBusyCursor="true">
+			<s:method name="getComboBoxData" result="getComboBoxDataHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="customData", type="com.xyw.sys.event.CustomDataEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.xyw.sys.custom.component.CompMethod;
+			import com.xyw.sys.event.CustomDataEvent;
+			import com.xyw.sys.model.ComboBoxDataRequest;
+			import com.xyw.sys.model.SystemUser;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CollectionEvent;
+			import mx.events.CollectionEventKind;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			private var systemUser:SystemUser;
+			private var comboBoxDataRequest:ComboBoxDataRequest;
+			private var i:uint=0;
+			private var institutionCodeEventHandler:Function;
+			private function init():void
+			{
+				systemUser=this.parentApplication.systemUser;
+				initializeComboBox();
+				//this.addEventListener("institutionCodeEvent",institutionCodeEventHandler);
+			}
+			/******************下拉框填充数据******************/
+			private function initializeComboBox():void
+			{
+				
+					comboBoxDataRequest = new ComboBoxDataRequest();
+					comboBoxDataRequest.showPrompt = true;
+					comboBoxDataRequest.sql = "select t.d101_01, t.d101_02 from D101 t where t.D101_01 = " + this.systemUser.institutionCode + " or t.D101_11 = " + this.systemUser.institutionCode;
+					comboBoxDataRequest.flag = "D101";
+					this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+			}
+			
+			
+			/******************下拉框填充数据******************/
+			public function _initializeComboBox(s05:String=null):void
+			{
+				
+					comboBoxDataRequest = new ComboBoxDataRequest();
+					comboBoxDataRequest.showPrompt = false;
+					comboBoxDataRequest.sql = "select t.s_01,t.s_02 from S301_10 t where t.S_05="+ s05+" and t.S_04 ="+this.systemUser.userCode;
+					comboBoxDataRequest.flag = "S301_10";
+					this.systemService.getComboBoxData(this.comboBoxDataRequest);
+				
+				
+			}
+			/******************得到数据******************/
+			private function getComboBoxDataHandler(event:ResultEvent):void
+			{
+				var comboBoxDataResponse:Object =  event.result;
+				var flag:String = comboBoxDataResponse.flag;
+				var comboBoxDataList:ArrayCollection = comboBoxDataResponse.comboBoxDataList;
+				if(flag == "D101")
+				{
+					this.institutionCode.dataProvider = comboBoxDataList;
+					this.institutionCode.selectedIndex = CompMethod.getDropDownListSelectedIndex(comboBoxDataList, this.systemUser.institutionCode);
+					dispatchEventCustomDataEvent(comboBoxDataList,this.institutionCode.selectedIndex);
+					
+				}else if(flag=="S301_10")
+				{
+					checker.dataProvider=comboBoxDataList;
+					checker.selectedIndex=0;
+				}
+			}
+			
+			/**
+			 *
+			 */
+			private function dispatchEventCustomDataEvent(comboBoxDataList:ArrayCollection,selectIdx:int=0):void
+			{
+				var dataObj:Object=new Object();
+				dataObj.idx=selectIdx;
+				dataObj.comboBoxDataList=comboBoxDataList;
+				var  dataEvent:CustomDataEvent=new CustomDataEvent(CustomDataEvent.CUSTOM_DATA);
+				dataEvent.data=dataObj;
+				this.dispatchEvent(dataEvent);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:NavigatorContent width="100%" label="检查机构">
+		<s:VGroup paddingBottom="2" paddingLeft="10" paddingRight="10">	
+			<s:HGroup width="100%" height="100%" paddingBottom="5" verticalAlign="middle">
+				<s:Label text="检查机构" id="institution"/><s:DropDownList width="130"  enabled="false" id="institutionCode"/>
+				<s:Label text="检查人员" id="Checkname"/><component:FindSelectedItemComboBox editable="true"  height="21" width="130" id="checker"/>
+				<s:Label text="检查时间" id="time"/>
+					<component:CustomRangeDateField  id="nowDate" isSelectNow="true"/>
+
+			</s:HGroup>
+		</s:VGroup>
+	</s:NavigatorContent>
+</mx:TabNavigator>
